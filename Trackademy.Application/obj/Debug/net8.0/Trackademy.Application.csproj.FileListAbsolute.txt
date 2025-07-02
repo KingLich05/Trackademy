@@ -13,3 +13,4 @@ C:\Users\Sultan\RiderProjects\Trackademy\Trackademy.Application\obj\Debug\net8.0
 C:\Users\Sultan\RiderProjects\Trackademy\Trackademy.Application\obj\Debug\net8.0\refint\Trackademy.Application.dll
 C:\Users\Sultan\RiderProjects\Trackademy\Trackademy.Application\obj\Debug\net8.0\Trackademy.Application.pdb
 C:\Users\Sultan\RiderProjects\Trackademy\Trackademy.Application\obj\Debug\net8.0\ref\Trackademy.Application.dll
+C:\Users\Sultan\RiderProjects\Trackademy\Trackademy.Application\obj\Debug\net8.0\Trackademy.Application.sourcelink.json

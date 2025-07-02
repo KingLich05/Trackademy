@@ -120,3 +120,6 @@ C:\Users\Sultan\RiderProjects\Trackademy\Trackademy.Api\obj\Debug\net8.0\refint\
 C:\Users\Sultan\RiderProjects\Trackademy\Trackademy.Api\obj\Debug\net8.0\Trackademy.Api.pdb
 C:\Users\Sultan\RiderProjects\Trackademy\Trackademy.Api\obj\Debug\net8.0\Trackademy.Api.genruntimeconfig.cache
 C:\Users\Sultan\RiderProjects\Trackademy\Trackademy.Api\obj\Debug\net8.0\ref\Trackademy.Api.dll
+C:\Users\Sultan\RiderProjects\Trackademy\Trackademy.Api\obj\Debug\net8.0\Trackademy.Api.sourcelink.json
+C:\Users\Sultan\RiderProjects\Trackademy\Trackademy.Api\bin\Debug\net8.0\Microsoft.Extensions.Configuration.FileExtensions.dll
+C:\Users\Sultan\RiderProjects\Trackademy\Trackademy.Api\bin\Debug\net8.0\Microsoft.Extensions.Configuration.Json.dll

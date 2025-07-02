@@ -9,3 +9,4 @@ C:\Users\Sultan\RiderProjects\Trackademy\Trackademy.Domain\obj\Debug\net8.0\Trac
 C:\Users\Sultan\RiderProjects\Trackademy\Trackademy.Domain\obj\Debug\net8.0\refint\Trackademy.Domain.dll
 C:\Users\Sultan\RiderProjects\Trackademy\Trackademy.Domain\obj\Debug\net8.0\Trackademy.Domain.pdb
 C:\Users\Sultan\RiderProjects\Trackademy\Trackademy.Domain\obj\Debug\net8.0\ref\Trackademy.Domain.dll
+C:\Users\Sultan\RiderProjects\Trackademy\Trackademy.Domain\obj\Debug\net8.0\Trackademy.Domain.sourcelink.json
