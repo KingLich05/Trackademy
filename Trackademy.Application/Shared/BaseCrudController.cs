@@ -34,8 +34,8 @@ public class BaseCrudController<T, TDto> : ControllerBase
     [HttpPost]
     public virtual async Task<IActionResult> Create([FromBody] TDto dto)
     {
-        var created = await _service.CreateAsync(dto);
-        return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
+        await _service.CreateAsync(dto);
+        return Ok();
     }
 
     [HttpPut("{id}")]
