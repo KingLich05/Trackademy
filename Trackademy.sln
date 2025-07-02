@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Trackademy.Api", "Trackademy.Api\Trackademy.Api.csproj", "{B99696D7-7CD1-4FF7-BF60-894391E79FEB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Trackademy.Application", "Trackademy.Application\Trackademy.Application.csproj", "{609FCE46-470B-4A2E-AD62-20091CDA059E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Trackademy.Domain", "Trackademy.Domain\Trackademy.Domain.csproj", "{EB4E4B1E-98CB-4FA8-9417-B6A266242436}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B99696D7-7CD1-4FF7-BF60-894391E79FEB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B99696D7-7CD1-4FF7-BF60-894391E79FEB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B99696D7-7CD1-4FF7-BF60-894391E79FEB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B99696D7-7CD1-4FF7-BF60-894391E79FEB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{609FCE46-470B-4A2E-AD62-20091CDA059E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{609FCE46-470B-4A2E-AD62-20091CDA059E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{609FCE46-470B-4A2E-AD62-20091CDA059E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{609FCE46-470B-4A2E-AD62-20091CDA059E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EB4E4B1E-98CB-4FA8-9417-B6A266242436}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EB4E4B1E-98CB-4FA8-9417-B6A266242436}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EB4E4B1E-98CB-4FA8-9417-B6A266242436}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EB4E4B1E-98CB-4FA8-9417-B6A266242436}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
