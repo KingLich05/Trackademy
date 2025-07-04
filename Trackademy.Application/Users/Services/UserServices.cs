@@ -1,11 +1,16 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using AutoMapper;
+using Microsoft.EntityFrameworkCore;
 using Trackademy.Application.Persistance;
+using Trackademy.Application.Shared;
 using Trackademy.Application.Users.Interfaces;
+using Trackademy.Application.Users.Models;
 using Trackademy.Domain.Users;
 
 namespace Trackademy.Application.Users.Services;
 
-public class UserServices(TrackademyDbContext dbContext) : IUserServices
+public class UserServices(TrackademyDbContext dbContext, IMapper mapper) : 
+    BaseService<User, UserDto>(dbContext, mapper),
+    IUserServices
 {
     public async Task<User?> GetById(Guid id)
     { 
@@ -17,7 +22,13 @@ public class UserServices(TrackademyDbContext dbContext) : IUserServices
         var user = new User
         {
             Id = Guid.NewGuid(),
-            Username = name
+            Name = name,
+            Email = name,
+            PasswordHash = name,
+            PhotoPath = name,
+            CreatedDate = DateTime.UtcNow,
+            Role = null,
+            RoleId = Guid.Empty
         };
         await dbContext.Users.AddAsync(user);
         await dbContext.SaveChangesAsync();

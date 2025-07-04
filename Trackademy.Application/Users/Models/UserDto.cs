@@ -1,0 +1,13 @@
+using Trackademy.Domain.Enums;
+
+namespace Trackademy.Application.Users.Models;
+
+public class UserDto
+{
+    public Guid Id { get; set; }
+    public string Name { get; set; }
+    public string Email { get; set; }
+    public string Phone { get; set; }
+    public string? PhotoPath { get; set; }
+    public RoleEnum Role { get; set; }
+}
