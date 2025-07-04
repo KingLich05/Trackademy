@@ -1,10 +1,10 @@
 using Trackademy.Domain.Enums;
+using Trackademy.Domain.hz;
 
 namespace Trackademy.Domain.Users;
 
-public class Roles
+public class Roles : Entity
 {
-    public Guid Id { get; set; }
     public RoleEnum Role { get; set; }
     
     public List<User> Users { get; set; }

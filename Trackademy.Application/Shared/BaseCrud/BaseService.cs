@@ -1,12 +1,13 @@
 ﻿using AutoMapper;
-using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
+using Trackademy.Domain.hz;
 
-namespace Trackademy.Application.Shared;
+namespace Trackademy.Application.Shared.BaseCrud;
 
-public class BaseService<T, TDto> : IBaseService<T, TDto>
-    where T : class
+public class BaseService<T, TDto, TAddDto> : IBaseService<T, TDto, TAddDto>
+    where T : Entity
     where TDto : class
+    where TAddDto : class
 {
     private readonly DbContext _context;
     private readonly IMapper _mapper;
@@ -31,15 +32,16 @@ public class BaseService<T, TDto> : IBaseService<T, TDto>
         return entity is null ? null : _mapper.Map<TDto>(entity);
     }
 
-    public virtual async Task<TDto> CreateAsync(TDto dto)
+    public virtual async Task<TDto> CreateAsync(TAddDto dto)
     {
-        var entity = _mapper.Map<T>(dto);
+        var entity = _mapper.Map<T>(dto); 
+        entity.Id = Guid.NewGuid();
         await _dbSet.AddAsync(entity);
         await _context.SaveChangesAsync();
         return _mapper.Map<TDto>(entity);
     }
 
-    public virtual async Task<bool> UpdateAsync(Guid id, TDto dto)
+    public virtual async Task<bool> UpdateAsync(Guid id, TAddDto dto)
     {
         var entity = await _dbSet.FindAsync(id);
         if (entity is null) return false;

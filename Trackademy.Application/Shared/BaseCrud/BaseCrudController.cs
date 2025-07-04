@@ -1,16 +1,17 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 
-namespace Trackademy.Application.Shared;
+namespace Trackademy.Application.Shared.BaseCrud;
 
 [ApiController]
 [Route("api/[controller]")]
-public class BaseCrudController<T, TDto> : ControllerBase
+public abstract class BaseCrudController<T, TDto, TAddDto> : ControllerBase
     where T : class
     where TDto : class
+    where TAddDto : class
 {
-    protected readonly IBaseService<T, TDto> _service;
+    protected readonly IBaseService<T, TDto, TAddDto> _service;
 
-    protected BaseCrudController(IBaseService<T, TDto> service)
+    protected BaseCrudController(IBaseService<T, TDto, TAddDto> service)
     {
         _service = service;
     }
@@ -31,15 +32,15 @@ public class BaseCrudController<T, TDto> : ControllerBase
         return Ok(item);
     }
 
-    [HttpPost]
-    public virtual async Task<IActionResult> Create([FromBody] TDto dto)
+    [HttpPost("create")]
+    public virtual async Task<IActionResult> Create([FromBody] TAddDto dto)
     {
         await _service.CreateAsync(dto);
         return Ok();
     }
 
     [HttpPut("{id}")]
-    public virtual async Task<IActionResult> Update(Guid id, [FromBody] TDto dto)
+    public virtual async Task<IActionResult> Update(Guid id, [FromBody] TAddDto dto)
     {
         var updated = await _service.UpdateAsync(id, dto);
         if (!updated)
@@ -51,9 +52,11 @@ public class BaseCrudController<T, TDto> : ControllerBase
     [HttpDelete("{id}")]
     public virtual async Task<IActionResult> Delete(Guid id)
     {
-        var deleted = await _service.DeleteAsync(id);
-        if (!deleted)
+        var isDeleted = await _service.DeleteAsync(id);
+        if (!isDeleted)
+        {
             return NotFound();
+        }
 
         return NoContent();
     }

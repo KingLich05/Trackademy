@@ -1,8 +1,9 @@
-﻿namespace Trackademy.Domain.Users;
+﻿using Trackademy.Domain.hz;
 
-public class User
+namespace Trackademy.Domain.Users;
+
+public class User : Entity
 {
-    public Guid Id { get; set; }
 
     public string Name { get; set; }
     

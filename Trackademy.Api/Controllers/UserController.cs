@@ -10,12 +10,12 @@ public class UserController(IUserServices service) : ControllerBase
     [HttpGet("{id}")]
     public async Task<IActionResult> GetUserById(Guid id)
     {
-        var user = await service.GetById(id);
+        // var user = await service.GetById(id);
+        //
+        // if (user == null)
+        //     return NotFound();
 
-        if (user == null)
-            return NotFound();
-
-        return Ok(user);
+        return Ok();
     }
 
     [HttpPost("create-user")]

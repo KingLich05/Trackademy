@@ -8,5 +8,8 @@ public class RoleProfile : Profile
     public RoleProfile()
     {
         CreateMap<Domain.Users.Roles, RoleDto>();
+
+        CreateMap<AddRoleModel, Domain.Users.Roles>()
+            .ForMember(x => x.Users, opt => opt.Ignore());
     }
 }
