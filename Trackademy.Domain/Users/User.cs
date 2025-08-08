@@ -1,21 +1,34 @@
-﻿using Trackademy.Domain.hz;
+﻿using Trackademy.Domain.Enums;
+using Trackademy.Domain.hz;
 
 namespace Trackademy.Domain.Users;
 
 public class User : Entity
 {
-
-    public string Name { get; set; }
+    public string FullName { get; set; }
     
-    public string Email { get; set; }
+    public string? Email { get; set; }
     
     public string PasswordHash { get; set; }
     
     public string? PhotoPath { get; set; }
     
-    public DateTime CreatedDate { get; set; }
-    
-    public Roles Role { get; set; }
+    public string Phone { get; set; }
 
-    public Guid RoleId { get; set; }
+    public string? ParentPhone { get; set; }
+    public DateTime CreatedDate { get; set; }
+
+    public RoleEnum Role { get; set; } = RoleEnum.Student;
+    
+    #region нав свойства
+
+    public ICollection<Groups> Groups { get; set; } = new List<Groups>();
+
+    public ICollection<Schedule> Schedules { get; set; } = new List<Schedule>();
+    public ICollection<Submission> Submissions { get; set; } = new List<Submission>();
+    public ICollection<Payment> Payments { get; set; } = new List<Payment>();
+    public ICollection<Notification> Notifications { get; set; } = new List<Notification>();
+    public ICollection<Attendance> Attendances { get; set; } = new List<Attendance>();
+
+    #endregion
 }

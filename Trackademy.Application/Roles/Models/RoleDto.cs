@@ -1,9 +1,0 @@
-using Trackademy.Domain.Enums;
-
-namespace Trackademy.Application.Roles.Models;
-
-public class RoleDto
-{
-    public Guid Id { get; set; }
-    public RoleEnum Role { get; set; }
-}

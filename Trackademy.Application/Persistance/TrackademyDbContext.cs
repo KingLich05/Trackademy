@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Trackademy.Application.Persistance.Configuration;
 using Trackademy.Domain.Users;
 
 namespace Trackademy.Application.Persistance;
@@ -12,24 +13,29 @@ public class TrackademyDbContext : DbContext
 
     public DbSet<User> Users { get; set; }
 
-    public DbSet<Domain.Users.Roles> Roles { get; set; }
+    public DbSet<Groups> Groups { get; set; }
+    public DbSet<Subject> Subjects { get; set; }
+    public DbSet<Room> Rooms { get; set; }
+    public DbSet<Schedule> Schedules { get; set; }
+    public DbSet<Attendance> Attendances { get; set; }
+    public DbSet<Assignment> Assignments { get; set; }
+    public DbSet<Submission> Submissions { get; set; }
+    public DbSet<Score> Scores { get; set; }
+    public DbSet<Payment> Payments { get; set; }
+    public DbSet<Notification> Notifications { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<Domain.Users.Roles>(entity =>
-        {
-            entity.HasKey(x => x.Id);
-        });
-        modelBuilder.Entity<User>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
-            entity.HasOne(e => e.Role)
-                .WithMany(r => r.Users)
-                .HasForeignKey(e => e.RoleId)
-                .OnDelete(DeleteBehavior.Restrict);
-        });
-
-        base.OnModelCreating(modelBuilder);
+        modelBuilder.ApplyConfiguration(new UserConfig());
+        modelBuilder.ApplyConfiguration(new GroupConfig());
+        modelBuilder.ApplyConfiguration(new SubjectConfig());
+        modelBuilder.ApplyConfiguration(new RoomConfig());
+        modelBuilder.ApplyConfiguration(new ScheduleConfig());
+        modelBuilder.ApplyConfiguration(new AttendanceConfig());
+        modelBuilder.ApplyConfiguration(new AssignmentConfig());
+        modelBuilder.ApplyConfiguration(new SubmissionConfig());
+        modelBuilder.ApplyConfiguration(new ScoreConfig());
+        modelBuilder.ApplyConfiguration(new PaymentConfig());
+        modelBuilder.ApplyConfiguration(new NotificationConfig());
     }
 }

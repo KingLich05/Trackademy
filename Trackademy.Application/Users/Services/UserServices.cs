@@ -18,13 +18,10 @@ public class UserServices(TrackademyDbContext dbContext, IMapper mapper) :
         var user = new User
         {
             Id = Guid.NewGuid(),
-            Name = name,
             Email = name,
             PasswordHash = name,
             PhotoPath = name,
-            CreatedDate = DateTime.UtcNow,
-            Role = null,
-            RoleId = Guid.Empty
+            CreatedDate = DateTime.UtcNow
         };
         await dbContext.Users.AddAsync(user);
         await dbContext.SaveChangesAsync();

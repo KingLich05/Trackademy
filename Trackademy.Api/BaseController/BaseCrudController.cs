@@ -1,10 +1,11 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
+using Trackademy.Application.Shared.BaseCrud;
 
-namespace Trackademy.Application.Shared.BaseCrud;
+namespace Trackademy.Api.BaseController;
 
 [ApiController]
 [Route("api/[controller]")]
-public abstract class BaseCrudController<T, TDto, TAddDto> : ControllerBase
+public abstract class BaseCrudController<T, TDto, TAddDto> : Controller
     where T : class
     where TDto : class
     where TAddDto : class
