@@ -1,12 +1,13 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Trackademy.Application.Users.Interfaces;
 
-namespace Trackademy.Api.Controllers;
+namespace Trackademy.Api.Controllers.Users;
 
 [ApiController]
 [Route("api/[controller]")]
 public class UserController(IUserServices service) : ControllerBase
 {
+    
     [HttpGet("{id}")]
     public async Task<IActionResult> GetUserById(Guid id)
     {
