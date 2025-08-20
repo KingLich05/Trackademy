@@ -22,7 +22,7 @@ public class AuthController(
     // [Authorize(Roles = "Admin")]
     public async Task<IActionResult> CreateUser([FromBody] CreateUserRequest request)
     {
-        if (ValidateData(request))
+        if (!ValidateData(request))
         {
             return Conflict("Не все поля заполнены.");
         }
