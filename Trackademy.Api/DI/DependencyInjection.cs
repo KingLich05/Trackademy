@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Trackademy.Application.Helper;
 using Trackademy.Application.Persistance;
 using Trackademy.Application.Users.AutoMapper;
 using Trackademy.Application.Users.Interfaces;
@@ -14,6 +15,7 @@ public static class DependencyInjection
             options.UseNpgsql(configuration.GetConnectionString("TrackademyDbContext")));
 
         services.AddScoped<IUserServices, UserServices>();
+        services.AddSingleton<ExtensionString>();
         
         services.AddAutoMapper(typeof(UserProfile).Assembly);
         return services;

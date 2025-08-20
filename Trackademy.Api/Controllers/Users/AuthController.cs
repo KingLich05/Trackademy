@@ -22,15 +22,19 @@ public class AuthController(
     // [Authorize(Roles = "Admin")]
     public async Task<IActionResult> CreateUser([FromBody] CreateUserRequest request)
     {
-        if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Password))
+        if (ValidateData(request))
         {
-            return BadRequest("Email и пароль обязательны");
+            return Conflict("Не все поля заполнены.");
+        }
+        if (!VerifyNullEmailAndNicknameAndPassword(request.Email, request.Nickname, request.Password))
+        {
+            return BadRequest("Email или nickname и пароль обязательны");
         }
 
-        var exists = await db.Users.AnyAsync(u => u.Email == request.Email);
+        var exists = await db.Users.AnyAsync(u => u.Email == request.Email || u.Nickname == request.Nickname);
         if (exists)
         {
-            return Conflict("Пользователь с таким email уже существует");
+            return Conflict("Пользователь с таким email или nickname уже существует");
         }
 
         var user = new User
@@ -52,7 +56,6 @@ public class AuthController(
         });
     }
 
-    // ====== OPTIONAL: текущий пользователь ======
     [HttpGet("me")]
     [Authorize]
     public async Task<IActionResult> GetMe()
@@ -94,6 +97,20 @@ public class AuthController(
         });
     }
 
+    #region Prvate methods
+
+
+    private bool ValidateData(CreateUserRequest request)
+    {
+        if (request == null) return false;
+        if (string.IsNullOrWhiteSpace(request.FullName)) return false;
+        if (string.IsNullOrWhiteSpace(request.Phone)) return false;
+        if (string.IsNullOrWhiteSpace(request.Password)) return false;
+        if (request.Role == null) return false;
+
+        return true;
+    }
+
     private string GenerateJwtToken(User user)
     {
         var jwtSection = config.GetSection("Jwt");
@@ -125,4 +142,18 @@ public class AuthController(
     {
         return BCrypt.Net.BCrypt.Verify(password, storedHash);
     }
+
+    private bool VerifyNullEmailAndNicknameAndPassword(string? email, string? nickname, string? password)
+    {
+        if (string.IsNullOrWhiteSpace(email) && string.IsNullOrWhiteSpace(nickname) 
+                                             || string.IsNullOrWhiteSpace(password))
+        {
+            
+            return false;
+        }
+
+        return true;
+    }
+
+    #endregion
 }
