@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
 using Trackademy.Application.Persistance;
 using Trackademy.Application.Shared;
@@ -27,8 +28,19 @@ public class UserServices(TrackademyDbContext dbContext, IMapper mapper) :
         await dbContext.SaveChangesAsync();
     }
 
-    public async Task<List<User>> GetUsers()
+    public async Task<List<UserDto>> GetUsers()
     {
-        return await dbContext.Users.ToListAsync();
+        var users = await dbContext.Users.ToListAsync();
+        var userDtos = users
+            .Select(u => new UserDto 
+            {
+                Id = u.Id,
+                Name = u.FullName,
+                Email = u.Email,
+                PhotoPath = u.PhotoPath,
+                Role = u.Role,
+            })
+            .ToList();
+        return userDtos;
     }
 }
