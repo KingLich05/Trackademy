@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Trackademy.Application.Users.Interfaces;
+using Trackademy.Application.Users.Models;
 
 namespace Trackademy.Api.Controllers.Users;
 
@@ -19,18 +20,11 @@ public class UserController(IUserServices service) : ControllerBase
         return Ok();
     }
 
-    [HttpPost("create-user")]
-    public async Task<IActionResult> CreateUser(
-        [FromBody] string name)
+    [HttpPost("get-users")]
+    public async Task<IActionResult> GetUsers(
+        [FromBody] GetUserRequest getUserRequest)
     {
-        await service.CreateUser(name);
-        return Ok();
-    }
-
-    [HttpGet("get-users")]
-    public async Task<IActionResult> GetUsers()
-    {
-        var users = await service.GetUsers();
+        var users = await service.GetUsers(getUserRequest);
         return Ok(users);
     }
 }

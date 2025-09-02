@@ -9,6 +9,7 @@ using Microsoft.IdentityModel.Tokens;
 using Trackademy.Application.authenticator.Models;
 using Trackademy.Application.Helper;
 using Trackademy.Application.Persistance;
+using Trackademy.Application.Users.Models;
 using Trackademy.Domain.Users;
 
 namespace Trackademy.Api.Controllers.Users;
@@ -73,10 +74,10 @@ public class AuthController(
     }
 
     [HttpPost("login")]
-    public async Task<IActionResult> Login([FromBody] LoginRequest request)
+    public async Task<IActionResult> Login([FromBody] LogRequest request)
     {
         var user = await db.Users
-            .FirstOrDefaultAsync(u => u.Email == request.Email || request.Email == u.Nickname);
+            .FirstOrDefaultAsync(u => u.Email == request.Email);
 
         if (user == null || !VerifyPassword(request.Password, user.PasswordHash))
         {

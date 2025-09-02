@@ -14,33 +14,28 @@ public class UserServices(TrackademyDbContext dbContext, IMapper mapper) :
     BaseService<User, UserDto, AddUserModel>(dbContext, mapper),
     IUserServices
 {
-    public async Task CreateUser(string name) // удалить, перегрузить базовый метод
+    public async Task<List<UserDto>> GetUsers(GetUserRequest getUserRequest)
     {
-        var user = new User
-        {
-            Id = Guid.NewGuid(),
-            Email = name,
-            PasswordHash = name,
-            PhotoPath = name,
-            CreatedDate = DateTime.UtcNow
-        };
-        await dbContext.Users.AddAsync(user);
-        await dbContext.SaveChangesAsync();
-    }
+        var usersQuery = dbContext.Users.Include(x => x.Groups).AsQueryable();
 
-    public async Task<List<UserDto>> GetUsers()
-    {
-        var users = await dbContext.Users.ToListAsync();
-        var userDtos = users
-            .Select(u => new UserDto 
-            {
-                Id = u.Id,
-                Name = u.FullName,
-                Email = u.Email,
-                PhotoPath = u.PhotoPath,
-                Role = u.Role,
-            })
-            .ToList();
-        return userDtos;
+        if (getUserRequest.search != null)
+        {
+            usersQuery = usersQuery.Where(x => x.FullName.Contains(getUserRequest.search));
+        }
+
+        if (getUserRequest.RoleIds != null)
+        {
+            usersQuery = usersQuery.Where(x => getUserRequest.RoleIds.Contains(x.Role));
+        }
+
+        if (getUserRequest.GroupIds != null || getUserRequest.GroupIds.Count > 0)
+        {
+            usersQuery = usersQuery.Where(x => 
+                x.Groups.Any(g => getUserRequest.GroupIds.Contains(g.Id)));
+        }
+        
+        var users = await usersQuery.ProjectTo<UserDto>(mapper.ConfigurationProvider).ToListAsync();
+        
+        return users;
     }
 }

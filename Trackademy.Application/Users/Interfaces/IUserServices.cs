@@ -5,6 +5,5 @@ namespace Trackademy.Application.Users.Interfaces;
 
 public interface IUserServices
 {
-    Task CreateUser(string name);
-    Task<List<UserDto>> GetUsers();
+    Task<List<UserDto>> GetUsers(GetUserRequest getUserRequest);
 }
