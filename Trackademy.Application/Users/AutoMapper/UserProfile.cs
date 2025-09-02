@@ -8,6 +8,9 @@ public class UserProfile : Profile
 {
     public UserProfile()
     {
-        CreateMap<User, UserDto>();
+        CreateMap<Groups, GroupMinimalViewModel>();
+        CreateMap<User, UserDto>()
+            .ForMember(dest => dest.Groups, opt => opt.MapFrom(x => x.Groups))
+            .ForMember(x => x.Name, opt => opt.MapFrom(q => q.FullName));
     }
 }

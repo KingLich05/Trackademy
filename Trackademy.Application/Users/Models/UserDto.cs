@@ -8,6 +8,6 @@ public class UserDto
     public string Name { get; set; }
     public string Email { get; set; }
     public string Phone { get; set; }
-    public string? PhotoPath { get; set; }
+    public List<GroupMinimalViewModel> Groups { get; set; }
     public RoleEnum Role { get; set; }
 }

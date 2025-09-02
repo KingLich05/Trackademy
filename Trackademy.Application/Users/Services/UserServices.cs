@@ -18,17 +18,17 @@ public class UserServices(TrackademyDbContext dbContext, IMapper mapper) :
     {
         var usersQuery = dbContext.Users.Include(x => x.Groups).AsQueryable();
 
-        if (getUserRequest.search != null)
+        if (getUserRequest.search is { Length: > 0 } && !string.IsNullOrWhiteSpace(getUserRequest.search))
         {
             usersQuery = usersQuery.Where(x => x.FullName.Contains(getUserRequest.search));
         }
 
-        if (getUserRequest.RoleIds != null)
+        if (getUserRequest.RoleIds.Count != 0)
         {
             usersQuery = usersQuery.Where(x => getUserRequest.RoleIds.Contains(x.Role));
         }
 
-        if (getUserRequest.GroupIds != null || getUserRequest.GroupIds.Count > 0)
+        if (getUserRequest.GroupIds.Count != 0)
         {
             usersQuery = usersQuery.Where(x => 
                 x.Groups.Any(g => getUserRequest.GroupIds.Contains(g.Id)));
