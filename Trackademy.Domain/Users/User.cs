@@ -7,9 +7,7 @@ public class User : Entity
 {
     public string FullName { get; set; }
     
-    public string? Nickname { get; set; }
-    
-    public string? Email { get; set; }
+    public string Email { get; set; }
     
     public string PasswordHash { get; set; }
     
@@ -18,9 +16,14 @@ public class User : Entity
     public string Phone { get; set; }
 
     public string? ParentPhone { get; set; }
+
     public DateTime CreatedDate { get; set; }
 
     public RoleEnum Role { get; set; } = RoleEnum.Student;
+    
+    public List<Guid> OrganizationIds { get; set; } = new List<Guid>();
+    
+    public List<Guid> GroupIds { get; set; } = new List<Guid>();
     
     #region нав свойства
 
@@ -31,6 +34,8 @@ public class User : Entity
     public ICollection<Payment> Payments { get; set; } = new List<Payment>();
     public ICollection<Notification> Notifications { get; set; } = new List<Notification>();
     public ICollection<Attendance> Attendances { get; set; } = new List<Attendance>();
+    
+    public ICollection<Organization> Organizations { get; set; } = new List<Organization>();
 
     #endregion
 }

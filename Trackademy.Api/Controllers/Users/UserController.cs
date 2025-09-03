@@ -10,7 +10,8 @@ public class UserController(IUserServices service) : ControllerBase
 {
     
     [HttpGet("{id}")]
-    public async Task<IActionResult> GetUserById(Guid id)
+    public async Task<IActionResult> GetUserById(
+        [FromHeader] Guid id)
     {
         // var user = await service.GetById(id);
         //

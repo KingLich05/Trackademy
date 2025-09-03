@@ -10,13 +10,13 @@ public class UserConfig: IEntityTypeConfiguration<User>
     {
         b.HasKey(x => x.Id);
         b.Property(x => x.FullName).IsRequired();
-        b.Property(x => x.Nickname).HasMaxLength(100);
+        b.Property(x => x.Email).IsRequired();
         b.Property(x => x.PasswordHash).IsRequired();
         b.Property(x => x.CreatedDate).HasColumnType("timestamptz");
 
         b.HasIndex(x => x.Email).IsUnique();
-        b.HasIndex(x => x.Nickname).IsUnique();
 
         b.HasMany(u => u.Groups).WithMany(g => g.Students);
+        b.HasMany(u => u.Organizations).WithMany(g => g.Users);
     }
 }

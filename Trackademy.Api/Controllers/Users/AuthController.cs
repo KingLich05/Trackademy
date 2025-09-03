@@ -27,12 +27,12 @@ public class AuthController(
         {
             return Conflict("Не все поля заполнены.");
         }
-        if (!VerifyNullEmailAndNicknameAndPassword(request.Email, request.Nickname, request.Password))
+        if (!VerifyNullEmailAndNicknameAndPassword(request.Email, request.Password))
         {
             return BadRequest("Email или nickname и пароль обязательны");
         }
 
-        var exists = await db.Users.AnyAsync(u => u.Email == request.Email || u.Nickname == request.Nickname);
+        var exists = await db.Users.AnyAsync(u => u.Email == request.Email);
         if (exists)
         {
             return Conflict("Пользователь с таким email или nickname уже существует");
@@ -119,7 +119,7 @@ public class AuthController(
         var claims = new List<Claim>
         {
             new Claim(ClaimTypes.NameIdentifier, str.Str(user.Id)),
-            new Claim(ClaimTypes.Email, (user.Email ?? user.Nickname) ?? throw new InvalidOperationException()),
+            new Claim(ClaimTypes.Email, user.Email ?? throw new InvalidOperationException()),
             new Claim(ClaimTypes.Role, str.Str(user.Role))
         };
 
@@ -144,10 +144,9 @@ public class AuthController(
         return BCrypt.Net.BCrypt.Verify(password, storedHash);
     }
 
-    private bool VerifyNullEmailAndNicknameAndPassword(string? email, string? nickname, string? password)
+    private bool VerifyNullEmailAndNicknameAndPassword(string? email, string? password)
     {
-        if (string.IsNullOrWhiteSpace(email) && string.IsNullOrWhiteSpace(nickname) 
-                                             || string.IsNullOrWhiteSpace(password))
+        if (string.IsNullOrWhiteSpace(email) && string.IsNullOrWhiteSpace(password))
         {
             
             return false;
