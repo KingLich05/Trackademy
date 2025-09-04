@@ -6,6 +6,10 @@ public class Groups : Entity
 {
     public string Name { get; set; }
     public string Code { get; set; }
+    
+    /// <summary>
+    /// Описание группы если необоходимо это или все таки уровень это больше не описание а доп информация для группы
+    /// </summary>
     public string? Level { get; set; }
     public TimeSpan StartTime { get; set; }
     public TimeSpan EndTime { get; set; }

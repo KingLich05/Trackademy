@@ -12,6 +12,7 @@ public class TrackademyDbContext : DbContext
     }
 
     public DbSet<User> Users { get; set; }
+    public DbSet<Organization> Organizations { get; set; }
 
     public DbSet<Groups> Groups { get; set; }
     public DbSet<Subject> Subjects { get; set; }
@@ -37,5 +38,6 @@ public class TrackademyDbContext : DbContext
         modelBuilder.ApplyConfiguration(new ScoreConfig());
         modelBuilder.ApplyConfiguration(new PaymentConfig());
         modelBuilder.ApplyConfiguration(new NotificationConfig());
+        modelBuilder.ApplyConfiguration(new OrganizationConfig());
     }
 }

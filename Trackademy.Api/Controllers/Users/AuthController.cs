@@ -2,7 +2,6 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -32,6 +31,12 @@ public class AuthController(
             return BadRequest("Email или nickname и пароль обязательны");
         }
 
+        var organization = await db.Organizations.Where(x => x.Id == request.OrganizationId).FirstOrDefaultAsync();
+        if (organization == null)
+        {
+            return BadRequest("ошибка с организацией");
+        }
+
         var exists = await db.Users.AnyAsync(u => u.Email == request.Email);
         if (exists)
         {
@@ -45,7 +50,10 @@ public class AuthController(
             Phone = request.Phone,
             ParentPhone = request.ParentPhone,
             Role = request.Role,
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password)
+            CreatedDate = DateTime.UtcNow,
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
+            OrganizationIds = [request.OrganizationId],
+            Organizations = [organization]
         };
 
         await db.Users.AddAsync(user);
@@ -67,17 +75,30 @@ public class AuthController(
             return Unauthorized();
         }
 
-        var user = await db.Users.FirstOrDefaultAsync(u => u.Id == id);
+        var user = await db.Users
+            .Include(user => user.Organizations)
+            .FirstOrDefaultAsync(u => u.Id == id);
+
         if (user == null) return Unauthorized();
 
-        return Ok(new { user.Id, user.FullName, user.Email, Role = str.Str(user.Role) });
+        return Ok(new
+        {
+            user.Id, 
+            user.FullName,
+            user.Email,
+            Role = str.Str(user.Role),
+            OrganizationId = user.Organizations.Select(x => x.Id)
+        });
     }
 
     [HttpPost("login")]
-    public async Task<IActionResult> Login([FromBody] LogRequest request)
+    public async Task<IActionResult> Login(
+        [FromBody] LogRequest request)
     {
         var user = await db.Users
-            .FirstOrDefaultAsync(u => u.Email == request.Email);
+            .Include(user => user.Organizations)
+            .FirstOrDefaultAsync(u => u.Organizations.Any(o => o.Id == request.OrganizationId) &&
+                                      u.Email == request.Email);
 
         if (user == null || !VerifyPassword(request.Password, user.PasswordHash))
         {
@@ -93,12 +114,14 @@ public class AuthController(
                 user.Id,
                 user.FullName,
                 user.Email,
-                Role = user.Role.ToString()
+                Role = user.Role.ToString(),
+                OrganizationId = user.Organizations.Select(x => x.Id),
+                OrganizationNames = user.Organizations.Select(x => x.Name)
             }
         });
     }
 
-    #region Prvate methods
+    #region Private methods
 
 
     private bool ValidateData(CreateUserRequest request)

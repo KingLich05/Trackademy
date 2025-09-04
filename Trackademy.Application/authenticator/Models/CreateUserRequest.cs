@@ -15,4 +15,6 @@ public record CreateUserRequest
     public string? ParentPhone { get; set; }
 
     public RoleEnum Role { get; set; }
+    
+    public Guid OrganizationId { get; set; }
 }
