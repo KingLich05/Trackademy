@@ -9,16 +9,16 @@ namespace Trackademy.Api.Controllers.Users;
 public class UserController(IUserServices service) : ControllerBase
 {
     
-    [HttpGet("{id}")]
+    [HttpGet("GetUserById")]
     public async Task<IActionResult> GetUserById(
         [FromHeader] Guid id)
     {
-        // var user = await service.GetById(id);
-        //
-        // if (user == null)
-        //     return NotFound();
+        var user = await service.GetById(id);
+        
+        if (user == null)
+            return NotFound();
 
-        return Ok();
+        return Ok(user);
     }
 
     [HttpPost("get-users")]

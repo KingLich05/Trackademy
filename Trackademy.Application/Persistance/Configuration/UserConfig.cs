@@ -17,6 +17,9 @@ public class UserConfig: IEntityTypeConfiguration<User>
         b.HasIndex(x => x.Email).IsUnique();
 
         b.HasMany(u => u.Groups).WithMany(g => g.Students);
-        b.HasMany(u => u.Organizations).WithMany(g => g.Users);
+        
+        b.HasOne(u => u.Organizations) // у User одна организация
+            .WithMany(o => o.Users)      // у Organization много Users
+            .HasForeignKey(u => u.OrganizationId);
     }
 }

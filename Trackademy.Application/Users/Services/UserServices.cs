@@ -36,4 +36,14 @@ public class UserServices(TrackademyDbContext dbContext, IMapper mapper) :
 
         return users;
     }
+
+    public async Task<UserByIdDto> GetById(Guid id)
+    {
+        var user = await dbContext.Users
+            .Include(x => x.Payments)
+            .Include(x => x.Groups)
+            .FirstOrDefaultAsync(x => x.Id == id);
+        
+        return mapper.Map<UserByIdDto>(user);
+    }
 }

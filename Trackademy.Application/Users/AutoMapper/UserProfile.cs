@@ -12,5 +12,9 @@ public class UserProfile : Profile
         CreateMap<User, UserDto>()
             .ForMember(dest => dest.Groups, opt => opt.MapFrom(x => x.Groups))
             .ForMember(x => x.Name, opt => opt.MapFrom(q => q.FullName));
+        
+        CreateMap<User, UserByIdDto>()
+            .ForMember(dest => dest.Groups, opt => opt.MapFrom(x => x.Groups))
+            .ForMember(x => x.Name, opt => opt.MapFrom(q => q.FullName));
     }
 }

@@ -13,6 +13,7 @@ using Trackademy.Domain.Users;
 
 namespace Trackademy.Api.Controllers.Users;
 
+[ApiController]
 public class AuthController(
     TrackademyDbContext db,
     IConfiguration config,
@@ -52,8 +53,8 @@ public class AuthController(
             Role = request.Role,
             CreatedDate = DateTime.UtcNow,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
-            OrganizationIds = [request.OrganizationId],
-            Organizations = [organization]
+            OrganizationId = request.OrganizationId,
+            Organizations = organization
         };
 
         await db.Users.AddAsync(user);
@@ -87,7 +88,7 @@ public class AuthController(
             user.FullName,
             user.Email,
             Role = str.Str(user.Role),
-            OrganizationId = user.Organizations.Select(x => x.Id)
+            OrganizationId = user.Organizations.Id
         });
     }
 
@@ -97,7 +98,7 @@ public class AuthController(
     {
         var user = await db.Users
             .Include(user => user.Organizations)
-            .FirstOrDefaultAsync(u => u.Organizations.Any(o => o.Id == request.OrganizationId) &&
+            .FirstOrDefaultAsync(u => u.Organizations.Id == request.OrganizationId &&
                                       u.Email == request.Email);
 
         if (user == null || !VerifyPassword(request.Password, user.PasswordHash))
@@ -115,8 +116,8 @@ public class AuthController(
                 user.FullName,
                 user.Email,
                 Role = user.Role.ToString(),
-                OrganizationId = user.Organizations.Select(x => x.Id),
-                OrganizationNames = user.Organizations.Select(x => x.Name)
+                OrganizationId = user.Organizations.Id,
+                OrganizationNames = user.Organizations.Name
             }
         });
     }

@@ -21,7 +21,7 @@ public class User : Entity
 
     public RoleEnum Role { get; set; } = RoleEnum.Student;
     
-    public List<Guid> OrganizationIds { get; set; } = new List<Guid>();
+    public Guid OrganizationId { get; set; }
     
     public List<Guid> GroupIds { get; set; } = new List<Guid>();
     
@@ -35,7 +35,7 @@ public class User : Entity
     public ICollection<Notification> Notifications { get; set; } = new List<Notification>();
     public ICollection<Attendance> Attendances { get; set; } = new List<Attendance>();
     
-    public ICollection<Organization> Organizations { get; set; } = new List<Organization>();
+    public Organization Organizations { get; set; }
 
     #endregion
 }

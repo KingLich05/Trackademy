@@ -13,7 +13,5 @@ public class OrganizationConfig : IEntityTypeConfiguration<Organization>
         b.Property(x => x.Name).IsRequired();
         b.Property(x => x.Address).IsRequired();
         b.Property(x => x.Phone).IsRequired();
-
-        b.HasMany(u => u.Users).WithMany(g => g.Organizations);
     }
 }
