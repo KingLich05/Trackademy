@@ -4,6 +4,7 @@ using Trackademy.Application.Helper;
 using Trackademy.Application.OrganizationServices;
 using Trackademy.Application.Persistance;
 using Trackademy.Application.Shared.BaseCrud;
+using Trackademy.Application.SubjectServices;
 using Trackademy.Application.Users.AutoMapper;
 using Trackademy.Application.Users.Interfaces;
 using Trackademy.Application.Users.Services;
@@ -20,6 +21,8 @@ public static class DependencyInjection
         services.AddScoped<IUserServices, UserServices>();
         services.AddScoped<IGroupService, GroupService>();
         services.AddScoped<IOrganizationService, OrganizationService>();
+        services.AddScoped<ISubjectService, SubjectService>();
+
         services.AddSingleton<ExtensionString>();
         
         services.AddAutoMapper(typeof(UserProfile).Assembly);
