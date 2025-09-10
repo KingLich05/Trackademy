@@ -3,7 +3,6 @@ using Trackademy.Application.GroupServices;
 using Trackademy.Application.Helper;
 using Trackademy.Application.OrganizationServices;
 using Trackademy.Application.Persistance;
-using Trackademy.Application.Shared.BaseCrud;
 using Trackademy.Application.SubjectServices;
 using Trackademy.Application.Users.AutoMapper;
 using Trackademy.Application.Users.Interfaces;
