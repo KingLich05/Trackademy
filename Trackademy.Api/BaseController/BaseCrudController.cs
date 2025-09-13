@@ -61,5 +61,4 @@ public abstract class BaseCrudController<T, TDto, TAddDto> : Controller
 
         return NoContent();
     }
-
 }
