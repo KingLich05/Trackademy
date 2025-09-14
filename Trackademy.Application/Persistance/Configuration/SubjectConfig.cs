@@ -10,5 +10,9 @@ public class SubjectConfig : IEntityTypeConfiguration<Subject>
     {;
         b.HasKey(x => x.Id);
         b.Property(x => x.Name).IsRequired();
+        
+        b.HasOne(u => u.Organization)
+            .WithMany(o => o.Subjects)
+            .HasForeignKey(u => u.OrganizationId);
     }
 }

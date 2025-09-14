@@ -246,7 +246,12 @@ namespace Trackademy.Application.Persistance.migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("OrganizationId");
 
                     b.ToTable("Rooms");
                 });
@@ -333,7 +338,12 @@ namespace Trackademy.Application.Persistance.migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("OrganizationId");
 
                     b.ToTable("Subjects");
                 });
@@ -498,6 +508,17 @@ namespace Trackademy.Application.Persistance.migrations
                     b.Navigation("Student");
                 });
 
+            modelBuilder.Entity("Trackademy.Domain.Users.Room", b =>
+                {
+                    b.HasOne("Trackademy.Domain.Users.Organization", "Organization")
+                        .WithMany("Rooms")
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Organization");
+                });
+
             modelBuilder.Entity("Trackademy.Domain.Users.Schedule", b =>
                 {
                     b.HasOne("Trackademy.Domain.Users.Groups", "Group")
@@ -544,6 +565,17 @@ namespace Trackademy.Application.Persistance.migrations
                     b.Navigation("Submission");
                 });
 
+            modelBuilder.Entity("Trackademy.Domain.Users.Subject", b =>
+                {
+                    b.HasOne("Trackademy.Domain.Users.Organization", "Organization")
+                        .WithMany("Subjects")
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Organization");
+                });
+
             modelBuilder.Entity("Trackademy.Domain.Users.Submission", b =>
                 {
                     b.HasOne("Trackademy.Domain.Users.Assignment", "Assignment")
@@ -586,6 +618,10 @@ namespace Trackademy.Application.Persistance.migrations
 
             modelBuilder.Entity("Trackademy.Domain.Users.Organization", b =>
                 {
+                    b.Navigation("Rooms");
+
+                    b.Navigation("Subjects");
+
                     b.Navigation("Users");
                 });
 
