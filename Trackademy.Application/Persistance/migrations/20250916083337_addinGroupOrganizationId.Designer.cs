@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Trackademy.Application.Persistance;
@@ -13,9 +14,11 @@ using Trackademy.Application.Persistance;
 namespace Trackademy.Application.Persistance.migrations
 {
     [DbContext(typeof(TrackademyDbContext))]
-    partial class TrackademyDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250916083337_addinGroupOrganizationId")]
+    partial class addinGroupOrganizationId
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -64,8 +67,7 @@ namespace Trackademy.Application.Persistance.migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Description")
-                        .HasMaxLength(800)
-                        .HasColumnType("character varying(800)");
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("DueDate")
                         .HasColumnType("timestamp with time zone");
@@ -90,10 +92,10 @@ namespace Trackademy.Application.Persistance.migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<DateOnly>("Date")
-                        .HasColumnType("date");
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid>("LessonId")
+                    b.Property<Guid>("ScheduleId")
                         .HasColumnType("uuid");
 
                     b.Property<int>("Status")
@@ -104,10 +106,9 @@ namespace Trackademy.Application.Persistance.migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("StudentId");
+                    b.HasIndex("ScheduleId");
 
-                    b.HasIndex("LessonId", "StudentId")
-                        .IsUnique();
+                    b.HasIndex("StudentId", "Date");
 
                     b.ToTable("Attendances");
                 });
@@ -146,69 +147,6 @@ namespace Trackademy.Application.Persistance.migrations
                     b.HasIndex("OrganizationId");
 
                     b.ToTable("Groups");
-                });
-
-            modelBuilder.Entity("Trackademy.Domain.Users.Lesson", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateOnly>("Date")
-                        .HasColumnType("date");
-
-                    b.Property<TimeSpan>("EndTime")
-                        .HasColumnType("interval");
-
-                    b.Property<Guid>("GroupId")
-                        .HasColumnType("uuid");
-
-                    b.Property<bool>("IsCancelled")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Note")
-                        .HasColumnType("text");
-
-                    b.Property<Guid>("RoomId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("ScheduleId")
-                        .HasColumnType("uuid");
-
-                    b.Property<TimeSpan>("StartTime")
-                        .HasColumnType("interval");
-
-                    b.Property<Guid>("SubjectId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("TeacherId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("GroupId");
-
-                    b.HasIndex("RoomId");
-
-                    b.HasIndex("ScheduleId");
-
-                    b.HasIndex("SubjectId");
-
-                    b.HasIndex("TeacherId");
-
-                    b.HasIndex("Date", "GroupId");
-
-                    b.HasIndex("Date", "RoomId");
-
-                    b.HasIndex("Date", "TeacherId");
-
-                    b.HasIndex("Date", "RoomId", "StartTime", "EndTime");
-
-                    b.ToTable("Lessons");
                 });
 
             modelBuilder.Entity("Trackademy.Domain.Users.Notification", b =>
@@ -332,14 +270,8 @@ namespace Trackademy.Application.Persistance.migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<int[]>("DaysOfWeek")
-                        .HasColumnType("integer[]");
-
-                    b.Property<DateOnly>("EffectiveFrom")
-                        .HasColumnType("date");
-
-                    b.Property<DateOnly?>("EffectiveTo")
-                        .HasColumnType("date");
+                    b.Property<int>("DayOfWeek")
+                        .HasColumnType("integer");
 
                     b.Property<TimeSpan>("EndTime")
                         .HasColumnType("interval");
@@ -350,9 +282,6 @@ namespace Trackademy.Application.Persistance.migrations
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text");
-
-                    b.Property<Guid>("OrganizationId")
-                        .HasColumnType("uuid");
 
                     b.Property<Guid>("RoomId")
                         .HasColumnType("uuid");
@@ -376,10 +305,7 @@ namespace Trackademy.Application.Persistance.migrations
 
                     b.HasIndex("TeacherId");
 
-                    b.ToTable("Schedules", t =>
-                        {
-                            t.HasCheckConstraint("CK_Schedule_Time", "\"StartTime\" < \"EndTime\"");
-                        });
+                    b.ToTable("Schedules");
                 });
 
             modelBuilder.Entity("Trackademy.Domain.Users.Score", b =>
@@ -394,9 +320,6 @@ namespace Trackademy.Application.Persistance.migrations
                     b.Property<string>("Feedback")
                         .HasColumnType("text");
 
-                    b.Property<Guid?>("LessonId")
-                        .HasColumnType("uuid");
-
                     b.Property<int>("Points")
                         .HasColumnType("integer");
 
@@ -404,8 +327,6 @@ namespace Trackademy.Application.Persistance.migrations
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("LessonId");
 
                     b.HasIndex("SubmissionId");
 
@@ -556,9 +477,9 @@ namespace Trackademy.Application.Persistance.migrations
 
             modelBuilder.Entity("Trackademy.Domain.Users.Attendance", b =>
                 {
-                    b.HasOne("Trackademy.Domain.Users.Lesson", "Lesson")
+                    b.HasOne("Trackademy.Domain.Users.Schedule", "Schedule")
                         .WithMany("Attendances")
-                        .HasForeignKey("LessonId")
+                        .HasForeignKey("ScheduleId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -568,7 +489,7 @@ namespace Trackademy.Application.Persistance.migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Lesson");
+                    b.Navigation("Schedule");
 
                     b.Navigation("Student");
                 });
@@ -582,49 +503,6 @@ namespace Trackademy.Application.Persistance.migrations
                         .IsRequired();
 
                     b.Navigation("Organization");
-                });
-
-            modelBuilder.Entity("Trackademy.Domain.Users.Lesson", b =>
-                {
-                    b.HasOne("Trackademy.Domain.Users.Groups", "Group")
-                        .WithMany()
-                        .HasForeignKey("GroupId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Trackademy.Domain.Users.Room", "Room")
-                        .WithMany()
-                        .HasForeignKey("RoomId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Trackademy.Domain.Users.Schedule", "Schedule")
-                        .WithMany()
-                        .HasForeignKey("ScheduleId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Trackademy.Domain.Users.Subject", "Subject")
-                        .WithMany()
-                        .HasForeignKey("SubjectId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Trackademy.Domain.Users.User", "Teacher")
-                        .WithMany()
-                        .HasForeignKey("TeacherId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Group");
-
-                    b.Navigation("Room");
-
-                    b.Navigation("Schedule");
-
-                    b.Navigation("Subject");
-
-                    b.Navigation("Teacher");
                 });
 
             modelBuilder.Entity("Trackademy.Domain.Users.Notification", b =>
@@ -675,7 +553,7 @@ namespace Trackademy.Application.Persistance.migrations
                         .IsRequired();
 
                     b.HasOne("Trackademy.Domain.Users.Subject", "Subject")
-                        .WithMany("Schedules")
+                        .WithMany()
                         .HasForeignKey("SubjectId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
@@ -697,10 +575,6 @@ namespace Trackademy.Application.Persistance.migrations
 
             modelBuilder.Entity("Trackademy.Domain.Users.Score", b =>
                 {
-                    b.HasOne("Trackademy.Domain.Users.Lesson", null)
-                        .WithMany("Scores")
-                        .HasForeignKey("LessonId");
-
                     b.HasOne("Trackademy.Domain.Users.Submission", "Submission")
                         .WithMany("Scores")
                         .HasForeignKey("SubmissionId")
@@ -742,13 +616,13 @@ namespace Trackademy.Application.Persistance.migrations
 
             modelBuilder.Entity("Trackademy.Domain.Users.User", b =>
                 {
-                    b.HasOne("Trackademy.Domain.Users.Organization", "Organization")
+                    b.HasOne("Trackademy.Domain.Users.Organization", "Organizations")
                         .WithMany("Users")
                         .HasForeignKey("OrganizationId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Organization");
+                    b.Navigation("Organizations");
                 });
 
             modelBuilder.Entity("Trackademy.Domain.Users.Assignment", b =>
@@ -759,13 +633,6 @@ namespace Trackademy.Application.Persistance.migrations
             modelBuilder.Entity("Trackademy.Domain.Users.Groups", b =>
                 {
                     b.Navigation("Schedules");
-                });
-
-            modelBuilder.Entity("Trackademy.Domain.Users.Lesson", b =>
-                {
-                    b.Navigation("Attendances");
-
-                    b.Navigation("Scores");
                 });
 
             modelBuilder.Entity("Trackademy.Domain.Users.Organization", b =>
@@ -784,11 +651,14 @@ namespace Trackademy.Application.Persistance.migrations
                     b.Navigation("Schedules");
                 });
 
+            modelBuilder.Entity("Trackademy.Domain.Users.Schedule", b =>
+                {
+                    b.Navigation("Attendances");
+                });
+
             modelBuilder.Entity("Trackademy.Domain.Users.Subject", b =>
                 {
                     b.Navigation("Assignments");
-
-                    b.Navigation("Schedules");
                 });
 
             modelBuilder.Entity("Trackademy.Domain.Users.Submission", b =>

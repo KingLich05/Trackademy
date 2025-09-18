@@ -13,4 +13,12 @@ public class GroupController(IGroupService service) : ControllerBase
         var groups = await service.GetAllAsync(getGroupRequest);
         return Ok(groups);
     }
+
+    [HttpPost("create-group")]
+    public async Task<IActionResult> CreateGroup(
+    [FromBody] GroupsAddModel addGroupModel)
+    {
+        await service.CreateGroup(addGroupModel);
+        return Ok();
+    }
 }

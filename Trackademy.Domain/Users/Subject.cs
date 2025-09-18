@@ -4,7 +4,6 @@ namespace Trackademy.Domain.Users;
 
 public class Subject : BaseEntity
 {
-    public string Name { get; set; }
     public string? Description { get; set; }
     
     public Guid OrganizationId { get; set; }
@@ -14,4 +13,6 @@ public class Subject : BaseEntity
     
     public Organization Organization { get; set; }
     public ICollection<Assignment> Assignments { get; set; } = new List<Assignment>();
+    
+    public ICollection<Schedule> Schedules { get; set; } = new List<Schedule>();
 }

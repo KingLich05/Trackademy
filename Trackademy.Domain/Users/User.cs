@@ -35,7 +35,7 @@ public class User : Entity
     public ICollection<Notification> Notifications { get; set; } = new List<Notification>();
     public ICollection<Attendance> Attendances { get; set; } = new List<Attendance>();
     
-    public Organization Organizations { get; set; }
+    public Organization Organization { get; set; }
 
     #endregion
 }

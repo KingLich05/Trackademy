@@ -13,4 +13,6 @@ public class Organization : Entity
     public List<Room> Rooms { get; set; } = new();
 
     public List<Subject> Subjects { get; set; } = new();
+    
+    public List<Groups> Groups { get; set; } = new();
 }

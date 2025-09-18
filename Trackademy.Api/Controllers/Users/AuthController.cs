@@ -54,7 +54,7 @@ public class AuthController(
             CreatedDate = DateTime.UtcNow,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
             OrganizationId = request.OrganizationId,
-            Organizations = organization
+            Organization = organization
         };
 
         await db.Users.AddAsync(user);
@@ -77,7 +77,7 @@ public class AuthController(
         }
 
         var user = await db.Users
-            .Include(user => user.Organizations)
+            .Include(user => user.Organization)
             .FirstOrDefaultAsync(u => u.Id == id);
 
         if (user == null) return Unauthorized();
@@ -88,7 +88,7 @@ public class AuthController(
             user.FullName,
             user.Email,
             Role = str.Str(user.Role),
-            OrganizationId = user.Organizations.Id
+            OrganizationId = user.Organization.Id
         });
     }
 
@@ -97,8 +97,8 @@ public class AuthController(
         [FromBody] LogRequest request)
     {
         var user = await db.Users
-            .Include(user => user.Organizations)
-            .FirstOrDefaultAsync(u => u.Organizations.Id == request.OrganizationId &&
+            .Include(user => user.Organization)
+            .FirstOrDefaultAsync(u => u.Organization.Id == request.OrganizationId &&
                                       u.Email == request.Email);
 
         if (user == null || !VerifyPassword(request.Password, user.PasswordHash))
@@ -116,8 +116,8 @@ public class AuthController(
                 user.FullName,
                 user.Email,
                 Role = user.Role.ToString(),
-                OrganizationId = user.Organizations.Id,
-                OrganizationNames = user.Organizations.Name
+                OrganizationId = user.Organization.Id,
+                OrganizationNames = user.Organization.Name
             }
         });
     }

@@ -3,4 +3,6 @@
 public class GroupRequest
 {
     public List<Guid>? Ids { get; set; }
+    
+    public Guid OrganizationId { get; set; }
 }

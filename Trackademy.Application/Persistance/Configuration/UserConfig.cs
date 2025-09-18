@@ -18,8 +18,8 @@ public class UserConfig: IEntityTypeConfiguration<User>
 
         b.HasMany(u => u.Groups).WithMany(g => g.Students);
         
-        b.HasOne(u => u.Organizations) // у User одна организация
-            .WithMany(o => o.Users)      // у Organization много Users
+        b.HasOne(u => u.Organization)
+            .WithMany(o => o.Users)
             .HasForeignKey(u => u.OrganizationId);
     }
 }

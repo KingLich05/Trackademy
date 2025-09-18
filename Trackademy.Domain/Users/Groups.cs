@@ -14,9 +14,15 @@ public class Groups : Entity
     public TimeSpan StartTime { get; set; }
     public TimeSpan EndTime { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
     
+    public Guid OrganizationId { get; set; }
+
+    #region Navigation
+
     public ICollection<User> Students { get; set; } = new List<User>();
     public ICollection<Subject> Subjects { get; set; } = new List<Subject>();
     public ICollection<Schedule> Schedules { get; set; } = new List<Schedule>();
+    public Organization Organization { get; set; }
+
+    #endregion
 }

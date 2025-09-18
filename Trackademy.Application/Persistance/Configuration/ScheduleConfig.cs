@@ -11,14 +11,23 @@ public class ScheduleConfig : IEntityTypeConfiguration<Schedule>
         b.HasKey(x => x.Id);
         b.Property(x => x.StartTime).IsRequired();
         b.Property(x => x.EndTime).IsRequired();
-        b.HasIndex(x => x.GroupId);
+        
+        b.HasIndex(x => x.GroupId); 
+        b.HasIndex(x => x.TeacherId);
+        b.HasIndex(x => x.RoomId);
+        b.HasCheckConstraint("CK_Schedule_Time", "\"StartTime\" < \"EndTime\"");
+
+        b.Property(x => x.DaysOfWeek).HasColumnType("integer[]");
+
+        b.Property(x => x.EffectiveFrom).HasColumnType("date");
+        b.Property(x => x.EffectiveTo).HasColumnType("date");
 
         b.HasOne(x => x.Group)
             .WithMany(g => g.Schedules)
             .HasForeignKey(x => x.GroupId);
 
         b.HasOne(x => x.Subject)
-            .WithMany()
+            .WithMany(s => s.Schedules)
             .HasForeignKey(x => x.SubjectId)
             .OnDelete(DeleteBehavior.Restrict);
         
@@ -29,7 +38,5 @@ public class ScheduleConfig : IEntityTypeConfiguration<Schedule>
         b.HasOne(x => x.Room)
             .WithMany(r => r.Schedules)
             .HasForeignKey(x => x.RoomId);
-        
-        // плак-плак я запутался(
     }
 }

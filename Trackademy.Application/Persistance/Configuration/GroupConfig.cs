@@ -15,5 +15,9 @@ public class GroupConfig : IEntityTypeConfiguration<Groups>
 
         b.HasMany(g => g.Subjects)
             .WithMany(s => s.Groups);
+        
+        b.HasOne(r => r.Organization)
+            .WithMany(o => o.Groups)
+            .HasForeignKey(u => u.OrganizationId);
     }
 }

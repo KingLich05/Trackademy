@@ -32,7 +32,10 @@ public class UserServices(TrackademyDbContext dbContext, IMapper mapper) :
                 x.Groups.Any(g => getUserRequest.GroupIds.Contains(g.Id)));
         }
 
-        var users = await usersQuery.ProjectTo<UserDto>(mapper.ConfigurationProvider).ToListAsync();
+        var users = await usersQuery
+            .ProjectTo<UserDto>(mapper.ConfigurationProvider)
+            .OrderBy(x => x.Name)
+            .ToListAsync();
 
         return users;
     }
