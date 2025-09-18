@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Trackademy.Application.Persistance;
 using Trackademy.Application.Users.Interfaces;
 using Trackademy.Application.Users.Models;
+using Trackademy.Domain.Enums;
 
 namespace Trackademy.Application.Users.Services;
 
@@ -13,6 +14,7 @@ public class UserServices(TrackademyDbContext dbContext, IMapper mapper) :
     public async Task<List<UserDto>> GetUsers(GetUserRequest getUserRequest)
     {
         var usersQuery = dbContext.Users
+            .Where(x => x.Role != RoleEnum.Administrator)
             .Include(x => x.Groups)
             .AsQueryable();
 
