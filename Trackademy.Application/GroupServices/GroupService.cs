@@ -15,11 +15,6 @@ public class GroupService(TrackademyDbContext dbContext, IMapper mapper) : IGrou
             .Where(x => x.OrganizationId == model.OrganizationId)
             .ToListAsync();
 
-        if (model.Ids != null && model.Ids.Count != 0)
-        {
-            group = group.Where(g => model.Ids.Contains(g.Id)).ToList();
-        }
-
         var groupsTdo = mapper.Map<List<GroupsTdo>>(group);
 
         return groupsTdo;

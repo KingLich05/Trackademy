@@ -11,8 +11,6 @@ public class Groups : Entity
     /// Описание группы если необоходимо это или все таки уровень это больше не описание а доп информация для группы
     /// </summary>
     public string? Level { get; set; }
-    public TimeSpan StartTime { get; set; }
-    public TimeSpan EndTime { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     
     public Guid OrganizationId { get; set; }
