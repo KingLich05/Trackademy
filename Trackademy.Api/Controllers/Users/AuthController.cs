@@ -20,7 +20,6 @@ public class AuthController(
     ExtensionString str) : ControllerBase
 {
     [HttpPost("create")]
-    // [Authorize(Roles = "Admin")]
     public async Task<IActionResult> CreateUser([FromBody] CreateUserRequest request)
     {
         if (!ValidateData(request))

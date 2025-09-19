@@ -1,10 +1,12 @@
 ﻿using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
+using Trackademy.Application.authenticator.Models;
 using Trackademy.Application.Persistance;
 using Trackademy.Application.Users.Interfaces;
 using Trackademy.Application.Users.Models;
 using Trackademy.Domain.Enums;
+using Trackademy.Domain.Users;
 
 namespace Trackademy.Application.Users.Services;
 
@@ -30,7 +32,7 @@ public class UserServices(TrackademyDbContext dbContext, IMapper mapper) :
 
         if (getUserRequest.GroupIds != null && getUserRequest.GroupIds.Count != 0)
         {
-            usersQuery = usersQuery.Where(x => 
+            usersQuery = usersQuery.Where(x =>
                 x.Groups.Any(g => getUserRequest.GroupIds.Contains(g.Id)));
         }
 
@@ -48,7 +50,26 @@ public class UserServices(TrackademyDbContext dbContext, IMapper mapper) :
             .Include(x => x.Payments)
             .Include(x => x.Groups)
             .FirstOrDefaultAsync(x => x.Id == id);
-        
+
         return mapper.Map<UserByIdDto>(user);
+    }
+
+    public async Task<bool> UpdateUser(Guid id, CreateUserRequest request)
+    {
+        var user = await dbContext.Users.FindAsync(id);
+        if (user is null)
+        {
+            return false;
+        }
+
+        user.FullName = request.FullName;
+        user.Email = request.Email;
+        user.Phone = request.Phone;
+        user.ParentPhone = request.ParentPhone;
+        user.Role = request.Role;
+        user.OrganizationId = request.OrganizationId;
+
+        await dbContext.SaveChangesAsync();
+        return true;
     }
 }

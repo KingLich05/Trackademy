@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Trackademy.Application.authenticator.Models;
 using Trackademy.Application.Users.Interfaces;
 using Trackademy.Application.Users.Models;
 
@@ -27,5 +28,13 @@ public class UserController(IUserServices service) : ControllerBase
     {
         var users = await service.GetUsers(getUserRequest);
         return Ok(users);
+    }
+
+    [HttpPut("update-user")]
+    public async Task<IActionResult> UpdateUser(
+        [FromHeader] Guid id,
+        [FromBody] CreateUserRequest getUserRequest)
+    {
+        return Ok(await service.UpdateUser(id, getUserRequest));
     }
 }
