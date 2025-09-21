@@ -10,14 +10,37 @@ public class GroupConfig : IEntityTypeConfiguration<Groups>
     public void Configure(EntityTypeBuilder<Groups> b)
     {
         b.HasKey(x => x.Id);
-        b.Property(x => x.Name).IsRequired();
-        b.Property(x => x.CreatedAt).HasColumnType("timestamptz");
-
-        b.HasMany(g => g.Subjects)
-            .WithMany(s => s.Groups);
+        b.Property(x => x.Name)
+            .IsRequired()
+            .HasMaxLength(200);
         
-        b.HasOne(r => r.Organization)
+        b.Property(x => x.Code)
+            .IsRequired()
+            .HasMaxLength(50);
+        
+        b.Property(x => x.CreatedAt)
+            .HasColumnType("timestamptz");
+
+        b.HasIndex(x => x.OrganizationId);
+
+        b.HasOne(g => g.Subject)
+            .WithMany(s => s.Groups)
+            .HasForeignKey(g => g.SubjectId)
+            .OnDelete(DeleteBehavior.Restrict);
+        
+        
+        b.HasOne(g => g.Organization)
             .WithMany(o => o.Groups)
-            .HasForeignKey(u => u.OrganizationId);
+            .HasForeignKey(g => g.OrganizationId)
+            .OnDelete(DeleteBehavior.Restrict);
+        
+        b.HasMany(g => g.Schedules)
+            .WithOne(s => s.Group)
+            .HasForeignKey(s => s.GroupId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        b.HasMany(g => g.Students)
+           .WithMany(u => u.Groups)
+           .UsingEntity(j => j.ToTable("GroupStudents"));
     }
 }

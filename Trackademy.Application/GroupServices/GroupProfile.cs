@@ -8,10 +8,10 @@ public class GroupProfile : Profile
 {
     public GroupProfile()
     {
-        CreateMap<Groups, GroupsTdo>();
+        CreateMap<Groups, GroupsDto>();
 
         CreateMap<GroupsAddModel, Groups>()
-            .ForMember(dest => dest.Subjects, opt => opt.Ignore())
+            .ForMember(dest => dest.Subject, opt => opt.Ignore())
             .ForMember(dest => dest.Schedules, opt => opt.Ignore())
             .ForMember(dest => dest.Students, opt => opt.Ignore())
             .ForMember(dest => dest.Organization, opt => opt.Ignore());

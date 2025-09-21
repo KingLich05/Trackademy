@@ -14,11 +14,13 @@ public class Groups : Entity
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     
     public Guid OrganizationId { get; set; }
+    
+    public Guid SubjectId {get; set;}
 
-    #region Navigation
+    #region Navigation properties
 
     public ICollection<User> Students { get; set; } = new List<User>();
-    public ICollection<Subject> Subjects { get; set; } = new List<Subject>();
+    public Subject Subject { get; set; }
     public ICollection<Schedule> Schedules { get; set; } = new List<Schedule>();
     public Organization Organization { get; set; }
 

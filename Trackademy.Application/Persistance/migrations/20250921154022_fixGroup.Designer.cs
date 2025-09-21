@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Trackademy.Application.Persistance;
@@ -13,9 +14,11 @@ using Trackademy.Application.Persistance;
 namespace Trackademy.Application.Persistance.migrations
 {
     [DbContext(typeof(TrackademyDbContext))]
-    partial class TrackademyDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250921154022_fixGroup")]
+    partial class fixGroup
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -36,7 +39,7 @@ namespace Trackademy.Application.Persistance.migrations
 
                     b.HasIndex("StudentsId");
 
-                    b.ToTable("GroupStudents", (string)null);
+                    b.ToTable("GroupsUser");
                 });
 
             modelBuilder.Entity("Trackademy.Domain.Users.Assignment", b =>
@@ -105,8 +108,7 @@ namespace Trackademy.Application.Persistance.migrations
 
                     b.Property<string>("Code")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamptz");
@@ -116,11 +118,14 @@ namespace Trackademy.Application.Persistance.migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
+                        .HasColumnType("text");
 
                     b.Property<Guid>("OrganizationId")
                         .HasColumnType("uuid");
+
+                    b.Property<List<Guid>>("StudentIds")
+                        .IsRequired()
+                        .HasColumnType("uuid[]");
 
                     b.Property<Guid>("SubjectId")
                         .HasColumnType("uuid");
@@ -549,18 +554,18 @@ namespace Trackademy.Application.Persistance.migrations
                     b.HasOne("Trackademy.Domain.Users.Organization", "Organization")
                         .WithMany("Groups")
                         .HasForeignKey("OrganizationId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Trackademy.Domain.Users.Subject", "Subject")
+                    b.HasOne("Trackademy.Domain.Users.Subject", "Subjects")
                         .WithMany("Groups")
                         .HasForeignKey("SubjectId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Organization");
 
-                    b.Navigation("Subject");
+                    b.Navigation("Subjects");
                 });
 
             modelBuilder.Entity("Trackademy.Domain.Users.Lesson", b =>

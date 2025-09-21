@@ -6,7 +6,6 @@ using Trackademy.Application.Persistance;
 using Trackademy.Application.Users.Interfaces;
 using Trackademy.Application.Users.Models;
 using Trackademy.Domain.Enums;
-using Trackademy.Domain.Users;
 
 namespace Trackademy.Application.Users.Services;
 

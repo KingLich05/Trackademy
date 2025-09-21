@@ -1,16 +1,19 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Trackademy.Api.BaseController;
 using Trackademy.Application.GroupServices;
 using Trackademy.Application.GroupServices.Models;
+using Trackademy.Domain.Users;
 
 namespace Trackademy.Api.Controllers.Group;
 
-public class GroupController(IGroupService service) : ControllerBase
+public class GroupController(IGroupService service) :
+    BaseCrudController<Groups, GroupsDto, GroupsAddModel>(service)
 {
-    [HttpPost("get-groups")]
+    [HttpGet("get-groups")]
     public async Task<IActionResult> GetGroups(
-        [FromBody] GroupRequest getGroupRequest)
+        [FromQuery] Guid organizationId)
     {
-        var groups = await service.GetAllAsync(getGroupRequest);
+        var groups = await service.GetAllAsync(organizationId);
         return Ok(groups);
     }
 

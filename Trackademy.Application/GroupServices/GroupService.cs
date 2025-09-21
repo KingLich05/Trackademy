@@ -2,29 +2,40 @@
 using Microsoft.EntityFrameworkCore;
 using Trackademy.Application.GroupServices.Models;
 using Trackademy.Application.Persistance;
+using Trackademy.Application.Shared.BaseCrud;
 using Trackademy.Domain.Users;
 
 namespace Trackademy.Application.GroupServices;
 
-public class GroupService(TrackademyDbContext dbContext, IMapper mapper) : IGroupService
+public class GroupService:
+    BaseService<Groups, GroupsDto, GroupsAddModel>, IGroupService
 {
-
-    public async Task<List<GroupsTdo>> GetAllAsync(GroupRequest model)
+    private TrackademyDbContext _context;
+    private readonly IMapper _mapper;
+    
+    public GroupService(TrackademyDbContext context, IMapper mapper)
+        : base(context, mapper)
     {
-        var group = await dbContext.Groups
-            .Where(x => x.OrganizationId == model.OrganizationId)
+        _context = context;
+        _mapper = mapper;
+    }
+
+    public async Task<List<GroupsDto>> GetAllAsync(Guid organizationId)
+    {
+        var group = await _context.Groups
+            .Where(x => x.OrganizationId == organizationId)
             .ToListAsync();
 
-        var groupsTdo = mapper.Map<List<GroupsTdo>>(group);
+        var groupsTdo = _mapper.Map<List<GroupsDto>>(group);
 
         return groupsTdo;
     }
 
     public async Task CreateGroup(GroupsAddModel model)
     {
-        var group = mapper.Map<Groups>(model);
+        var group = _mapper.Map<Groups>(model);
 
-        await dbContext.Groups.AddAsync(group);
-        await dbContext.SaveChangesAsync();
+        await _context.Groups.AddAsync(group);
+        await _context.SaveChangesAsync();
     }
 }

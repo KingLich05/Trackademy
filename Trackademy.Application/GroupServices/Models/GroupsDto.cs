@@ -1,6 +1,6 @@
 ﻿namespace Trackademy.Application.GroupServices.Models;
 
-public class GroupsTdo
+public class GroupsDto
 {
     public Guid Id { get; set; }
     public string Name { get; set; }
