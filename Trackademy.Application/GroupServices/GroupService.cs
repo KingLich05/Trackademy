@@ -36,6 +36,17 @@ public class GroupService:
 
     public async Task CreateGroup(GroupsAddModel model)
     {
+        if (string.IsNullOrEmpty(model.Code) || string.IsNullOrWhiteSpace(model.Code))
+        {
+            model.Code = GenerateCode();
+        }
+
+        if (string.IsNullOrEmpty(model.Name) || string.IsNullOrWhiteSpace(model.Name))
+        {
+            var subject = await _context.Subjects.FindAsync(model.SubjectId);
+            model.Name = subject?.Name + "-" + model.Code;
+        }
+
         var group = _mapper.Map<Groups>(model);
         if (model.StudentIds.Count != 0)
         {
@@ -48,5 +59,18 @@ public class GroupService:
 
         await _context.Groups.AddAsync(group);
         await _context.SaveChangesAsync();
+    }
+    
+    private static string GenerateCode()
+    {
+        var random = new Random();
+
+        var letters = new string(Enumerable.Range(0, 2)
+            .Select(_ => (char)random.Next('A', 'Z' + 1))
+            .ToArray());
+
+        var numbers = random.Next(0, 1000).ToString("D3");
+
+        return $"{letters}-{numbers}";
     }
 }

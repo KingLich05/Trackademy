@@ -4,7 +4,7 @@ public class GroupsAddModel
 {
     public string? Name { get; set; }
     
-    public required string Code { get; set; }
+    public string? Code { get; set; }
     
     public string? Level { get; set; }
 
