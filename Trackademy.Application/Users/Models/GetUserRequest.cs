@@ -9,4 +9,6 @@ public class GetUserRequest
     public List<Guid>? GroupIds { get; set; }
     
     public List<RoleEnum>? RoleIds { get; set; }
+    
+    public Guid OrganizationId { get; set; }
 }
