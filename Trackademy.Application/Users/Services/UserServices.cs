@@ -71,4 +71,17 @@ public class UserServices(TrackademyDbContext dbContext, IMapper mapper) :
         await dbContext.SaveChangesAsync();
         return true;
     }
+
+    public async Task<bool> DeleteUser(Guid id)
+    {
+        var user = await dbContext.Users.FindAsync(id);
+        if (user is null)
+        {
+            return false;
+        }
+
+        dbContext.Users.Remove(user);
+        await dbContext.SaveChangesAsync();
+        return true;
+    }
 }
