@@ -24,4 +24,16 @@ public class GroupController(IGroupService service) :
         await service.CreateGroup(addGroupModel);
         return Ok();
     }
+    
+    [NonAction]
+    public override Task<IActionResult> Create([FromBody] GroupsAddModel dto)
+    {
+        return base.Create(dto);
+    }
+    
+    [NonAction]
+    public override async Task<IActionResult> GetAll()
+    {
+        return await base.GetAll();
+    }
 }

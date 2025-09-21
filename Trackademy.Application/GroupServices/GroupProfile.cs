@@ -8,7 +8,12 @@ public class GroupProfile : Profile
 {
     public GroupProfile()
     {
-        CreateMap<Groups, GroupsDto>();
+        CreateMap<User, UserMinimalViewModel>()
+            .ForMember(x => x.StudentId, o => o.MapFrom(q => q.Id))
+            .ForMember(x => x.StudentName, o => o.MapFrom(q => q.FullName));
+
+        CreateMap<Groups, GroupsDto>()
+            .ForMember(x => x.SubjectName, o => o.MapFrom(q => q.Subject.Name));
 
         CreateMap<GroupsAddModel, Groups>()
             .ForMember(dest => dest.Subject, opt => opt.Ignore())
