@@ -48,22 +48,20 @@ public class GroupService:
 
             if (idsToAdd.Count > 0)
             {
-                // foreach (var addId in idsToAdd)
-                // {
-                //     _context.Attach(new User { Id = addId }).State = EntityState.Unchanged;
-                //     entity.Students.Add(new User { Id = addId });
-                // }
-                //
+                var usersToAdd = await _context.Users
+                    .Where(u => idsToAdd.Contains(u.Id))
+                    .ToListAsync();
 
-                var usersToAdd = await _context.Users.Where(u => idsToAdd.Contains(u.Id)).ToListAsync();
-                foreach (var u in usersToAdd) entity.Students.Add(u);
+                foreach (var u in usersToAdd)
+                {
+                    entity.Students.Add(u);
+                }
             }
         }
 
         await _context.SaveChangesAsync();
         return true;
     }
-
 
     public async Task<List<GroupsDto>> GetAllAsync(Guid organizationId)
     {
@@ -105,7 +103,7 @@ public class GroupService:
         await _context.Groups.AddAsync(group);
         await _context.SaveChangesAsync();
     }
-    
+
     private static string GenerateCode()
     {
         var random = new Random();
