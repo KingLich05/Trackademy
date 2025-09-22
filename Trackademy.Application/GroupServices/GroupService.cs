@@ -20,6 +20,51 @@ public class GroupService:
         _mapper = mapper;
     }
 
+    public override async Task<bool> UpdateAsync(Guid id, GroupsAddModel dto)
+    {
+        var entity = await _context.Groups
+            .Include(g => g.Students)
+            .FirstOrDefaultAsync(g => g.Id == id);
+
+        if (entity is null) return false;
+
+        _mapper.Map(dto, entity);
+
+        if (dto.StudentIds is not null)
+        {
+            var desired = dto.StudentIds.Distinct().ToHashSet();
+            var current = entity.Students.Select(s => s.Id).ToHashSet();
+
+            var idsToAdd    = desired.Except(current).ToList();
+            var idsToRemove = current.Except(desired).ToList();
+
+            if (idsToRemove.Count > 0)
+            {
+                var removeSet = idsToRemove.ToHashSet();
+                entity.Students = entity.Students
+                    .Where(s => !removeSet.Contains(s.Id))
+                    .ToList();
+            }
+
+            if (idsToAdd.Count > 0)
+            {
+                // foreach (var addId in idsToAdd)
+                // {
+                //     _context.Attach(new User { Id = addId }).State = EntityState.Unchanged;
+                //     entity.Students.Add(new User { Id = addId });
+                // }
+                //
+
+                var usersToAdd = await _context.Users.Where(u => idsToAdd.Contains(u.Id)).ToListAsync();
+                foreach (var u in usersToAdd) entity.Students.Add(u);
+            }
+        }
+
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+
     public async Task<List<GroupsDto>> GetAllAsync(Guid organizationId)
     {
         var group = await _context.Groups
