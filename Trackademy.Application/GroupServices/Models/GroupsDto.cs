@@ -1,4 +1,6 @@
-﻿namespace Trackademy.Application.GroupServices.Models;
+﻿using Trackademy.Application.SubjectServices.Models;
+
+namespace Trackademy.Application.GroupServices.Models;
 
 public class GroupsDto
 {
@@ -6,6 +8,6 @@ public class GroupsDto
     public string Name { get; set; }
     public string Code { get; set; }
     public string? Level { get; set; }
-    public string SubjectName { get; set; }
+    public SubjectMinimalViewModel Subject { get; set; }
     public List<UserMinimalViewModel> Students { get; set; }
 }

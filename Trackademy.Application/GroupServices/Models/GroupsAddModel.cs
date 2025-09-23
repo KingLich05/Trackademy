@@ -12,5 +12,5 @@ public class GroupsAddModel
     
     public List<Guid> StudentIds { get; set; }
     
-    public Guid? OrganizationId { get; set; }
+    public Guid OrganizationId { get; set; }
 }
