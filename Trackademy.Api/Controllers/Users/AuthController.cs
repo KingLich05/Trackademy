@@ -87,7 +87,8 @@ public class AuthController(
             user.FullName,
             user.Email,
             Role = str.Str(user.Role),
-            OrganizationId = user.Organization.Id
+            OrganizationId = user.Organization.Id,
+            OrganizationName = user.Organization.Name
         });
     }
 
