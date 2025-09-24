@@ -17,7 +17,7 @@ public class TrackademyDbContext : DbContext
     public DbSet<Groups> Groups { get; set; }
     public DbSet<Subject> Subjects { get; set; }
     public DbSet<Room> Rooms { get; set; }
-    public DbSet<Schedule> Schedules { get; set; }
+    public DbSet<Domain.Users.Schedule> Schedules { get; set; }
     public DbSet<Attendance> Attendances { get; set; }
     public DbSet<Assignment> Assignments { get; set; }
     public DbSet<Submission> Submissions { get; set; }

@@ -1,10 +1,13 @@
 using System.Text;
+using FluentValidation;
+using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Trackademy.Api.DI;
 using Trackademy.Application.Persistance;
+using Trackademy.Application.Schedule;
 
 try
 {
@@ -15,6 +18,9 @@ try
     builder.Services.AddDependencies(builder.Configuration);
 
     builder.Services.AddControllers();
+    builder.Services.AddFluentValidationAutoValidation()
+        .AddFluentValidationClientsideAdapters()
+        .AddValidatorsFromAssemblyContaining<ScheduleAddModelValidator>();
 
     builder.Services.AddEndpointsApiExplorer();
     

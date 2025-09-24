@@ -2,7 +2,7 @@ using Trackademy.Domain.hz;
 
 namespace Trackademy.Domain.Users;
 
-public class Schedule : BaseEntity
+public class Schedule : Entity
 {
     /// <summary>
     /// Дни недели как массив 1..7 (1=Пн ... 7=Вс)
@@ -17,7 +17,6 @@ public class Schedule : BaseEntity
     public DateOnly? EffectiveTo  { get; set; }
     
     public Guid GroupId { get; set; }
-    public Guid SubjectId { get; set; }
     public Guid TeacherId { get; set; }
     public Guid RoomId { get; set; }
     

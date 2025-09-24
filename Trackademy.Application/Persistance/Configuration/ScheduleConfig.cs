@@ -4,9 +4,9 @@ using Trackademy.Domain.Users;
 
 namespace Trackademy.Application.Persistance.Configuration;
 
-public class ScheduleConfig : IEntityTypeConfiguration<Schedule>
+public class ScheduleConfig : IEntityTypeConfiguration<Domain.Users.Schedule>
 {
-    public void Configure(EntityTypeBuilder<Schedule> b)
+    public void Configure(EntityTypeBuilder<Domain.Users.Schedule> b)
     {
         b.HasKey(x => x.Id);
         b.Property(x => x.StartTime).IsRequired();
@@ -25,11 +25,6 @@ public class ScheduleConfig : IEntityTypeConfiguration<Schedule>
         b.HasOne(x => x.Group)
             .WithMany(g => g.Schedules)
             .HasForeignKey(x => x.GroupId);
-
-        b.HasOne(x => x.Subject)
-            .WithMany(s => s.Schedules)
-            .HasForeignKey(x => x.SubjectId)
-            .OnDelete(DeleteBehavior.Restrict);
         
         b.HasOne(x => x.Teacher)
             .WithMany(u => u.Schedules)

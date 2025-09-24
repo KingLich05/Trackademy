@@ -4,6 +4,7 @@ using Trackademy.Application.Helper;
 using Trackademy.Application.OrganizationServices;
 using Trackademy.Application.Persistance;
 using Trackademy.Application.RoomServices;
+using Trackademy.Application.Schedule;
 using Trackademy.Application.SubjectServices;
 using Trackademy.Application.Users.AutoMapper;
 using Trackademy.Application.Users.Interfaces;
@@ -23,6 +24,7 @@ public static class DependencyInjection
         services.AddScoped<IOrganizationService, OrganizationService>();
         services.AddScoped<ISubjectService, SubjectService>();
         services.AddScoped<IRoomService, RoomService>();
+        services.AddScoped<IScheduleService, ScheduleService>();
 
         services.AddSingleton<ExtensionString>();
         
