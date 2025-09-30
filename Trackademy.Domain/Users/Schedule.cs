@@ -26,7 +26,7 @@ public class Schedule : Entity
 
     public Groups Group { get; set; }
     
-    public Subject Subject { get; set; }
+    public Organization Organization { get; set; }
     
     public User Teacher { get; set; }
     
