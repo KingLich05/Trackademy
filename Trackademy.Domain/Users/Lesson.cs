@@ -1,8 +1,9 @@
-﻿using Trackademy.Domain.hz;
+﻿using Trackademy.Domain.Enums;
+using Trackademy.Domain.hz;
 
 namespace Trackademy.Domain.Users;
 
-public class Lesson: BaseEntity
+public class Lesson: Entity
 {
     public Guid ScheduleId { get; set; }
     public DateOnly Date   { get; set; }
@@ -16,7 +17,9 @@ public class Lesson: BaseEntity
     public Guid TeacherId { get; set; }
     public Guid RoomId    { get; set; }
 
-    public bool IsCancelled { get; set; }
+    public LessonStatus LessonStatus { get; set; } = LessonStatus.Planned;
+    public string? CancelReason { get; set; }
+
     public string? Note     { get; set; }
 
     #region нав поля
