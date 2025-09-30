@@ -9,6 +9,8 @@ public class ScheduleService(TrackademyDbContext dbContext, IMapper mapper) : IS
 {
     public async Task<bool> CreateSchedule(ScheduleAddModel addModel)
     {
+        var start = TimeSpan.Parse(addModel.StartTime);
+        var end = TimeSpan.Parse(addModel.EndTime);
         var existSchedules = await dbContext.Schedules
             .AsNoTracking()
             .Where(x => x.OrganizationId == addModel.OrganizationId)
@@ -16,33 +18,28 @@ public class ScheduleService(TrackademyDbContext dbContext, IMapper mapper) : IS
 
         foreach (var s in existSchedules)
         {
-            // 1. Проверка пересечения по дням недели
             if (s.DaysOfWeek != null && addModel.DaysOfWeek != null)
             {
                 if (!s.DaysOfWeek.Intersect(addModel.DaysOfWeek).Any())
                     continue;
             }
 
-            // 2. Проверка пересечения по времени
-            var overlapByTime = s.StartTime < addModel.EndTime && addModel.StartTime < s.EndTime;
+            var overlapByTime = s.StartTime < end && start < s.EndTime;
             if (!overlapByTime)
-                continue; // нет пересечения по времени -> нет конфликта
+                continue;
 
-            // 3. Проверка по аудитории
             if (s.RoomId == addModel.RoomId)
                 return false;
 
-            // 4. Проверка по преподавателю
             if (s.TeacherId == addModel.TeacherId)
                 return false;
         }
 
-        // Если сюда дошли — значит конфликтов нет
         var newSchedule = new Domain.Users.Schedule
         {
             DaysOfWeek = addModel.DaysOfWeek,
-            StartTime = addModel.StartTime,
-            EndTime = addModel.EndTime,
+            StartTime = start,
+            EndTime = end,
             EffectiveFrom = addModel.EffectiveFrom,
             EffectiveTo = addModel.EffectiveTo,
             GroupId = addModel.GroupId,
@@ -51,10 +48,18 @@ public class ScheduleService(TrackademyDbContext dbContext, IMapper mapper) : IS
             OrganizationId = addModel.OrganizationId
         };
 
-        dbContext.Schedules.Add(newSchedule);
+        await dbContext.Schedules.AddAsync(newSchedule);
+        
+        // теперь здесь нужно создать все записи lesson для последующих уроков.
+        await CreateLessons(addModel);
        
         
         await dbContext.SaveChangesAsync();
         return true;
+    }
+
+    private async Task CreateLessons(ScheduleAddModel addModel)
+    {
+        
     }
 }
