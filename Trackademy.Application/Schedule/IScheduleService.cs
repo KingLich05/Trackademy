@@ -8,4 +8,7 @@ public interface IScheduleService
 
     Task<List<ScheduleViewModel>> GetAllSchedulesAsync(ScheduleRequest scheduleRequest);
     
+    Task<List<LessonViewModel>> GetAllLessons(LessonRequest lessonRequest);
+    
+    Task DeleteAsync(Guid id);
 }

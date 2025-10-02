@@ -23,4 +23,6 @@ public class ScheduleViewModel
 
     public UserMinimalModel Teacher { get; set; }
     public RoomMinimalViewModel Room { get; set; }
+    
+    public List<LessonViewModel> Lessons { get; set; }
 }

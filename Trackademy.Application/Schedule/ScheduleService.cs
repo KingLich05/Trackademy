@@ -8,6 +8,7 @@ namespace Trackademy.Application.Schedule;
 
 public class ScheduleService(TrackademyDbContext dbContext, IMapper mapper) : IScheduleService
 {
+    
     public async Task<List<ScheduleViewModel>> GetAllSchedulesAsync(ScheduleRequest scheduleRequest)
     {
         var scheduleQuery = dbContext.Schedules
@@ -21,6 +22,25 @@ public class ScheduleService(TrackademyDbContext dbContext, IMapper mapper) : IS
         var schedule = await Filtration(scheduleRequest, scheduleQuery);
 
         return mapper.Map<List<ScheduleViewModel>>(schedule);
+    }
+
+    public async Task<List<LessonViewModel>> GetAllLessons(LessonRequest lessonRequest)
+    {
+        // получение всего списка фактических занятий
+        throw new NotImplementedException();
+    }
+
+    public async Task DeleteAsync(Guid id)
+    {
+        var entity = await dbContext.Schedules.FindAsync(id);
+
+        if (entity == null)
+        {
+            return;
+        }
+
+        dbContext.Schedules.Remove(entity);
+        await dbContext.SaveChangesAsync();
     }
 
     public async Task<bool> CreateSchedule(ScheduleAddModel addModel)

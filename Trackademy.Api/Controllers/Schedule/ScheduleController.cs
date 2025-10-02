@@ -24,4 +24,22 @@ public class ScheduleController(IScheduleService service) : ControllerBase
 
         return Ok(result);
     }
+
+    [HttpGet("get-all-lessons")]
+    public async Task<IActionResult> GetAllLessonsAsync(
+        [FromQuery] LessonRequest request)
+    {
+        var result = await service.GetAllLessons(request);
+
+        return Ok(result);
+    }
+    
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(Guid id)
+    {
+        await service.DeleteAsync(id);
+        
+
+        return NoContent();
+    }
 }
