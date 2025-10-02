@@ -8,6 +8,21 @@ namespace Trackademy.Application.Schedule;
 
 public class ScheduleService(TrackademyDbContext dbContext, IMapper mapper) : IScheduleService
 {
+    public async Task<List<ScheduleViewModel>> GetAllSchedulesAsync(ScheduleRequest scheduleRequest)
+    {
+        var scheduleQuery = dbContext.Schedules
+            .Where(x => x.OrganizationId == scheduleRequest.OrganizationId)
+            .Include(x => x.Teacher)
+            .Include(x => x.Room)
+            .Include(x => x.Group)
+            .ThenInclude(x => x.Subject)
+            .AsQueryable();
+        
+        var schedule = await Filtration(scheduleRequest, scheduleQuery);
+
+        return mapper.Map<List<ScheduleViewModel>>(schedule);
+    }
+
     public async Task<bool> CreateSchedule(ScheduleAddModel addModel)
     {
         var start = TimeSpan.Parse(addModel.StartTime);
@@ -66,6 +81,33 @@ public class ScheduleService(TrackademyDbContext dbContext, IMapper mapper) : IS
         return true;
     }
 
+    private async Task<List<Domain.Users.Schedule>> Filtration(
+        ScheduleRequest req,
+        IQueryable<Domain.Users.Schedule> schedules)
+    {
+        if (req.SubjectId.HasValue && req.SubjectId != Guid.Empty)
+        {
+            schedules = schedules.Where(x => x.Group.SubjectId == req.SubjectId);
+        }
+
+        if (req.RoomId.HasValue && req.RoomId != Guid.Empty)
+        {
+            schedules = schedules.Where(x => x.RoomId == req.RoomId);
+        }
+
+        if (req.TeacherId.HasValue && req.TeacherId != Guid.Empty)
+        {
+            schedules = schedules.Where(x => x.TeacherId == req.TeacherId);
+        }
+
+        if (req.GroupId.HasValue && req.GroupId != Guid.Empty)
+        {
+            schedules = schedules.Where(x => x.GroupId == req.GroupId);
+        }
+
+        return await schedules.ToListAsync();
+    }
+
     private async Task<int> CreateLessons(Domain.Users.Schedule schedule)
     {
         var lessonsToAdd = new List<Domain.Users.Lesson>();
@@ -84,7 +126,7 @@ public class ScheduleService(TrackademyDbContext dbContext, IMapper mapper) : IS
         {
             var dow = (int)date.DayOfWeek;
             if (dow == 0)
-            { 
+            {
                 // в самом .Net воскресенье это 0 из за этого мы переделываем под нашу систему
                 dow = 7;
             }

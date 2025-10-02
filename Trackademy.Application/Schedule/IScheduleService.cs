@@ -5,4 +5,7 @@ namespace Trackademy.Application.Schedule;
 public interface IScheduleService
 {
     Task<bool> CreateSchedule(ScheduleAddModel addModel);
+
+    Task<List<ScheduleViewModel>> GetAllSchedulesAsync(ScheduleRequest scheduleRequest);
+    
 }

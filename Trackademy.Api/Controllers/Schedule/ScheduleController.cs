@@ -15,4 +15,13 @@ public class ScheduleController(IScheduleService service) : ControllerBase
         var result = await service.CreateSchedule(addModel);
         return Ok(result);
     }
+
+    [HttpPost("get-all-schedules")]
+    public async Task<IActionResult> GetAllSchedulesAsync(
+        [FromBody] ScheduleRequest request)
+    {
+        var result = await service.GetAllSchedulesAsync(request);
+
+        return Ok(result);
+    }
 }
