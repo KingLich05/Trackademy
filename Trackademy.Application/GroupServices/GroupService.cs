@@ -27,10 +27,11 @@ public class GroupService:
             .FirstOrDefaultAsync(g => g.Id == id);
 
         if (entity is null) return false;
+        dto.OrganizationId = entity.OrganizationId;
 
         _mapper.Map(dto, entity);
 
-        if (dto.StudentIds is not null)
+        if (dto.StudentIds is not null || dto.StudentIds.Any())
         {
             var desired = dto.StudentIds.Distinct().ToHashSet();
             var current = entity.Students.Select(s => s.Id).ToHashSet();

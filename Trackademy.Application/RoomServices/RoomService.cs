@@ -39,4 +39,12 @@ public class RoomService :
 
         return base.CreateAsync(dto);
     }
+
+    public override async Task<bool> UpdateAsync(Guid id, RoomAddModel dto)
+    {
+        var entity = await _context.Rooms.FindAsync(id);
+        if (entity == null) return false;
+        dto.OrganizationId = entity.Id;
+        return await base.UpdateAsync(id, dto);
+    }
 }
