@@ -14,6 +14,7 @@ using Trackademy.Domain.Users;
 namespace Trackademy.Api.Controllers.Users;
 
 [ApiController]
+[Route("api/[controller]")]
 public class AuthController(
     TrackademyDbContext db,
     IConfiguration config,
@@ -86,7 +87,7 @@ public class AuthController(
             user.Id, 
             user.FullName,
             user.Email,
-            Role = str.Str(user.Role),
+            Role = user.Role,
             OrganizationId = user.Organization.Id,
             OrganizationName = user.Organization.Name
         });
