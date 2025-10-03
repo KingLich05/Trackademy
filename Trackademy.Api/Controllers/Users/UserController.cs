@@ -44,6 +44,9 @@ public class UserController(IUserServices service) : ControllerBase
         [FromQuery] Guid id)
     {
         var result = await service.DeleteUser(id);
+
+        if (!result) return NotFound();
+
         return Ok(result);
     }
 }

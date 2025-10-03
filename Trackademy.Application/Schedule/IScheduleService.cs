@@ -10,5 +10,5 @@ public interface IScheduleService
     
     Task<List<LessonViewModel>> GetAllLessons(LessonRequest lessonRequest);
     
-    Task DeleteAsync(Guid id);
+    Task<bool> DeleteAsync(Guid id);
 }

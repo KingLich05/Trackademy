@@ -30,17 +30,18 @@ public class ScheduleService(TrackademyDbContext dbContext, IMapper mapper) : IS
         throw new NotImplementedException();
     }
 
-    public async Task DeleteAsync(Guid id)
+    public async Task<bool> DeleteAsync(Guid id)
     {
         var entity = await dbContext.Schedules.FindAsync(id);
 
         if (entity == null)
         {
-            return;
+            return false;
         }
 
         dbContext.Schedules.Remove(entity);
         await dbContext.SaveChangesAsync();
+        return true;
     }
 
     public async Task<bool> CreateSchedule(ScheduleAddModel addModel)

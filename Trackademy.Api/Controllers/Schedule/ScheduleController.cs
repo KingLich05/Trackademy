@@ -37,9 +37,10 @@ public class ScheduleController(IScheduleService service) : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(Guid id)
     {
-        await service.DeleteAsync(id);
-        
+        var result = await service.DeleteAsync(id);
 
-        return NoContent();
+        if (!result) return NotFound();
+
+        return Ok();
     }
 }
