@@ -9,7 +9,11 @@ public class SubjectConfig : IEntityTypeConfiguration<Subject>
     public void Configure(EntityTypeBuilder<Subject> b)
     {;
         b.HasKey(x => x.Id);
-        b.Property(x => x.Name).IsRequired();
+        b.Property(x => x.Name)
+            .IsRequired();
+
+        b.HasIndex(x => x.Name)
+            .IsUnique();
         
         b.HasOne(u => u.Organization)
             .WithMany(o => o.Subjects)

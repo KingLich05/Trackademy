@@ -9,6 +9,7 @@ using Trackademy.Application.authenticator.Models;
 using Trackademy.Application.Helper;
 using Trackademy.Application.Persistance;
 using Trackademy.Application.Users.Models;
+using Trackademy.Domain.Enums;
 using Trackademy.Domain.Users;
 
 namespace Trackademy.Api.Controllers.Users;
@@ -146,11 +147,10 @@ public class AuthController(
 
     private bool ValidateData(CreateUserRequest request)
     {
-        if (request == null) return false;
         if (string.IsNullOrWhiteSpace(request.FullName)) return false;
         if (string.IsNullOrWhiteSpace(request.Phone)) return false;
         if (string.IsNullOrWhiteSpace(request.Password)) return false;
-        if (request.Role == default) return false;
+        if (!Enum.IsDefined(typeof(RoleEnum), request.Role)) return false;
 
         return true;
     }

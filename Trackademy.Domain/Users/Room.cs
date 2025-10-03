@@ -4,7 +4,7 @@ namespace Trackademy.Domain.Users;
 
 public class Room : BaseEntity
 {
-    public int? Capacity { get; set; }
+    public required int Capacity { get; set; }
     
     public Guid OrganizationId { get; set; }
 
