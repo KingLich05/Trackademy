@@ -4,6 +4,7 @@ namespace Trackademy.Application.authenticator.Models;
 
 public record CreateUserRequest
 {
+    public required string Login { get; set; }
     public string FullName { get; set; }
     
     public string Email { get; set; }

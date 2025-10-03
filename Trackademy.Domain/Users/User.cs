@@ -5,6 +5,8 @@ namespace Trackademy.Domain.Users;
 
 public class User : Entity
 {
+    public required string Login { get; set; }
+
     public string FullName { get; set; }
     
     public string Email { get; set; }

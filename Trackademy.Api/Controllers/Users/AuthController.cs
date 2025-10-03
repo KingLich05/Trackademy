@@ -27,25 +27,33 @@ public class AuthController(
         {
             return Conflict("Не все поля заполнены.");
         }
+
         if (!VerifyNullEmailAndNicknameAndPassword(request.Email, request.Password))
         {
-            return BadRequest("Email или nickname и пароль обязательны");
+            return BadRequest("Email и пароль обязательны");
         }
 
-        var organization = await db.Organizations.Where(x => x.Id == request.OrganizationId).FirstOrDefaultAsync();
+        var organization = await db.Organizations
+            .Where(x => x.Id == request.OrganizationId)
+            .FirstOrDefaultAsync();
+
         if (organization == null)
         {
-            return BadRequest("ошибка с организацией");
+            return BadRequest("Ошибка с организацией");
         }
 
-        var exists = await db.Users.AnyAsync(u => u.Email == request.Email);
+        var exists = await db.Users
+            .Where(x => x.OrganizationId == request.OrganizationId)
+            .AnyAsync(u => u.Login == request.Login);
+
         if (exists)
         {
-            return Conflict("Пользователь с таким email или nickname уже существует");
+            return Conflict("Пользователь с таким login уже существует");
         }
 
         var user = new User
         {
+            Login = request.Login,
             FullName = request.FullName,
             Email = request.Email,
             Phone = request.Phone,
@@ -62,7 +70,11 @@ public class AuthController(
 
         return CreatedAtAction(nameof(GetMe), new { id = user.Id }, new
         {
-            user.Id, user.FullName, user.Email, Role = user.Role.ToString()
+            user.Id,
+            user.FullName,
+            user.Login,
+            user.Email,
+            Role = user.Role.ToString()
         });
     }
 
@@ -85,6 +97,7 @@ public class AuthController(
         return Ok(new
         {
             user.Id, 
+            user.Login,
             user.FullName,
             user.Email,
             Role = user.Role,
@@ -99,12 +112,16 @@ public class AuthController(
     {
         var user = await db.Users
             .Include(user => user.Organization)
-            .FirstOrDefaultAsync(u => u.Organization.Id == request.OrganizationId &&
-                                      u.Email == request.Email);
+            .FirstOrDefaultAsync(u => u.Login == request.Login);
 
         if (user == null || !VerifyPassword(request.Password, user.PasswordHash))
         {
-            return Unauthorized(new { message = "Неверный email или пароль" });
+            return Unauthorized(new { message = "Неверный Login или пароль" });
+        }
+
+        if (user.OrganizationId != request.OrganizationId)
+        {
+            return Unauthorized(new { message = "Неверная организация" });
         }
 
         var token = GenerateJwtToken(user);
@@ -114,6 +131,7 @@ public class AuthController(
             user = new
             {
                 user.Id,
+                user.Login,
                 user.FullName,
                 user.Email,
                 Role = user.Role.ToString(),
@@ -132,7 +150,7 @@ public class AuthController(
         if (string.IsNullOrWhiteSpace(request.FullName)) return false;
         if (string.IsNullOrWhiteSpace(request.Phone)) return false;
         if (string.IsNullOrWhiteSpace(request.Password)) return false;
-        if (request.Role == null) return false;
+        if (request.Role == default) return false;
 
         return true;
     }
