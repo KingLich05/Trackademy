@@ -136,6 +136,12 @@ public class ScheduleService(TrackademyDbContext dbContext, IMapper mapper) : IS
         var startDate = schedule.EffectiveFrom;
         var endDate = schedule.EffectiveTo ?? startDate.AddMonths(2);
 
+        var now = DateTime.Now.TimeOfDay;
+        if (now > schedule.EndTime)
+        {
+            startDate = startDate.AddDays(1);
+        }
+
         var subjectId = await dbContext.Groups
             .Where(g => g.Id == schedule.GroupId)
             .Select(g => g.SubjectId)
