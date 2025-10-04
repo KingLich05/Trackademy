@@ -139,10 +139,13 @@ public class ScheduleService(
         var startDate = schedule.EffectiveFrom;
         var endDate = schedule.EffectiveTo ?? startDate.AddMonths(2);
 
-        var now = DateTime.Now;
-        logger.LogInformation("CreateLessons now: {Now}", now);
+        var utcNow = DateTime.UtcNow;
+        var timeZone = TimeZoneInfo.FindSystemTimeZoneById("Asia/Almaty");
+        var localNow = TimeZoneInfo.ConvertTimeFromUtc(utcNow, timeZone);
+        // now = now.AddHours(5); // TODO: Setting вывести в локальное время
+        logger.LogInformation("CreateLessons now: {Now}", localNow);
 
-        var currentDayNumber = now.DayOfWeek switch
+        var currentDayNumber = localNow.DayOfWeek switch
         {
             DayOfWeek.Monday => 1,
             DayOfWeek.Tuesday => 2,
@@ -156,7 +159,7 @@ public class ScheduleService(
 
         if (schedule.DaysOfWeek != null &&
             schedule.DaysOfWeek.Contains(currentDayNumber) &&
-            now.TimeOfDay > schedule.EndTime)
+            localNow.TimeOfDay > schedule.EndTime)
         {
             startDate = startDate.AddDays(1);
         }
