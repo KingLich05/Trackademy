@@ -16,7 +16,6 @@ public class Schedule : Entity
     public DateOnly EffectiveFrom { get; set; }
 
     public DateOnly? EffectiveTo  { get; set; }
-    
 
     public Guid GroupId { get; set; }
 

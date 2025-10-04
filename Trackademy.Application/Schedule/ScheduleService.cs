@@ -7,9 +7,11 @@ using Trackademy.Domain.Enums;
 
 namespace Trackademy.Application.Schedule;
 
-public class ScheduleService(TrackademyDbContext dbContext, IMapper mapper, ILogger logger) : IScheduleService
+public class ScheduleService(
+    TrackademyDbContext dbContext,
+    IMapper mapper,
+    ILogger<ScheduleService> logger) : IScheduleService
 {
-    
     public async Task<List<ScheduleViewModel>> GetAllSchedulesAsync(ScheduleRequest scheduleRequest)
     {
         var scheduleQuery = dbContext.Schedules
@@ -137,9 +139,24 @@ public class ScheduleService(TrackademyDbContext dbContext, IMapper mapper, ILog
         var startDate = schedule.EffectiveFrom;
         var endDate = schedule.EffectiveTo ?? startDate.AddMonths(2);
 
-        var now = DateTime.Now.TimeOfDay;
-        logger.LogInformation("CreateLessons now: " + now);
-        if (now > schedule.EndTime)
+        var now = DateTime.Now;
+        logger.LogInformation("CreateLessons now: {Now}", now);
+
+        var currentDayNumber = now.DayOfWeek switch
+        {
+            DayOfWeek.Monday => 1,
+            DayOfWeek.Tuesday => 2,
+            DayOfWeek.Wednesday => 3,
+            DayOfWeek.Thursday => 4,
+            DayOfWeek.Friday => 5,
+            DayOfWeek.Saturday => 6,
+            DayOfWeek.Sunday => 7,
+            _ => throw new ArgumentOutOfRangeException()
+        };
+
+        if (schedule.DaysOfWeek != null &&
+            schedule.DaysOfWeek.Contains(currentDayNumber) &&
+            now.TimeOfDay > schedule.EndTime)
         {
             startDate = startDate.AddDays(1);
         }

@@ -13,6 +13,4 @@ public class Subject : BaseEntity
     
     public Organization Organization { get; set; }
     public ICollection<Assignment> Assignments { get; set; } = new List<Assignment>();
-    
-    public ICollection<Schedule> Schedules { get; set; } = new List<Schedule>();
 }
