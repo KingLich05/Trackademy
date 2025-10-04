@@ -1,12 +1,13 @@
 ﻿using AutoMapper;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Trackademy.Application.Persistance;
 using Trackademy.Application.Schedule.Model;
 using Trackademy.Domain.Enums;
 
 namespace Trackademy.Application.Schedule;
 
-public class ScheduleService(TrackademyDbContext dbContext, IMapper mapper) : IScheduleService
+public class ScheduleService(TrackademyDbContext dbContext, IMapper mapper, ILogger logger) : IScheduleService
 {
     
     public async Task<List<ScheduleViewModel>> GetAllSchedulesAsync(ScheduleRequest scheduleRequest)
@@ -137,6 +138,7 @@ public class ScheduleService(TrackademyDbContext dbContext, IMapper mapper) : IS
         var endDate = schedule.EffectiveTo ?? startDate.AddMonths(2);
 
         var now = DateTime.Now.TimeOfDay;
+        logger.LogInformation("CreateLessons now: " + now);
         if (now > schedule.EndTime)
         {
             startDate = startDate.AddDays(1);
