@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Trackademy.Application.Persistance;
 using Trackademy.Application.Schedule.Model;
+using Trackademy.Application.Shared.Exception;
 using Trackademy.Domain.Enums;
 
 namespace Trackademy.Application.Schedule;
@@ -51,6 +52,21 @@ public class ScheduleService(
     {
         var start = TimeSpan.Parse(addModel.StartTime);
         var end = TimeSpan.Parse(addModel.EndTime);
+        
+        var room = await dbContext.Rooms
+            .AsNoTracking()
+            .FirstAsync(x => x.Id == addModel.RoomId);
+
+        var group = await dbContext.Groups
+            .AsNoTracking()
+            .Include(groups => groups.Students)
+            .FirstAsync(x => x.Id == addModel.GroupId);
+
+        if (room.Capacity < group.Students.Count)
+        {
+            throw new ConflictException($"Количество студентов не вмещается в кабинет.");
+        }
+        
         var existSchedules = await dbContext.Schedules
             .AsNoTracking()
             .Where(x => x.OrganizationId == addModel.OrganizationId)
