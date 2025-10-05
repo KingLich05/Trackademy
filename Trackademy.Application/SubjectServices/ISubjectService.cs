@@ -5,7 +5,7 @@ using Trackademy.Domain.Users;
 
 namespace Trackademy.Application.SubjectServices;
 
-public interface ISubjectService : IBaseService<Subject, SubjectDto, SubjectAddModel>
+public interface ISubjectService : IBaseService<Subject, SubjectDto, SubjectAddModel,SubjectUpdateModel>
 {
     Task<IEnumerable<SubjectDto>> GetAllAsync(RequestIdOrganization request);
 }

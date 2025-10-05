@@ -9,7 +9,7 @@ using Trackademy.Domain.Users;
 namespace Trackademy.Application.SubjectServices;
 
 public class SubjectService :
-    BaseService<Subject, SubjectDto, SubjectAddModel>,
+    BaseService<Subject, SubjectDto, SubjectAddModel,SubjectUpdateModel>,
     ISubjectService
 {
     private TrackademyDbContext _context;
@@ -29,13 +29,5 @@ public class SubjectService :
             .ToListAsync();
 
         return _mapper.Map<IEnumerable<SubjectDto>>(subjects);
-    }
-
-    public override async Task<bool> UpdateAsync(Guid id, SubjectAddModel dto)
-    {
-        var entity = await _context.Subjects.FindAsync(id);
-        if (entity == null) return false;
-        dto.OrganizationId = entity.Id;
-        return await base.UpdateAsync(id, dto);
     }
 }

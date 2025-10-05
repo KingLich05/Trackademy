@@ -9,7 +9,7 @@ using Trackademy.Domain.Users;
 namespace Trackademy.Application.RoomServices;
 
 public class RoomService : 
-    BaseService<Room, RoomDto, RoomAddModel>,
+    BaseService<Room, RoomDto, RoomAddModel, RoomUpdateModel>,
     IRoomService
 {
     private TrackademyDbContext _context;
@@ -30,21 +30,13 @@ public class RoomService :
         return _mapper.Map<IEnumerable<RoomDto>>(rooms);
     }
 
-    public override Task<RoomDto> CreateAsync(RoomAddModel dto)
+    public override async Task<Guid> CreateAsync(RoomAddModel dto)
     {
-        if (dto.Capacity != null && dto.Capacity == 0)
+        if (dto.Capacity == 0)
         {
-            return null;
+            return Guid.Empty;
         }
 
-        return base.CreateAsync(dto);
-    }
-
-    public override async Task<bool> UpdateAsync(Guid id, RoomAddModel dto)
-    {
-        var entity = await _context.Rooms.FindAsync(id);
-        if (entity == null) return false;
-        dto.OrganizationId = entity.Id;
-        return await base.UpdateAsync(id, dto);
+        return await base.CreateAsync(dto);
     }
 }

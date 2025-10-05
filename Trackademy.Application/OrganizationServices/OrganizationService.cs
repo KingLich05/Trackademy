@@ -6,7 +6,7 @@ using Trackademy.Application.Shared.BaseCrud;
 namespace Trackademy.Application.OrganizationServices;
 
 public class OrganizationService : 
-    BaseService<Domain.Users.Organization, OrganizationDto, OrganizationAddModel>,
+    BaseService<Domain.Users.Organization, OrganizationDto, OrganizationAddModel, OrganizationAddModel>,
     IOrganizationService
 {
     public OrganizationService(TrackademyDbContext context, IMapper mapper) 

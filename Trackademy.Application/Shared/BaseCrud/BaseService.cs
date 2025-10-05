@@ -4,10 +4,11 @@ using Trackademy.Domain.hz;
 
 namespace Trackademy.Application.Shared.BaseCrud;
 
-public class BaseService<T, TDto, TAddDto> : IBaseService<T, TDto, TAddDto>
+public class BaseService<T, TDto, TAddDto, TUpdateDto> : IBaseService<T, TDto, TAddDto, TUpdateDto>
     where T : Entity
     where TDto : class
     where TAddDto : class
+    where TUpdateDto : class
 {
     private readonly DbContext _context;
     private readonly IMapper _mapper;
@@ -22,7 +23,7 @@ public class BaseService<T, TDto, TAddDto> : IBaseService<T, TDto, TAddDto>
 
     public virtual async Task<IEnumerable<TDto>> GetAllAsync()
     {
-        var entities = await _dbSet.ToListAsync();
+        var entities = await _dbSet.AsNoTracking().ToListAsync();
         return _mapper.Map<IEnumerable<TDto>>(entities);
     }
 
@@ -32,24 +33,24 @@ public class BaseService<T, TDto, TAddDto> : IBaseService<T, TDto, TAddDto>
         return entity is null ? null : _mapper.Map<TDto>(entity);
     }
 
-    public virtual async Task<TDto> CreateAsync(TAddDto dto)
+    public virtual async Task<Guid> CreateAsync(TAddDto dto)
     {
         var entity = _mapper.Map<T>(dto); 
         entity.Id = Guid.NewGuid();
         await _dbSet.AddAsync(entity);
         await _context.SaveChangesAsync();
-        return _mapper.Map<TDto>(entity);
+        return entity.Id;
     }
 
-    public virtual async Task<bool> UpdateAsync(Guid id, TAddDto dto)
+   public virtual async Task<Guid> UpdateAsync(Guid id, TUpdateDto dto)
     {
         var entity = await _dbSet.FindAsync(id);
-        if (entity is null) return false;
+        if (entity is null) return Guid.Empty;
 
         _mapper.Map(dto, entity);
         _context.Update(entity);
         await _context.SaveChangesAsync();
-        return true;
+        return entity.Id;
     }
 
     public virtual async Task<bool> DeleteAsync(Guid id)

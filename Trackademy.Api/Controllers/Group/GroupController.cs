@@ -7,7 +7,7 @@ using Trackademy.Domain.Users;
 namespace Trackademy.Api.Controllers.Group;
 
 public class GroupController(IGroupService service) :
-    BaseCrudController<Groups, GroupsDto, GroupsAddModel>(service)
+    BaseCrudController<Groups, GroupsDto, GroupsAddModel, GroupsUpdateModel>(service)
 {
     [HttpGet("get-groups")]
     public async Task<IActionResult> GetGroups(
@@ -21,8 +21,8 @@ public class GroupController(IGroupService service) :
     public async Task<IActionResult> CreateGroup(
     [FromBody] GroupsAddModel addGroupModel)
     {
-        await service.CreateGroup(addGroupModel);
-        return Ok();
+        var result = await service.CreateGroup(addGroupModel);
+        return Ok(result);
     }
     
     [NonAction]

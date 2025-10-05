@@ -12,5 +12,9 @@ public class SubjectProfile : Profile
         CreateMap<SubjectAddModel, Subject>()
             .ForMember(x => x.Assignments, opt => opt.Ignore())
             .ForMember(x => x.Groups, opt => opt.Ignore());
+        
+        CreateMap<SubjectUpdateModel, Subject>()
+            .ForMember(x => x.Assignments, opt => opt.Ignore())
+            .ForMember(x => x.Groups, opt => opt.Ignore());
     }
 }

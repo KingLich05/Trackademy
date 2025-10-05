@@ -4,10 +4,10 @@ using Trackademy.Domain.Users;
 
 namespace Trackademy.Application.GroupServices;
 
-public interface IGroupService : IBaseService<Groups, GroupsDto, GroupsAddModel>
+public interface IGroupService : IBaseService<Groups, GroupsDto, GroupsAddModel, GroupsUpdateModel>
 {
     Task<List<GroupsDto>> GetAllAsync(Guid model);
     
-    Task CreateGroup(GroupsAddModel model);
+    Task<Guid> CreateGroup(GroupsAddModel model);
 
 }

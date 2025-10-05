@@ -8,7 +8,7 @@ using Trackademy.Domain.Users;
 namespace Trackademy.Api.Controllers;
 
 public class RoomController(IRoomService service) :
-    BaseCrudController<Room, RoomDto, RoomAddModel>(service)
+    BaseCrudController<Room, RoomDto, RoomAddModel, RoomUpdateModel>(service)
 {
     [HttpGet("GetAllRooms")]
     public new async Task<IActionResult> GetAllRooms(

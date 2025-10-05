@@ -11,5 +11,8 @@ public class RoomProfile : Profile
         CreateMap<Room, RoomDto>();
         CreateMap<RoomAddModel, Room>()
             .ForMember(x => x.Schedules, opt => opt.Ignore());
+
+        CreateMap<RoomUpdateModel, Room>()
+            .ForMember(x => x.Schedules, opt => opt.Ignore());
     }
 }

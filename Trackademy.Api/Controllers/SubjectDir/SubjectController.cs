@@ -8,7 +8,7 @@ using Trackademy.Domain.Users;
 namespace Trackademy.Api.Controllers.SubjectDir;
 
 public class SubjectController(ISubjectService service) :
-    BaseCrudController<Subject, SubjectDto, SubjectAddModel>(service)
+    BaseCrudController<Subject, SubjectDto, SubjectAddModel,SubjectUpdateModel>(service)
 {
     [HttpGet("GetAllSubjects")]
     public new async Task<IActionResult> GetAllSubjects(

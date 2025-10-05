@@ -19,6 +19,12 @@ public class GroupProfile : Profile
 
         CreateMap<Groups, GroupsDto>();
 
+        CreateMap<GroupsUpdateModel, Groups>()
+            .ForMember(dest => dest.Subject, opt => opt.Ignore())
+            .ForMember(dest => dest.Schedules, opt => opt.Ignore())
+            .ForMember(dest => dest.Students, opt => opt.Ignore())
+            .ForMember(dest => dest.Organization, opt => opt.Ignore());
+
         CreateMap<GroupsAddModel, Groups>()
             .ForMember(dest => dest.Subject, opt => opt.Ignore())
             .ForMember(dest => dest.Schedules, opt => opt.Ignore())

@@ -142,7 +142,6 @@ public class ScheduleService(
         var utcNow = DateTime.UtcNow;
         var timeZone = TimeZoneInfo.FindSystemTimeZoneById("Asia/Almaty");
         var localNow = TimeZoneInfo.ConvertTimeFromUtc(utcNow, timeZone);
-        // now = now.AddHours(5); // TODO: Setting вывести в локальное время
         logger.LogInformation("CreateLessons now: {Now}", localNow);
 
         var currentDayNumber = localNow.DayOfWeek switch

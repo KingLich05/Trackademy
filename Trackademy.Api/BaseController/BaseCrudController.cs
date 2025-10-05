@@ -5,17 +5,16 @@ namespace Trackademy.Api.BaseController;
 
 [ApiController]
 [Route("api/[controller]")]
-public abstract class BaseCrudController<T, TDto, TAddDto> : Controller
+public abstract class BaseCrudController<T, TDto, TAddDto, TUpdateDto> : ControllerBase
     where T : class
     where TDto : class
     where TAddDto : class
+    where TUpdateDto : class
 {
-    protected readonly IBaseService<T, TDto, TAddDto> _service;
+    protected readonly IBaseService<T, TDto, TAddDto, TUpdateDto> _service;
 
-    protected BaseCrudController(IBaseService<T, TDto, TAddDto> service)
-    {
-        _service = service;
-    }
+    protected BaseCrudController(IBaseService<T, TDto, TAddDto, TUpdateDto> service)
+        => _service = service;
 
     [HttpGet]
     public virtual async Task<IActionResult> GetAll()
@@ -36,18 +35,21 @@ public abstract class BaseCrudController<T, TDto, TAddDto> : Controller
     [HttpPost("create")]
     public virtual async Task<IActionResult> Create([FromBody] TAddDto dto)
     {
-        await _service.CreateAsync(dto);
-        return Ok();
+        var id = await _service.CreateAsync(dto);
+        
+        if (id == Guid.Empty) return NotFound();
+
+        return Ok(id);
     }
 
     [HttpPut("{id}")]
-    public virtual async Task<IActionResult> Update(Guid id, [FromBody] TAddDto dto)
+    public virtual async Task<IActionResult> Update(Guid id, [FromBody] TUpdateDto dto)
     {
         var updated = await _service.UpdateAsync(id, dto);
-        if (!updated)
-            return NotFound();
 
-        return NoContent();
+        if (updated == Guid.Empty) return NotFound();
+
+        return Ok(updated);
     }
 
     [HttpDelete("{id}")]

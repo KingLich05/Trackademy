@@ -8,7 +8,7 @@ using Trackademy.Domain.Users;
 namespace Trackademy.Application.GroupServices;
 
 public class GroupService:
-    BaseService<Groups, GroupsDto, GroupsAddModel>, IGroupService
+    BaseService<Groups, GroupsDto, GroupsAddModel, GroupsUpdateModel>, IGroupService
 {
     private TrackademyDbContext _context;
     private readonly IMapper _mapper;
@@ -20,14 +20,13 @@ public class GroupService:
         _mapper = mapper;
     }
 
-    public override async Task<bool> UpdateAsync(Guid id, GroupsAddModel dto)
+    public override async Task<Guid> UpdateAsync(Guid id, GroupsUpdateModel dto)
     {
         var entity = await _context.Groups
             .Include(g => g.Students)
             .FirstOrDefaultAsync(g => g.Id == id);
 
-        if (entity is null) return false;
-        dto.OrganizationId = entity.OrganizationId;
+        if (entity is null) return Guid.Empty;
 
         _mapper.Map(dto, entity);
 
@@ -61,7 +60,7 @@ public class GroupService:
         }
 
         await _context.SaveChangesAsync();
-        return true;
+        return entity.Id;
     }
 
     public async Task<List<GroupsDto>> GetAllAsync(Guid organizationId)
@@ -78,7 +77,7 @@ public class GroupService:
         return groupsTdo;
     }
 
-    public async Task CreateGroup(GroupsAddModel model)
+    public async Task<Guid> CreateGroup(GroupsAddModel model)
     {
         if (string.IsNullOrEmpty(model.Code) || string.IsNullOrWhiteSpace(model.Code))
         {
@@ -103,6 +102,7 @@ public class GroupService:
 
         await _context.Groups.AddAsync(group);
         await _context.SaveChangesAsync();
+        return group.Id;
     }
 
     private static string GenerateCode()
