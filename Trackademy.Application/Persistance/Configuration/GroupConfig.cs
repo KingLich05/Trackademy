@@ -22,6 +22,7 @@ public class GroupConfig : IEntityTypeConfiguration<Groups>
             .HasColumnType("timestamptz");
 
         b.HasIndex(x => x.OrganizationId);
+        b.HasIndex(x => x.Code).IsUnique();
 
         b.HasOne(g => g.Subject)
             .WithMany(s => s.Groups)
