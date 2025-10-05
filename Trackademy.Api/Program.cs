@@ -18,9 +18,7 @@ try
     builder.Services.AddDependencies(builder.Configuration);
 
     builder.Services.AddControllers();
-    builder.Services.AddFluentValidationAutoValidation()
-        .AddFluentValidationClientsideAdapters()
-        .AddValidatorsFromAssemblyContaining<ScheduleAddModelValidator>();
+    builder.Services.AddAppValidation();
 
     builder.Services.AddEndpointsApiExplorer();
     
@@ -95,6 +93,7 @@ try
 
     app.UseCors("AllowAll");
 
+    app.UseMiddleware<ExceptionHandlingMiddleware>();
     app.UseAuthentication();
     app.UseAuthorization();
 
