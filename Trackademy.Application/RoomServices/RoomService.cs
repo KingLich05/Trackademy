@@ -49,4 +49,32 @@ public class RoomService :
 
         return await base.CreateAsync(dto);
     }
+
+    public override async Task<Guid> UpdateAsync(Guid id, RoomUpdateModel dto)
+    {
+        var entity = await _context.Rooms.FirstOrDefaultAsync(r => r.Id == id);
+        if (entity is null)
+            return Guid.Empty;
+
+        if (dto.Capacity == 0)
+        {
+            throw new ConflictException($"Кабинет не должен быть с нулевой вместимостью.");
+        }
+
+        if (!string.IsNullOrWhiteSpace(dto.Name) &&
+            !dto.Name.Equals(entity.Name, StringComparison.OrdinalIgnoreCase))
+        {
+            var isExists = await _context.Rooms.AnyAsync(r =>
+                r.OrganizationId == entity.OrganizationId &&
+                r.Name.ToLower() == dto.Name.ToLower() &&
+                r.Id != entity.Id);
+
+            if (isExists)
+            {
+                throw new ConflictException($"Кабинет с названием '{dto.Name}' уже существует в этой организации.");
+            }
+        }
+        
+        return await base.UpdateAsync(id, dto);
+    }
 }
