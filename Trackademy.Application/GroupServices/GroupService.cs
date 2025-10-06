@@ -105,7 +105,7 @@ public class GroupService:
 
         if (isExists)
         {
-            throw new ConflictException($"Группа с названием '{model.Code}' уже существует в этой организации.");
+            throw new ConflictException($"Группа с кодом '{model.Code}' уже существует в этой организации.");
         }
 
         if (string.IsNullOrEmpty(model.Name) || string.IsNullOrWhiteSpace(model.Name))
