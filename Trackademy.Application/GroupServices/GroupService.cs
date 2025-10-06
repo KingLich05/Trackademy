@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Trackademy.Application.GroupServices.Models;
 using Trackademy.Application.Persistance;
 using Trackademy.Application.Shared.BaseCrud;
+using Trackademy.Application.Shared.Exception;
 using Trackademy.Domain.Users;
 
 namespace Trackademy.Application.GroupServices;
@@ -27,6 +28,20 @@ public class GroupService:
             .FirstOrDefaultAsync(g => g.Id == id);
 
         if (entity is null) return Guid.Empty;
+        
+        if (!string.IsNullOrWhiteSpace(dto.Code) && 
+            !dto.Code.Equals(entity.Code, StringComparison.OrdinalIgnoreCase))
+        {
+            var exists = await _context.Groups.AnyAsync(g =>
+                g.OrganizationId == entity.OrganizationId &&
+                g.Code.ToLower() == dto.Code.ToLower() &&
+                g.Id != entity.Id);
+
+            if (exists)
+            {
+                throw new ConflictException($"Группа с кодом '{dto.Code}' уже существует в этой организации.");
+            }
+        }
 
         _mapper.Map(dto, entity);
 
@@ -82,6 +97,15 @@ public class GroupService:
         if (string.IsNullOrEmpty(model.Code) || string.IsNullOrWhiteSpace(model.Code))
         {
             model.Code = GenerateCode();
+        }
+
+        var isExists = await _context.Groups.AnyAsync(r =>
+            r.OrganizationId == model.OrganizationId &&
+            r.Code.ToLower() == model.Code.ToLower());
+
+        if (isExists)
+        {
+            throw new ConflictException($"Группа с названием '{model.Code}' уже существует в этой организации.");
         }
 
         if (string.IsNullOrEmpty(model.Name) || string.IsNullOrWhiteSpace(model.Name))
