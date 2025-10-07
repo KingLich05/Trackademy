@@ -48,10 +48,60 @@ public class ScheduleService(
         return true;
     }
 
-    public async Task<bool> CreateSchedule(ScheduleAddModel addModel)
+    public async Task<Guid> UpdateScheduleAsync(
+        Guid id,
+        ScheduleUpdateModel updateModel)
     {
-        var start = TimeSpan.Parse(addModel.StartTime);
-        var end = TimeSpan.Parse(addModel.EndTime);
+        var existingSchedule = await dbContext.Schedules
+            .FirstOrDefaultAsync(x => x.Id == id);
+
+        if (existingSchedule == null)
+            throw new ConflictException.NotFoundException("Расписание не найдено.");
+        
+        var room = await dbContext.Rooms
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == updateModel.RoomId);
+
+        var group = await dbContext.Groups
+            .AsNoTracking()
+            .Include(g => g.Students)
+            .FirstOrDefaultAsync(x => x.Id == updateModel.GroupId);
+
+        var teacher = await dbContext.Users
+            .AsNoTracking()
+            .Where(x => x.Role == RoleEnum.Teacher)
+            .FirstOrDefaultAsync(x => x.Id == updateModel.TeacherId);
+
+        if (room == null)
+        {
+            throw new ConflictException("Кабинета не существует.");
+        }
+
+        if (group == null)
+        {
+            throw new ConflictException("Группы не существует.");
+        }
+
+        if (teacher == null)
+            throw new ConflictException("Преподавателя не существует.");
+
+        if (room.Capacity < group.Students.Count)
+            throw new ConflictException("Количество студентов не вмещается в кабинет.");
+
+        var existSchedules = await dbContext.Schedules
+            .AsNoTracking()
+            .Where(x => x.Id != id)
+            .ToListAsync();
+
+        
+
+        throw new NotImplementedException();
+    }
+
+    public async Task<Guid> CreateSchedule(ScheduleAddModel addModel)
+    {
+        var start = addModel.StartTime; //TimeSpan.Parse(addModel.StartTime);
+        var end = addModel.EndTime; //TimeSpan.Parse(addModel.EndTime);
         
         var room = await dbContext.Rooms
             .AsNoTracking()
@@ -77,7 +127,7 @@ public class ScheduleService(
             .FirstOrDefaultAsync(x => x.Id == addModel.TeacherId);
         if (teacher == null)
         {
-            return false;
+            throw new ConflictException("Преподавателя не существует.");
         }
 
         foreach (var s in existSchedules)
@@ -93,10 +143,10 @@ public class ScheduleService(
                 continue;
 
             if (s.RoomId == addModel.RoomId)
-                return false;
+                throw new ConflictException("Кабинет в это время занят.");
 
             if (s.TeacherId == addModel.TeacherId)
-                return false;
+                throw new ConflictException("Преподаватель в это время занят.");
         }
 
         var newSchedule = new Domain.Users.Schedule
@@ -118,9 +168,11 @@ public class ScheduleService(
         var countLessons = await CreateLessons(newSchedule);
         Console.WriteLine("Создано уроков: " + countLessons);
 
-        return true;
+        return newSchedule.Id;
     }
 
+    #region Private methods
+    
     private async Task<List<Domain.Users.Schedule>> Filtration(
         ScheduleRequest req,
         IQueryable<Domain.Users.Schedule> schedules)
@@ -218,4 +270,6 @@ public class ScheduleService(
 
         return lessonsToAdd.Count;
     }
+    
+    #endregion
 }

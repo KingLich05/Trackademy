@@ -16,6 +16,15 @@ public class ScheduleController(IScheduleService service) : ControllerBase
         return Ok(result);
     }
 
+    [HttpPut("update-schedule/{id}")]
+    public async Task<IActionResult> UpdateSchedule(
+        Guid id,
+        [FromBody] ScheduleUpdateModel model)
+    {
+        var result = await service.UpdateScheduleAsync(id, model);
+        return Ok(result);
+    }
+
     [HttpPost("get-all-schedules")]
     public async Task<IActionResult> GetAllSchedulesAsync(
         [FromBody] ScheduleRequest request)
@@ -33,7 +42,7 @@ public class ScheduleController(IScheduleService service) : ControllerBase
 
         return Ok(result);
     }
-    
+
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(Guid id)
     {

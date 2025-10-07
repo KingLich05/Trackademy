@@ -3,6 +3,7 @@ using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
 using Trackademy.Application.authenticator.Models;
 using Trackademy.Application.Persistance;
+using Trackademy.Application.Shared.Exception;
 using Trackademy.Application.Users.Interfaces;
 using Trackademy.Application.Users.Models;
 using Trackademy.Domain.Enums;
@@ -53,12 +54,12 @@ public class UserServices(TrackademyDbContext dbContext, IMapper mapper) :
         return mapper.Map<UserByIdDto>(user);
     }
 
-    public async Task<bool> UpdateUser(Guid id, CreateUserRequest request)
+    public async Task<Guid> UpdateUser(Guid id, CreateUserRequest request)
     {
         var user = await dbContext.Users.FindAsync(id);
         if (user is null)
         {
-            return false;
+            throw new ConflictException("Пользователя с таким идентификатором не существует");
         }
 
         user.FullName = request.FullName;
@@ -68,7 +69,7 @@ public class UserServices(TrackademyDbContext dbContext, IMapper mapper) :
         user.Role = request.Role;
 
         await dbContext.SaveChangesAsync();
-        return true;
+        return user.Id;
     }
 
     public async Task<bool> DeleteUser(Guid id)

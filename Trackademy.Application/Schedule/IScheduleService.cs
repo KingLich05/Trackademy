@@ -4,11 +4,15 @@ namespace Trackademy.Application.Schedule;
 
 public interface IScheduleService
 {
-    Task<bool> CreateSchedule(ScheduleAddModel addModel);
+    Task<Guid> CreateSchedule(ScheduleAddModel addModel);
 
     Task<List<ScheduleViewModel>> GetAllSchedulesAsync(ScheduleRequest scheduleRequest);
     
     Task<List<LessonViewModel>> GetAllLessons(LessonRequest lessonRequest);
     
     Task<bool> DeleteAsync(Guid id);
+    
+    Task<Guid> UpdateScheduleAsync(
+        Guid id,
+        ScheduleUpdateModel addModel);
 }

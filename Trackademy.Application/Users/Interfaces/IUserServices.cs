@@ -10,7 +10,7 @@ public interface IUserServices
     
     Task<UserByIdDto> GetById(Guid id);
     
-    Task<bool> UpdateUser(Guid id, CreateUserRequest updateUserRequest);
+    Task<Guid> UpdateUser(Guid id, CreateUserRequest updateUserRequest);
     
     Task<bool> DeleteUser(Guid id);
 }
