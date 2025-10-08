@@ -67,6 +67,7 @@ public class UserServices(TrackademyDbContext dbContext, IMapper mapper) :
         user.Phone = request.Phone;
         user.ParentPhone = request.ParentPhone;
         user.Role = request.Role;
+        user.Birthday = request.Birthday;
 
         await dbContext.SaveChangesAsync();
         return user.Id;

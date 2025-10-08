@@ -18,6 +18,8 @@ public class User : Entity
     public string Phone { get; set; }
 
     public string? ParentPhone { get; set; }
+    
+    public DateTime? Birthday { get; set; }
 
     public DateTime CreatedDate { get; set; }
 

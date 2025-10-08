@@ -60,6 +60,7 @@ public class AuthController(
             Phone = request.Phone,
             ParentPhone = request.ParentPhone,
             Role = request.Role,
+            Birthday = request.Birthday,
             CreatedDate = DateTime.UtcNow,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
             OrganizationId = request.OrganizationId,
