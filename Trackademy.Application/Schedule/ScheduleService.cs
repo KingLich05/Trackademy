@@ -36,15 +36,29 @@ public class ScheduleService(
 
     public async Task<bool> DeleteAsync(Guid id)
     {
-        /* todo:
-            удаление
-    Кстати, а может? Или сделать так,что удалять можно только те раписания,уроки в которых еще не начинались?(когда неправильно создали рксписание например)
-    можно удалить урок, а точнее проставить ему последний день, чтобы после этого не повторялся*/
         var entity = await dbContext.Schedules.FindAsync(id);
-
         if (entity == null)
-        {
             return false;
+
+        var today = DateOnly.FromDateTime(
+            TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow,
+                TimeZoneInfo.FindSystemTimeZoneById("Asia/Almaty")));
+
+        var hasPastLessons = await dbContext.Lessons
+            .AnyAsync(l => l.ScheduleId == id && l.Date < today);
+
+        if (hasPastLessons)
+        {
+            entity.EffectiveTo = today.AddDays(-1);
+
+            var count = await dbContext.Lessons
+                .Where(l => l.ScheduleId == id && l.Date > entity.EffectiveTo)
+                .ExecuteDeleteAsync();
+            await dbContext.SaveChangesAsync();
+
+            logger.LogInformation("было удалено будущих уроков: {name}", count);
+
+            return true;
         }
 
         dbContext.Schedules.Remove(entity);
