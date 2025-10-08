@@ -8,6 +8,13 @@ namespace Trackademy.Api.Controllers.Schedule;
 [Route("api/[controller]")]
 public class ScheduleController(IScheduleService service) : ControllerBase
 {
+    [HttpGet("[action]/{id}")]
+    public async Task<ScheduleViewModel?> GetScheduleById(Guid id)
+    {
+        var result = await service.GetSchedule(id);
+        return result;
+    }
+
     [HttpPost("create-schedule")]
     public async Task<IActionResult> CreateSchedule(
         [FromBody] ScheduleAddModel addModel)

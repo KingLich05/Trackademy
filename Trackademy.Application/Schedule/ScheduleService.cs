@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Trackademy.Application.Persistance;
@@ -13,6 +14,16 @@ public class ScheduleService(
     IMapper mapper,
     ILogger<ScheduleService> logger) : IScheduleService
 {
+    public async Task<ScheduleViewModel?> GetSchedule(Guid id)
+    {
+        var schedule = await dbContext.Schedules
+            .Where(x => x.Id == id)
+            .ProjectTo<ScheduleViewModel>(mapper.ConfigurationProvider)
+            .FirstOrDefaultAsync();
+
+        return schedule;
+    }
+
     public async Task<List<ScheduleViewModel>> GetAllSchedulesAsync(ScheduleRequest scheduleRequest)
     {
         var scheduleQuery = dbContext.Schedules

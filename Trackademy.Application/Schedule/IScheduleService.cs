@@ -15,4 +15,6 @@ public interface IScheduleService
     Task<Guid> UpdateScheduleAsync(
         Guid id,
         ScheduleUpdateModel addModel);
+
+    Task<ScheduleViewModel?> GetSchedule(Guid id);
 }
