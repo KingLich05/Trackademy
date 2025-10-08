@@ -22,7 +22,7 @@ public class ScheduleService(
             .Include(x => x.Group)
             .ThenInclude(x => x.Subject)
             .AsQueryable();
-        
+
         var schedule = await Filtration(scheduleRequest, scheduleQuery);
 
         return mapper.Map<List<ScheduleViewModel>>(schedule);
@@ -36,6 +36,10 @@ public class ScheduleService(
 
     public async Task<bool> DeleteAsync(Guid id)
     {
+        /* todo:
+            удаление
+    Кстати, а может? Или сделать так,что удалять можно только те раписания,уроки в которых еще не начинались?(когда неправильно создали рксписание например)
+    можно удалить урок, а точнее проставить ему последний день, чтобы после этого не повторялся*/
         var entity = await dbContext.Schedules.FindAsync(id);
 
         if (entity == null)
@@ -52,12 +56,17 @@ public class ScheduleService(
         Guid id,
         ScheduleUpdateModel updateModel)
     {
+        var start = updateModel.StartTime;
+        var end = updateModel.EndTime;
+
         var existingSchedule = await dbContext.Schedules
             .FirstOrDefaultAsync(x => x.Id == id);
 
         if (existingSchedule == null)
+        {
             throw new ConflictException.NotFoundException("Расписание не найдено.");
-        
+        }
+
         var room = await dbContext.Rooms
             .AsNoTracking()
             .FirstOrDefaultAsync(x => x.Id == updateModel.RoomId);
@@ -83,26 +92,52 @@ public class ScheduleService(
         }
 
         if (teacher == null)
+        {
             throw new ConflictException("Преподавателя не существует.");
+        }
 
         if (room.Capacity < group.Students.Count)
+        {
             throw new ConflictException("Количество студентов не вмещается в кабинет.");
+        }
 
-        var existSchedules = await dbContext.Schedules
+        var existOtherSchedules = await dbContext.Schedules
             .AsNoTracking()
             .Where(x => x.Id != id)
             .ToListAsync();
 
-        
+        foreach (var s in existOtherSchedules)
+        {
+            if (s.DaysOfWeek != null && updateModel.DaysOfWeek != null)
+            {
+                if (!s.DaysOfWeek.Intersect(updateModel.DaysOfWeek).Any())
+                    continue;
+            }
 
-        throw new NotImplementedException();
+            var overlapByTime = s.StartTime < end && start < s.EndTime;
+            if (!overlapByTime) continue;
+
+            if (s.RoomId == updateModel.RoomId)
+                throw new ConflictException("Кабинет в это время занят.");
+
+            if (s.TeacherId == updateModel.TeacherId)
+                throw new ConflictException("Преподаватель в это время занят.");
+        }
+
+        mapper.Map(updateModel, existingSchedule);
+
+        await dbContext.SaveChangesAsync();
+
+        await ReplaceFutureLessonsAsync(existingSchedule);
+
+        return existingSchedule.Id;
     }
 
     public async Task<Guid> CreateSchedule(ScheduleAddModel addModel)
     {
-        var start = addModel.StartTime; //TimeSpan.Parse(addModel.StartTime);
-        var end = addModel.EndTime; //TimeSpan.Parse(addModel.EndTime);
-        
+        var start = addModel.StartTime;
+        var end = addModel.EndTime;
+
         var room = await dbContext.Rooms
             .AsNoTracking()
             .FirstAsync(x => x.Id == addModel.RoomId);
@@ -116,7 +151,7 @@ public class ScheduleService(
         {
             throw new ConflictException($"Количество студентов не вмещается в кабинет.");
         }
-        
+
         var existSchedules = await dbContext.Schedules
             .AsNoTracking()
             .Where(x => x.OrganizationId == addModel.OrganizationId)
@@ -165,14 +200,32 @@ public class ScheduleService(
         await dbContext.Schedules.AddAsync(newSchedule);
         await dbContext.SaveChangesAsync();
 
-        var countLessons = await CreateLessons(newSchedule);
+        var countLessons = await CreateLessonsAsync(newSchedule);
         Console.WriteLine("Создано уроков: " + countLessons);
 
         return newSchedule.Id;
     }
 
     #region Private methods
-    
+
+    private async Task ReplaceFutureLessonsAsync(Domain.Users.Schedule schedule)
+    {
+        var timeZone = TimeZoneInfo.FindSystemTimeZoneById("Asia/Almaty");
+        var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, timeZone));
+
+        var futureLessons = await dbContext.Lessons
+            .Where(l => l.ScheduleId == schedule.Id && l.Date >= today)
+            .ToListAsync();
+
+        if (futureLessons.Any())
+        {
+            dbContext.Lessons.RemoveRange(futureLessons);
+            await dbContext.SaveChangesAsync();
+        }
+
+        await CreateLessonsAsync(schedule, DateTime.Now);
+    }
+
     private async Task<List<Domain.Users.Schedule>> Filtration(
         ScheduleRequest req,
         IQueryable<Domain.Users.Schedule> schedules)
@@ -200,17 +253,25 @@ public class ScheduleService(
         return await schedules.ToListAsync();
     }
 
-    private async Task<int> CreateLessons(Domain.Users.Schedule schedule)
+    private async Task<int> CreateLessonsAsync(Domain.Users.Schedule schedule, DateTime? overrideStartDate = null)
     {
         var lessonsToAdd = new List<Domain.Users.Lesson>();
 
-        var startDate = schedule.EffectiveFrom;
-        var endDate = schedule.EffectiveTo ?? startDate.AddMonths(2);
-
-        var utcNow = DateTime.UtcNow;
         var timeZone = TimeZoneInfo.FindSystemTimeZoneById("Asia/Almaty");
+        var utcNow = DateTime.UtcNow;
         var localNow = TimeZoneInfo.ConvertTimeFromUtc(utcNow, timeZone);
+        var todayDateOnly = DateOnly.FromDateTime(localNow);
+
         logger.LogInformation("CreateLessons now: {Now}", localNow);
+
+        var startDate = overrideStartDate.HasValue
+            ? DateOnly.FromDateTime(overrideStartDate.Value)
+            : schedule.EffectiveFrom;
+
+        if (startDate < todayDateOnly)
+            startDate = todayDateOnly;
+
+        var endDate = schedule.EffectiveTo ?? startDate.AddMonths(2);
 
         var currentDayNumber = localNow.DayOfWeek switch
         {
@@ -231,21 +292,12 @@ public class ScheduleService(
             startDate = startDate.AddDays(1);
         }
 
-        var subjectId = await dbContext.Groups
-            .Where(g => g.Id == schedule.GroupId)
-            .Select(g => g.SubjectId)
-            .SingleAsync();
-
-        var allowedDays = (schedule.DaysOfWeek ?? Array.Empty<int>()).ToHashSet();
+        var allowedDays = (schedule.DaysOfWeek ?? []).ToHashSet();
 
         for (var date = startDate; date <= endDate; date = date.AddDays(1))
         {
             var dow = (int)date.DayOfWeek;
-            if (dow == 0)
-            {
-                // в самом .Net воскресенье это 0 из за этого мы переделываем под нашу систему
-                dow = 7;
-            }
+            if (dow == 0) dow = 7; // Преобразуем Sunday (0) → 7
 
             if (!allowedDays.Contains(dow))
                 continue;
@@ -256,7 +308,6 @@ public class ScheduleService(
                 Date = date,
                 StartTime = schedule.StartTime,
                 EndTime = schedule.EndTime,
-                SubjectId = subjectId,
                 GroupId = schedule.GroupId,
                 TeacherId = schedule.TeacherId,
                 RoomId = schedule.RoomId,
@@ -264,12 +315,14 @@ public class ScheduleService(
             });
         }
 
-        if (lessonsToAdd.Count <= 0) return lessonsToAdd.Count;
+        if (lessonsToAdd.Count == 0)
+            return 0;
+
         await dbContext.Lessons.AddRangeAsync(lessonsToAdd);
         await dbContext.SaveChangesAsync();
 
         return lessonsToAdd.Count;
     }
-    
+
     #endregion
 }

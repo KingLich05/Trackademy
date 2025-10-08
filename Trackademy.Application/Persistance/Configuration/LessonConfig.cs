@@ -23,7 +23,6 @@ public class LessonConfig : IEntityTypeConfiguration<Lesson>
             .OnDelete(DeleteBehavior.Cascade);
 
         b.HasOne(x => x.Group).WithMany().HasForeignKey(x => x.GroupId);
-        b.HasOne(x => x.Subject).WithMany().HasForeignKey(x => x.SubjectId);
         b.HasOne(x => x.Teacher).WithMany().HasForeignKey(x => x.TeacherId);
         b.HasOne(x => x.Room).WithMany().HasForeignKey(x => x.RoomId);
     }

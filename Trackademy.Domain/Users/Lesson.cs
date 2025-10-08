@@ -12,7 +12,6 @@ public class Lesson: Entity
     // то есть если schedule является фактом а lesson является фактом посещения или переноса
     public TimeSpan StartTime { get; set; }
     public TimeSpan EndTime   { get; set; }
-    public Guid SubjectId { get; set; }
     public Guid GroupId   { get; set; }
     public Guid TeacherId { get; set; }
     public Guid RoomId    { get; set; }
@@ -25,7 +24,6 @@ public class Lesson: Entity
     #region нав поля
 
     public Schedule Schedule { get; set; } = null!;
-    public Subject Subject { get; set; } = null!;
     public Groups Group { get; set; } = null!;
     public User Teacher { get; set; } = null!;
     public Room Room { get; set; } = null!;

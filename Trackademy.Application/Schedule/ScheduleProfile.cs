@@ -17,6 +17,13 @@ public class ScheduleProfile : Profile
             .ForMember(d => d.Teacher, opt => opt.MapFrom(s => s.Teacher))
             .ForMember(d => d.Room, opt => opt.MapFrom(s => s.Room));
 
+        CreateMap<ScheduleUpdateModel, Domain.Users.Schedule>()
+            .ForMember(x => x.Group, opt => opt.Ignore())
+            .ForMember(x => x.Teacher, opt => opt.Ignore())
+            .ForMember(x => x.Room, opt => opt.Ignore())
+            .ForMember(x => x.Organization, opt => opt.Ignore())
+            .ForMember(x => x.OrganizationId, opt => opt.Ignore());
+
         #region MinimalViewModel
 
         CreateMap<Subject, SubjectMinimalViewModel>()
