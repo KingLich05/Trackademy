@@ -1,0 +1,179 @@
+﻿using AutoMapper;
+using Microsoft.EntityFrameworkCore;
+using Trackademy.Application.Lessons.Models;
+using Trackademy.Application.Persistance;
+using Trackademy.Application.Schedule.Model;
+using Trackademy.Application.Shared.Exception;
+using Trackademy.Domain.Enums;
+using Trackademy.Domain.Users;
+
+namespace Trackademy.Application.Lessons;
+
+public class LessonService(
+    TrackademyDbContext dbContext,
+    IMapper mapper) : ILessonService
+{
+    public async Task<Guid> CreateCustomLessonAsync(LessonCustomAddModel model)
+    {
+        var timeZone = TimeZoneInfo.FindSystemTimeZoneById("Asia/Almaty");
+        var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, timeZone));
+
+        if (model.Date < today)
+        {
+            throw new ConflictException("Нельзя создать урок в прошлом.");
+        }
+
+        if (model.EndTime <= model.StartTime)
+        {
+            throw new ConflictException("Время окончания должно быть позже начала.");
+        }
+
+        var groupExists = await dbContext.Groups.AnyAsync(x => x.Id == model.GroupId);
+        var teacherExists = await dbContext.Users.AnyAsync(x => x.Id == model.TeacherId && x.Role == RoleEnum.Teacher);
+        var room = await dbContext.Rooms.FirstOrDefaultAsync(x => x.Id == model.RoomId);
+
+        if (!groupExists || !teacherExists || room == null)
+        {
+            throw new ConflictException("Проверьте корректность группы, преподавателя или кабинета.");
+        }
+
+        var studentCount = await dbContext.Groups
+            .Where(x => x.Id == model.GroupId)
+            .SelectMany(g => g.Students)
+            .CountAsync();
+
+        if (room.Capacity < studentCount)
+        {
+            throw new ConflictException("Количество студентов не вмещается в кабинет.");
+        }
+
+        var overlapExists = await dbContext.Lessons
+            .Where(l => l.Date == model.Date)
+            .Where(l =>
+                l.TeacherId == model.TeacherId ||
+                l.GroupId == model.GroupId ||
+                l.RoomId == model.RoomId)
+            .AnyAsync(l =>
+                l.StartTime < model.EndTime.ToTimeSpan() && model.StartTime.ToTimeSpan() < l.EndTime);
+
+        if (overlapExists)
+        {
+            throw new ConflictException("Указанное время пересекается с другим занятием.");
+        }
+
+        var newLesson = new Lesson
+        {
+            Id = Guid.NewGuid(),
+            Date = model.Date,
+            StartTime = model.StartTime.ToTimeSpan(),
+            EndTime = model.EndTime.ToTimeSpan(),
+            GroupId = model.GroupId,
+            TeacherId = model.TeacherId,
+            RoomId = model.RoomId,
+            LessonStatus = LessonStatus.Planned,
+            Note = model.Note
+        };
+
+        await dbContext.Lessons.AddAsync(newLesson);
+        await dbContext.SaveChangesAsync();
+
+        return newLesson.Id;
+    }
+
+    public async Task<bool> RescheduleLessonAsync(Guid lessonId, LessonRescheduleModel model)
+    {
+        var lesson = await dbContext.Lessons
+            .AsTracking()
+            .FirstOrDefaultAsync(l => l.Id == lessonId);
+
+        if (lesson == null)
+            return false;
+
+        if (model.EndTime <= model.StartTime)
+            throw new ConflictException("Время окончания должно быть позже времени начала.");
+
+        var now = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow,
+            TimeZoneInfo.FindSystemTimeZoneById("Asia/Almaty"));
+
+        var lessonDateTime = new DateTime(
+            model.Date.Year, model.Date.Month, model.Date.Day,
+            model.EndTime.Hours, model.EndTime.Minutes, model.EndTime.Seconds);
+        if (lessonDateTime < now)
+        {
+            throw new ConflictException("Нельзя перенести урок в прошлое.");
+        }
+
+        var overlapExists = await dbContext.Lessons
+            .Where(l => l.Id != lesson.Id && l.Date == model.Date)
+            .Where(l =>
+                l.TeacherId == lesson.TeacherId ||
+                l.GroupId == lesson.GroupId ||
+                l.RoomId == lesson.RoomId)
+            .AnyAsync(l =>
+                l.StartTime < model.EndTime && model.StartTime < l.EndTime);
+
+        if (overlapExists)
+            throw new ConflictException("На выбранное время уже назначен другой урок.");
+
+        lesson.Date = model.Date;
+        lesson.StartTime = model.StartTime;
+        lesson.EndTime = model.EndTime;
+        lesson.LessonStatus = LessonStatus.Moved;
+
+        await dbContext.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<bool> UpdateLessonStatusAsync(Guid lessonId, LessonStatus newStatus)
+    {
+        var lesson = await dbContext.Lessons.FirstOrDefaultAsync(l => l.Id == lessonId);
+        if (lesson == null)
+            return false;
+
+        lesson.LessonStatus = newStatus;
+        await dbContext.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<List<LessonViewModel>> GetLessonsByScheduleAsync(
+        Guid scheduleId,
+        DateOnly? fromDate = null,
+        DateOnly? toDate = null)
+    {
+        var query = dbContext.Lessons
+            .Include(x => x.Group)
+            .Include(x => x.Teacher)
+            .Include(x => x.Room)
+            .Where(x => x.ScheduleId == scheduleId);
+
+        if (fromDate.HasValue)
+        {
+            query = query.Where(x => x.Date >= fromDate.Value);
+        }
+
+        if (toDate.HasValue)
+        {
+            query = query.Where(x => x.Date <= toDate.Value);
+        }
+
+        var lessons = await query.ToListAsync();
+
+        return mapper.Map<List<LessonViewModel>>(lessons);
+    }
+
+    public async Task<LessonViewModel> GetLessonByIdAsync(Guid id)
+    {
+        var lesson = await dbContext.Lessons
+            .Include(x => x.Group)
+            .Include(x => x.Teacher)
+            .Include(x => x.Room)
+            .FirstOrDefaultAsync(x => x.Id == id);
+
+        if (lesson == null)
+        {
+            throw new ConflictException.NotFoundException("Урок не найден.");
+        }
+
+        return mapper.Map<LessonViewModel>(lesson);
+    }
+}

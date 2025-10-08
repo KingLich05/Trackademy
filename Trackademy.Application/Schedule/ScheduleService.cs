@@ -39,12 +39,6 @@ public class ScheduleService(
         return mapper.Map<List<ScheduleViewModel>>(schedule);
     }
 
-    public async Task<List<LessonViewModel>> GetAllLessons(LessonRequest lessonRequest)
-    {
-        // получение всего списка фактических занятий
-        throw new NotImplementedException();
-    }
-
     public async Task<bool> DeleteAsync(Guid id)
     {
         var entity = await dbContext.Schedules.FindAsync(id);

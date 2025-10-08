@@ -7,9 +7,7 @@ public interface IScheduleService
     Task<Guid> CreateSchedule(ScheduleAddModel addModel);
 
     Task<List<ScheduleViewModel>> GetAllSchedulesAsync(ScheduleRequest scheduleRequest);
-    
-    Task<List<LessonViewModel>> GetAllLessons(LessonRequest lessonRequest);
-    
+
     Task<bool> DeleteAsync(Guid id);
     
     Task<Guid> UpdateScheduleAsync(
