@@ -156,7 +156,7 @@ public class LessonService(
             query = query.Where(x => x.Date <= toDate.Value);
         }
 
-        var lessons = await query.ToListAsync();
+        var lessons = await query.OrderBy(x => x.Date).ToListAsync();
 
         return mapper.Map<List<LessonViewModel>>(lessons);
     }
