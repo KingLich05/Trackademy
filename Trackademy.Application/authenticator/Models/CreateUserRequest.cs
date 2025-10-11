@@ -15,7 +15,7 @@ public record CreateUserRequest
 
     public string? ParentPhone { get; set; }
     
-    public DateTime? Birthday { get; set; }
+    public DateOnly? Birthday { get; set; }
 
     public RoleEnum Role { get; set; }
     

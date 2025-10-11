@@ -10,7 +10,7 @@ public class UserDto
     public string Email { get; set; }
     public string Phone { get; set; }
     public string? ParentPhone { get; set; }
-    public DateTime? Birthday { get; set; }
+    public DateOnly? Birthday { get; set; }
     public List<GroupMinimalViewModel> Groups { get; set; }
     public RoleEnum Role { get; set; }
 }
