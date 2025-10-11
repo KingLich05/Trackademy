@@ -21,7 +21,7 @@ try
     builder.Services.AddAppValidation();
 
     builder.Services.AddEndpointsApiExplorer();
-    
+
     builder.Services.AddSwaggerGen(c =>
     {
         c.SwaggerDoc("v1", new OpenApiInfo { Title = "Trackademy API", Version = "v1" });
@@ -46,14 +46,14 @@ try
             { securityScheme, Array.Empty<string>() }
         });
     });
-    
+
     builder.Services.AddAuthorization(options =>
     {
         options.AddPolicy("AdminsOnly", p => p.RequireRole("Admin"));
         options.AddPolicy("TeacherOnly", p => p.RequireRole("Teacher"));
         options.AddPolicy("StudentsOnly", p => p.RequireRole("Student"));
     });
-    
+
     builder.Services.AddAuthentication(options =>
         {
             options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -73,7 +73,7 @@ try
                     Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
             };
         });
-    
+
     builder.Services.AddCors(options =>
     {
         options.AddPolicy("AllowAll", policy =>
