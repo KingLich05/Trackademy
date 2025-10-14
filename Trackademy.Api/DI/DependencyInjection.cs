@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Trackademy.Application.Attendances;
 using Trackademy.Application.GroupServices;
 using Trackademy.Application.Helper;
 using Trackademy.Application.Lessons;
@@ -27,6 +28,7 @@ public static class DependencyInjection
         services.AddScoped<IRoomService, RoomService>();
         services.AddScoped<IScheduleService, ScheduleService>();
         services.AddScoped<ILessonService, LessonService>();
+        services.AddScoped<IAttendanceService, AttendanceService>();
 
         services.AddSingleton<ExtensionString>();
         
