@@ -1,13 +1,10 @@
 using System.Text;
-using FluentValidation;
-using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Trackademy.Api.DI;
 using Trackademy.Application.Persistance;
-using Trackademy.Application.Schedule;
 
 try
 {
