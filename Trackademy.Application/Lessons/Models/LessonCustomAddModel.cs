@@ -9,6 +9,7 @@ public class LessonCustomAddModel
     public Guid GroupId { get; set; }
     public Guid TeacherId { get; set; }
     public Guid RoomId { get; set; }
+    public Guid ScheduleId { get; set; }
 
     public string? Note { get; set; }
 }

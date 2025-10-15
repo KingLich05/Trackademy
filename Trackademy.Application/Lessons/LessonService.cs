@@ -54,7 +54,7 @@ public class LessonService(
                 l.GroupId == model.GroupId ||
                 l.RoomId == model.RoomId)
             .AnyAsync(l =>
-                l.StartTime < model.EndTime.ToTimeSpan() && model.StartTime.ToTimeSpan() < l.EndTime);
+                l.StartTime < new TimeSpan(model.EndTime.Ticks) && new TimeSpan(model.StartTime.Ticks) < l.EndTime);
 
         if (overlapExists)
         {
@@ -65,11 +65,12 @@ public class LessonService(
         {
             Id = Guid.NewGuid(),
             Date = model.Date,
-            StartTime = model.StartTime.ToTimeSpan(),
-            EndTime = model.EndTime.ToTimeSpan(),
+            StartTime = new TimeSpan(model.StartTime.Ticks),
+            EndTime = new TimeSpan(model.EndTime.Ticks),
             GroupId = model.GroupId,
             TeacherId = model.TeacherId,
             RoomId = model.RoomId,
+            ScheduleId = model.ScheduleId,
             LessonStatus = LessonStatus.Planned,
             Note = model.Note
         };
