@@ -93,16 +93,29 @@ public class AttendanceController : ControllerBase
     [HttpPost("export")]
     public async Task<IActionResult> ExportAttendanceReport([FromBody] AttendanceExportFilterModel filter)
     {
-        try
-        {
-            var excelBytes = await _attendanceService.ExportAttendanceReportAsync(filter);
-            var fileName = $"attendance_report_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
-            
-            return File(excelBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
-        }
-        catch (NotImplementedException)
-        {
-            return BadRequest("Экспорт в Excel временно недоступен");
-        }
+        var excelBytes = await _attendanceService.ExportAttendanceReportAsync(filter);
+        var fileName = $"attendance_report_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+        
+        return File(excelBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+    }
+
+    /// <summary>
+    /// Экспорт детального отчета посещаемости для группы в Excel
+    /// </summary>
+    [HttpGet("export/group/{groupId}")]
+    public async Task<IActionResult> ExportGroupAttendanceReport(
+        Guid groupId,
+        [FromQuery] DateOnly fromDate,
+        [FromQuery] DateOnly toDate)
+    {
+        var groupReport = await _attendanceService.GetGroupAttendanceReportAsync(groupId, fromDate, toDate);
+        
+        // Получим название группы для файла - возьмем первый код группы или используем ID
+        var groupName = groupId.ToString()[..8]; // Первые 8 символов ID как название
+        
+        var excelBytes = await _attendanceService.ExportGroupReportToExcelAsync(groupReport, groupName, fromDate, toDate);
+        var fileName = $"group_{groupName}_attendance_{fromDate:yyyyMMdd}_{toDate:yyyyMMdd}.xlsx";
+        
+        return File(excelBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
     }
 }

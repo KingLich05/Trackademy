@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Trackademy.Application.Attendances.Models;
 using Trackademy.Application.Persistance;
+using Trackademy.Application.Services;
 using Trackademy.Application.Shared.Exception;
 using Trackademy.Application.Shared.Models;
 using Trackademy.Domain.Enums;
@@ -13,11 +14,13 @@ public class AttendanceService : IAttendanceService
 {
     private readonly TrackademyDbContext _context;
     private readonly IMapper _mapper;
+    private readonly IExcelExportService _excelExportService;
 
-    public AttendanceService(TrackademyDbContext context, IMapper mapper)
+    public AttendanceService(TrackademyDbContext context, IMapper mapper, IExcelExportService excelExportService)
     {
         _context = context;
         _mapper = mapper;
+        _excelExportService = excelExportService;
     }
 
     public async Task<bool> MarkAttendancesAsync(AttendanceBulkCreateModel model)
@@ -249,8 +252,36 @@ public class AttendanceService : IAttendanceService
 
     public async Task<byte[]> ExportAttendanceReportAsync(AttendanceExportFilterModel filter)
     {
-        // Для начала вернем простую реализацию, позже добавим Excel
-        throw new NotImplementedException("Экспорт в Excel будет реализован в следующей итерации");
+        // Создаем фильтр для поиска посещаемости
+        var attendanceFilter = new AttendanceFilterModel
+        {
+            OrganizationId = filter.OrganizationId,
+            GroupId = filter.GroupId,
+            SubjectId = filter.SubjectId,
+            FromDate = filter.FromDate,
+            ToDate = filter.ToDate,
+            Status = filter.Status,
+            PageNumber = 1,
+            PageSize = int.MaxValue // Получаем все записи
+        };
+
+        // Получаем данные посещаемости
+        var attendanceData = await GetAttendancesAsync(attendanceFilter);
+        
+        if (filter.StudentId.HasValue)
+        {
+            attendanceData.Items = attendanceData.Items
+                .Where(a => a.StudentId == filter.StudentId.Value)
+                .ToList();
+        }
+
+        // Экспортируем в Excel
+        return await _excelExportService.ExportAttendanceReportAsync(attendanceData.Items, filter);
+    }
+
+    public async Task<byte[]> ExportGroupReportToExcelAsync(List<AttendanceReportDto> groupReport, string groupName, DateOnly fromDate, DateOnly toDate)
+    {
+        return await _excelExportService.ExportGroupAttendanceReportAsync(groupReport, groupName, fromDate, toDate);
     }
 
     private static string GetStatusName(AttendanceStatus status)

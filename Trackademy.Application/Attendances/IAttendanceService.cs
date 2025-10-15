@@ -39,4 +39,9 @@ public interface IAttendanceService
     /// Экспорт отчета посещаемости в Excel
     /// </summary>
     Task<byte[]> ExportAttendanceReportAsync(AttendanceExportFilterModel filter);
+    
+    /// <summary>
+    /// Экспорт детального отчета по группе в Excel
+    /// </summary>
+    Task<byte[]> ExportGroupReportToExcelAsync(List<AttendanceReportDto> groupReport, string groupName, DateOnly fromDate, DateOnly toDate);
 }
