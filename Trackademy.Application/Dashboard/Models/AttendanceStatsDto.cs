@@ -28,13 +28,13 @@ public class AttendanceStatsDto
     /// <summary>
     /// Посещаемость по группам
     /// </summary>
-    public List<GroupAttendanceDto> GroupAttendanceRates { get; set; } = new();
+    public List<GroupAttendanceSummaryDto> GroupAttendanceRates { get; set; } = new();
 }
 
 /// <summary>
-/// Посещаемость отдельной группы
+/// Краткая информация о посещаемости группы
 /// </summary>
-public class GroupAttendanceDto
+public class GroupAttendanceSummaryDto
 {
     public Guid GroupId { get; set; }
     public string GroupName { get; set; } = string.Empty;

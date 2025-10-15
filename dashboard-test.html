@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard API Тестирование</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .endpoint { margin: 10px 0; padding: 10px; border: 1px solid #ccc; border-radius: 5px; }
+        .response { background: #f5f5f5; padding: 10px; margin-top: 10px; white-space: pre-wrap; font-family: monospace; max-height: 300px; overflow-y: auto; }
+        button { padding: 8px 15px; margin: 5px; cursor: pointer; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+    </style>
+</head>
+<body>
+    <h1>🚀 Dashboard API Тестирование</h1>
+    
+    <div class="endpoint">
+        <h3>1. Общая статистика дашборда</h3>
+        <button onclick="testEndpoint('/api/Dashboard/overview', 'overview-result')">GET /api/Dashboard/overview</button>
+        <div id="overview-result" class="response"></div>
+    </div>
+
+    <div class="endpoint">
+        <h3>2. Статистика студентов</h3>
+        <button onclick="testEndpoint('/api/Dashboard/students', 'students-result')">GET /api/Dashboard/students</button>
+        <div id="students-result" class="response"></div>
+    </div>
+
+    <div class="endpoint">
+        <h3>3. Статистика групп</h3>
+        <button onclick="testEndpoint('/api/Dashboard/groups', 'groups-result')">GET /api/Dashboard/groups</button>
+        <div id="groups-result" class="response"></div>
+    </div>
+
+    <div class="endpoint">
+        <h3>4. Уроки на сегодня</h3>
+        <button onclick="testEndpoint('/api/Dashboard/lessons-today', 'lessons-result')">GET /api/Dashboard/lessons-today</button>
+        <div id="lessons-result" class="response"></div>
+    </div>
+
+    <div class="endpoint">
+        <h3>5. Статистика посещаемости</h3>
+        <button onclick="testEndpoint('/api/Dashboard/attendance', 'attendance-result')">GET /api/Dashboard/attendance</button>
+        <div id="attendance-result" class="response"></div>
+    </div>
+
+    <div class="endpoint">
+        <h3>6. Группы с низкой успеваемостью</h3>
+        <button onclick="testEndpoint('/api/Dashboard/low-performance-groups', 'low-groups-result')">GET /api/Dashboard/low-performance-groups</button>
+        <div id="low-groups-result" class="response"></div>
+    </div>
+
+    <div class="endpoint">
+        <h3>7. Неоплатившие студенты</h3>
+        <button onclick="testEndpoint('/api/Dashboard/unpaid-students', 'unpaid-result')">GET /api/Dashboard/unpaid-students</button>
+        <div id="unpaid-result" class="response"></div>
+    </div>
+
+    <div class="endpoint">
+        <h3>8. Пробные студенты</h3>
+        <button onclick="testEndpoint('/api/Dashboard/trial-students', 'trial-result')">GET /api/Dashboard/trial-students</button>
+        <div id="trial-result" class="response"></div>
+    </div>
+
+    <div class="endpoint">
+        <h3>9. Топ преподаватели</h3>
+        <button onclick="testEndpoint('/api/Dashboard/top-teachers?limit=5', 'teachers-result')">GET /api/Dashboard/top-teachers</button>
+        <div id="teachers-result" class="response"></div>
+    </div>
+
+    <div class="endpoint">
+        <h3>10. Последнее обновление расписания</h3>
+        <button onclick="testEndpoint('/api/Dashboard/latest-schedule-update', 'schedule-result')">GET /api/Dashboard/latest-schedule-update</button>
+        <div id="schedule-result" class="response"></div>
+    </div>
+
+    <script>
+        const BASE_URL = 'https://localhost:7188'; // Замените на правильный URL если нужно
+
+        async function testEndpoint(endpoint, resultId) {
+            const resultDiv = document.getElementById(resultId);
+            resultDiv.innerHTML = 'Loading...';
+            resultDiv.className = 'response';
+
+            try {
+                const response = await fetch(BASE_URL + endpoint, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.className = 'response success';
+                    resultDiv.innerHTML = `✅ Status: ${response.status}\n\n${JSON.stringify(data, null, 2)}`;
+                } else {
+                    resultDiv.className = 'response error';
+                    resultDiv.innerHTML = `❌ Status: ${response.status}\n\n${JSON.stringify(data, null, 2)}`;
+                }
+            } catch (error) {
+                resultDiv.className = 'response error';
+                resultDiv.innerHTML = `❌ Network Error: ${error.message}`;
+            }
+        }
+
+        // Тест всех endpoints сразу
+        async function testAllEndpoints() {
+            const endpoints = [
+                { url: '/api/Dashboard/overview', id: 'overview-result' },
+                { url: '/api/Dashboard/students', id: 'students-result' },
+                { url: '/api/Dashboard/groups', id: 'groups-result' },
+                { url: '/api/Dashboard/lessons-today', id: 'lessons-result' },
+                { url: '/api/Dashboard/attendance', id: 'attendance-result' },
+                { url: '/api/Dashboard/low-performance-groups', id: 'low-groups-result' },
+                { url: '/api/Dashboard/unpaid-students', id: 'unpaid-result' },
+                { url: '/api/Dashboard/trial-students', id: 'trial-result' },
+                { url: '/api/Dashboard/top-teachers?limit=5', id: 'teachers-result' },
+                { url: '/api/Dashboard/latest-schedule-update', id: 'schedule-result' }
+            ];
+
+            for (const endpoint of endpoints) {
+                await testEndpoint(endpoint.url, endpoint.id);
+                await new Promise(resolve => setTimeout(resolve, 1000)); // Пауза между запросами
+            }
+        }
+    </script>
+
+    <div style="margin-top: 20px; padding: 20px; background: #e9ecef; border-radius: 5px;">
+        <h3>Автоматическое тестирование</h3>
+        <button onclick="testAllEndpoints()" style="background: #007bff; color: white; border: none; padding: 10px 20px;">
+            🔄 Тестировать все endpoints
+        </button>
+    </div>
+
+    <div style="margin-top: 20px; padding: 15px; background: #fff3cd; border-radius: 5px;">
+        <h4>📝 Инструкции:</h4>
+        <ol>
+            <li>Убедитесь, что сервер запущен (dotnet run --project Trackademy.Api)</li>
+            <li>Проверьте правильность BASE_URL в коде</li>
+            <li>Нажмите на кнопки для тестирования отдельных endpoints</li>
+            <li>Используйте "Тестировать все endpoints" для полной проверки</li>
+        </ol>
+    </div>
+</body>
+</html>

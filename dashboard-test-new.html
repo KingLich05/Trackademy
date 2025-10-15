@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>✅ Новый Dashboard API - Тестирование</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 20px; 
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+        }
+        .api-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 2px solid #3498db;
+            border-radius: 8px;
+            background: #f8f9fa;
+        }
+        .api-section h3 {
+            color: #2980b9;
+            margin-top: 0;
+        }
+        .endpoint-test {
+            margin: 15px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: white;
+        }
+        .response {
+            background: #f5f5f5;
+            padding: 15px;
+            margin-top: 10px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            max-height: 400px;
+            overflow-y: auto;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #2980b9;
+        }
+        .success { 
+            background-color: #d4edda; 
+            border-color: #c3e6cb; 
+            color: #155724;
+        }
+        .error { 
+            background-color: #f8d7da; 
+            border-color: #f5c6cb; 
+            color: #721c24;
+        }
+        .status {
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin-left: 10px;
+            font-weight: bold;
+        }
+        .legacy-note {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 15px;
+            border-radius: 5px;
+            color: #856404;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>✅ Новый Dashboard API - Очищенная архитектура</h1>
+            <p>Проверяем новые упрощенные endpoints после удаления устаревшего кода</p>
+        </div>
+
+        <!-- Новые основные API -->
+        <div class="api-section">
+            <h3>🎯 Основные API Endpoints (Новые)</h3>
+            
+            <div class="endpoint-test">
+                <h4>📊 Краткая сводка дашборда</h4>
+                <p><strong>GET</strong> /api/Dashboard/summary</p>
+                <p>Основные метрики в одном компактном ответе</p>
+                <button onclick="testEndpoint('/api/Dashboard/summary', 'summary-result')">Тестировать Summary API</button>
+                <div id="summary-result" class="response"></div>
+            </div>
+
+            <div class="endpoint-test">
+                <h4>📈 Детальный отчет дашборда</h4>
+                <p><strong>GET</strong> /api/Dashboard/detailed</p>
+                <p>Полный детальный отчет со всеми данными</p>
+                <button onclick="testEndpoint('/api/Dashboard/detailed', 'detailed-result')">Тестировать Detailed API</button>
+                <div id="detailed-result" class="response"></div>
+            </div>
+        </div>
+
+        <!-- Тесты с фильтрами -->
+        <div class="api-section">
+            <h3>🔍 Тесты с фильтрами</h3>
+            
+            <div class="endpoint-test">
+                <h4>Summary с организацией</h4>
+                <button onclick="testEndpoint('/api/Dashboard/summary?organizationId=123e4567-e89b-12d3-a456-426614174000', 'summary-org-result')">
+                    Summary + OrganizationId
+                </button>
+                <div id="summary-org-result" class="response"></div>
+            </div>
+
+            <div class="endpoint-test">
+                <h4>Detailed с фильтрами даты</h4>
+                <button onclick="testEndpoint('/api/Dashboard/detailed?organizationId=123e4567-e89b-12d3-a456-426614174000&startDate=2024-01-01&endDate=2024-01-31', 'detailed-filter-result')">
+                    Detailed + Фильтры
+                </button>
+                <div id="detailed-filter-result" class="response"></div>
+            </div>
+        </div>
+
+        <!-- Информация о статусе -->
+        <div class="legacy-note">
+            <h4>✅ Статус очистки кода</h4>
+            <ul>
+                <li>✅ <strong>DashboardController</strong> - содержит только 2 основных endpoint</li>
+                <li>✅ <strong>IDashboardService</strong> - упрощен до 2 методов</li>
+                <li>✅ <strong>DashboardService</strong> - пересоздан с чистой реализацией</li>
+                <li>✅ <strong>Проект компилируется</strong> - все ошибки исправлены</li>
+                <li>✅ <strong>Устаревший код удален</strong> - нет больше ненужных endpoints</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        const BASE_URL = 'https://localhost:7244'; // Измените на ваш URL
+
+        async function testEndpoint(endpoint, resultId) {
+            const resultDiv = document.getElementById(resultId);
+            resultDiv.innerHTML = '⏳ Загрузка...';
+            resultDiv.className = 'response';
+
+            try {
+                console.log(`Тестируем: ${BASE_URL}${endpoint}`);
+                
+                const response = await fetch(`${BASE_URL}${endpoint}`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const statusCode = response.status;
+                const responseText = await response.text();
+
+                let result = `Status: ${statusCode}\n`;
+                result += `Headers: ${JSON.stringify([...response.headers.entries()], null, 2)}\n\n`;
+
+                if (response.ok) {
+                    try {
+                        const jsonData = JSON.parse(responseText);
+                        result += `Response:\n${JSON.stringify(jsonData, null, 2)}`;
+                        resultDiv.className = 'response success';
+                    } catch (e) {
+                        result += `Response (text):\n${responseText}`;
+                        resultDiv.className = 'response success';
+                    }
+                } else {
+                    result += `Error:\n${responseText}`;
+                    resultDiv.className = 'response error';
+                }
+
+                resultDiv.innerHTML = result;
+
+            } catch (error) {
+                console.error('Fetch error:', error);
+                resultDiv.innerHTML = `❌ Network Error:\n${error.message}\n\nЗапустите API сервер и проверьте URL: ${BASE_URL}`;
+                resultDiv.className = 'response error';
+            }
+        }
+
+        // Информация о системе
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('🚀 Dashboard API Test Page загружена');
+            console.log('📋 Тестируем новую упрощенную архитектуру Dashboard API');
+        });
+    </script>
+</body>
+</html>

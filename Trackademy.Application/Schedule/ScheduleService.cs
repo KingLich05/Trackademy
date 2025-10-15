@@ -18,10 +18,28 @@ public class ScheduleService(
     {
         var schedule = await dbContext.Schedules
             .Where(x => x.Id == id)
-            .ProjectTo<ScheduleViewModel>(mapper.ConfigurationProvider)
+            .Include(x => x.Teacher)
+            .Include(x => x.Room)
+            .Include(x => x.Group)
+                .ThenInclude(x => x.Subject)
             .FirstOrDefaultAsync();
 
-        return schedule;
+        if (schedule == null)
+            return null;
+
+        // Загружаем уроки отдельно, так как у Schedule нет прямой связи с Lesson
+        var lessons = await dbContext.Lessons
+            .Where(l => l.ScheduleId == schedule.Id)
+            .Include(l => l.Group)
+                .ThenInclude(g => g.Subject)
+            .Include(l => l.Teacher)
+            .Include(l => l.Room)
+            .ToListAsync();
+
+        var result = mapper.Map<ScheduleViewModel>(schedule);
+        result.Lessons = mapper.Map<List<LessonViewModel>>(lessons);
+
+        return result;
     }
 
     public async Task<List<ScheduleViewModel>> GetAllSchedulesAsync(ScheduleRequest scheduleRequest)
