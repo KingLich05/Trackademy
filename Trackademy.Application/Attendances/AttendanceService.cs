@@ -103,6 +103,7 @@ public class AttendanceService : IAttendanceService
     public async Task<PagedResult<AttendanceDto>> GetAttendancesAsync(AttendanceFilterModel filter)
     {
         var query = _context.Attendances
+            .AsNoTracking()
             .Where(a => a.Student.OrganizationId == filter.OrganizationId)
             .Include(a => a.Student)
             .Include(a => a.Lesson)
@@ -252,7 +253,6 @@ public class AttendanceService : IAttendanceService
 
     public async Task<byte[]> ExportAttendanceReportAsync(AttendanceExportFilterModel filter)
     {
-        // Создаем фильтр для поиска посещаемости
         var attendanceFilter = new AttendanceFilterModel
         {
             OrganizationId = filter.OrganizationId,
@@ -262,10 +262,9 @@ public class AttendanceService : IAttendanceService
             ToDate = filter.ToDate,
             Status = filter.Status,
             PageNumber = 1,
-            PageSize = int.MaxValue // Получаем все записи
+            PageSize = int.MaxValue
         };
 
-        // Получаем данные посещаемости
         var attendanceData = await GetAttendancesAsync(attendanceFilter);
         
         if (filter.StudentId.HasValue)
