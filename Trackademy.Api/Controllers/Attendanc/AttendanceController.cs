@@ -80,10 +80,24 @@ public class AttendanceController : ControllerBase
     [HttpGet("report/group/{groupId}")]
     public async Task<IActionResult> GetGroupAttendanceReport(
         Guid groupId,
-        [FromQuery] DateOnly fromDate,
-        [FromQuery] DateOnly toDate)
+        [FromQuery] DateOnly? fromDate = null,
+        [FromQuery] DateOnly? toDate = null)
     {
-        var result = await _attendanceService.GetGroupAttendanceReportAsync(groupId, fromDate, toDate);
+        // Устанавливаем значения по умолчанию если даты не переданы
+        var actualFromDate = fromDate ?? DateOnly.FromDateTime(DateTime.Today.AddDays(-30)); // Последние 30 дней
+        var actualToDate = toDate ?? DateOnly.FromDateTime(DateTime.Today);
+
+        // Валидация: fromDate не должна быть больше toDate
+        if (actualFromDate > actualToDate)
+        {
+            return BadRequest(new { 
+                error = "Дата начала не может быть больше даты окончания",
+                fromDate = actualFromDate,
+                toDate = actualToDate
+            });
+        }
+
+        var result = await _attendanceService.GetGroupAttendanceReportAsync(groupId, actualFromDate, actualToDate);
         return Ok(result);
     }
 
@@ -105,16 +119,40 @@ public class AttendanceController : ControllerBase
     [HttpGet("export/group/{groupId}")]
     public async Task<IActionResult> ExportGroupAttendanceReport(
         Guid groupId,
-        [FromQuery] DateOnly fromDate,
-        [FromQuery] DateOnly toDate)
+        [FromQuery] DateOnly? fromDate = null,
+        [FromQuery] DateOnly? toDate = null)
     {
-        var groupReport = await _attendanceService.GetGroupAttendanceReportAsync(groupId, fromDate, toDate);
+        // Устанавливаем значения по умолчанию если даты не переданы
+        var actualFromDate = fromDate ?? DateOnly.FromDateTime(DateTime.Today.AddDays(-30)); // Последние 30 дней
+        var actualToDate = toDate ?? DateOnly.FromDateTime(DateTime.Today);
+
+        // Валидация: fromDate не должна быть больше toDate
+        if (actualFromDate > actualToDate)
+        {
+            return BadRequest(new { 
+                error = "Дата начала не может быть больше даты окончания",
+                fromDate = actualFromDate,
+                toDate = actualToDate
+            });
+        }
+
+        // Валидация: период не должен превышать 1 год
+        if (actualToDate.DayNumber - actualFromDate.DayNumber > 365)
+        {
+            return BadRequest(new { 
+                error = "Период отчета не может превышать 365 дней",
+                fromDate = actualFromDate,
+                toDate = actualToDate
+            });
+        }
+
+        var groupReport = await _attendanceService.GetGroupAttendanceReportAsync(groupId, actualFromDate, actualToDate);
         
-        // Получим название группы для файла - возьмем первый код группы или используем ID
-        var groupName = groupId.ToString()[..8]; // Первые 8 символов ID как название
+        // Получим название группы для файла - возьмем первые 8 символов ID как название
+        var groupName = groupId.ToString()[..8]; 
         
-        var excelBytes = await _attendanceService.ExportGroupReportToExcelAsync(groupReport, groupName, fromDate, toDate);
-        var fileName = $"group_{groupName}_attendance_{fromDate:yyyyMMdd}_{toDate:yyyyMMdd}.xlsx";
+        var excelBytes = await _attendanceService.ExportGroupReportToExcelAsync(groupReport, groupName, actualFromDate, actualToDate);
+        var fileName = $"group_{groupName}_attendance_{actualFromDate:yyyyMMdd}_{actualToDate:yyyyMMdd}.xlsx";
         
         return File(excelBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
     }
