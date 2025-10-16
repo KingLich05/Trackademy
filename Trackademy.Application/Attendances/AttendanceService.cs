@@ -33,6 +33,9 @@ public class AttendanceService : IAttendanceService
         if (lesson == null)
             throw new ConflictException("Урок не найден");
 
+        // Используем текущую дату вместо передаваемой из модели
+        var currentDate = DateOnly.FromDateTime(DateTime.Today);
+
         var existingAttendances = await _context.Attendances
             .Where(a => a.LessonId == model.LessonId)
             .ToListAsync();
@@ -46,7 +49,7 @@ public class AttendanceService : IAttendanceService
             {
                 // Обновляем существующую запись
                 existing.Status = attendanceRecord.Status;
-                existing.Date = model.Date;
+                existing.Date = currentDate; // Проставляем текущую дату
             }
             else
             {
@@ -56,7 +59,7 @@ public class AttendanceService : IAttendanceService
                     Id = Guid.NewGuid(),
                     StudentId = attendanceRecord.StudentId,
                     LessonId = model.LessonId,
-                    Date = model.Date,
+                    Date = currentDate, // Проставляем текущую дату
                     Status = attendanceRecord.Status
                 };
 
@@ -191,7 +194,7 @@ public class AttendanceService : IAttendanceService
         var specialReasonLessons = attendances.Count(a => a.Status == AttendanceStatus.SpecialReason);
 
         var attendancePercentage = totalLessons > 0 
-            ? Math.Round((double)attendedLessons / totalLessons * 100, 2)
+            ? Math.Round((double)attendedLessons / totalLessons * 100, 0)
             : 0;
 
         return new AttendanceStatsDto

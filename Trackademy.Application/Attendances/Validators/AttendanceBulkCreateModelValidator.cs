@@ -11,9 +11,6 @@ public class AttendanceBulkCreateModelValidator : AbstractValidator<AttendanceBu
         RuleFor(x => x.LessonId)
             .NotEmpty().WithMessage("ID урока обязателен");
 
-        RuleFor(x => x.Date)
-            .NotEmpty().WithMessage("Дата обязательна");
-
         RuleFor(x => x.Attendances)
             .NotNull().WithMessage("Список посещаемости обязателен")
             .Must(list => list.Count > 0).WithMessage("Список посещаемости не может быть пустым");

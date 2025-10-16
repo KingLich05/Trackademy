@@ -5,7 +5,6 @@ namespace Trackademy.Application.Attendances.Models;
 public class AttendanceBulkCreateModel
 {
     public Guid LessonId { get; set; }
-    public DateOnly Date { get; set; }
     public List<AttendanceRecordModel> Attendances { get; set; } = new();
 }
 

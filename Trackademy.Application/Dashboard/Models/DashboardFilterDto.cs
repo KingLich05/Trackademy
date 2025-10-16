@@ -8,7 +8,7 @@ public class DashboardFilterDto
     /// <summary>
     /// ID организации для фильтрации
     /// </summary>
-    public Guid? OrganizationId { get; set; }
+    public Guid OrganizationId { get; set; }
     
     /// <summary>
     /// Дата начала периода для статистики

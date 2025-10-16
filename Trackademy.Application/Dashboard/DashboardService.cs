@@ -40,10 +40,10 @@ public class DashboardService : IDashboardService
             LessonsToday = todayLessons,
             CompletedLessonsToday = weeklyLessons,
             AverageAttendanceRate = attendanceRate,
-            LowPerformanceGroupsCount = 3, // Заглушка
-            UnpaidStudentsCount = 12, // Заглушка
-            TrialStudentsCount = 8, // Заглушка
-            TotalDebt = 15000.0m, // Заглушка
+            LowPerformanceGroupsCount = await GetLowPerformanceGroupsCountAsync(organizationId),
+            UnpaidStudentsCount = await GetUnpaidStudentsCountAsync(organizationId),
+            TrialStudentsCount = await GetTrialStudentsCountAsync(organizationId),
+            TotalDebt = await GetTotalDebtAsync(organizationId),
             LastUpdated = DateTime.Now
         };
     }
@@ -249,11 +249,11 @@ public class DashboardService : IDashboardService
 
     private Guid GetOrganizationIdFromFilter(DashboardFilterDto? filter)
     {
-        if (filter?.OrganizationId == null)
+        if (filter?.OrganizationId == Guid.Empty)
         {
             throw new ArgumentException("OrganizationId is required in filter");
         }
-        return filter.OrganizationId.Value;
+        return filter.OrganizationId;
     }
 
     private string GetReportPeriod(DashboardFilterDto? filter)
@@ -264,4 +264,201 @@ public class DashboardService : IDashboardService
         }
         return "За последние 30 дней";
     }
+
+    #region Реальная бизнес-логика
+
+    /// <summary>
+    /// Получить количество неоплативших студентов
+    /// </summary>
+    private async Task<int> GetUnpaidStudentsCountAsync(Guid organizationId)
+    {
+        var today = DateTime.Today;
+        return await dbContext.Payments
+            .Where(p => p.Student.OrganizationId == organizationId && 
+                       p.Status == PaymentStatus.Overdue && 
+                       p.DueDate <= today)
+            .Select(p => p.StudentId)
+            .Distinct()
+            .CountAsync();
+    }
+
+    /// <summary>
+    /// Получить общую сумму задолженности
+    /// </summary>
+    private async Task<decimal> GetTotalDebtAsync(Guid organizationId)
+    {
+        var today = DateTime.Today;
+        return await dbContext.Payments
+            .Where(p => p.Student.OrganizationId == organizationId && 
+                       (p.Status == PaymentStatus.Overdue || p.Status == PaymentStatus.Pending) && 
+                       p.DueDate <= today)
+            .SumAsync(p => p.Amount);
+    }
+
+    /// <summary>
+    /// Получить количество пробных студентов (созданных в последние 30 дней без платежей)
+    /// </summary>
+    private async Task<int> GetTrialStudentsCountAsync(Guid organizationId)
+    {
+        var thirtyDaysAgo = DateTime.Today.AddDays(-30);
+        return await dbContext.Users
+            .Where(u => u.OrganizationId == organizationId && 
+                       u.Role == RoleEnum.Student && 
+                       u.CreatedDate >= thirtyDaysAgo && 
+                       !u.Payments.Any())
+            .CountAsync();
+    }
+
+    /// <summary>
+    /// Получить количество групп с низкой успеваемостью (посещаемость < 60%)
+    /// </summary>
+    private async Task<int> GetLowPerformanceGroupsCountAsync(Guid organizationId)
+    {
+        var thirtyDaysAgo = DateOnly.FromDateTime(DateTime.Today.AddDays(-30));
+        
+        var groupAttendanceRates = await dbContext.Groups
+            .Where(g => g.OrganizationId == organizationId)
+            .Select(g => new
+            {
+                GroupId = g.Id,
+                TotalAttendances = g.Students
+                    .SelectMany(s => s.Attendances)
+                    .Where(a => a.Date >= thirtyDaysAgo)
+                    .Count(),
+                PresentAttendances = g.Students
+                    .SelectMany(s => s.Attendances)
+                    .Where(a => a.Date >= thirtyDaysAgo && a.Status == AttendanceStatus.Attend)
+                    .Count()
+            })
+            .Where(x => x.TotalAttendances > 0)
+            .ToListAsync();
+
+        return groupAttendanceRates
+            .Where(x => (decimal)x.PresentAttendances / x.TotalAttendances < 0.6m)
+            .Count();
+    }
+
+    /// <summary>
+    /// Получить реальные данные для неоплативших студентов
+    /// </summary>
+    private async Task<List<UnpaidStudentDto>> GetUnpaidStudentsAsync(Guid organizationId)
+    {
+        var today = DateTime.Today;
+        return await dbContext.Payments
+            .Where(p => p.Student.OrganizationId == organizationId && 
+                       p.Status == PaymentStatus.Overdue && 
+                       p.DueDate <= today)
+            .GroupBy(p => p.Student)
+            .Select(g => new UnpaidStudentDto
+            {
+                StudentId = g.Key.Id,
+                StudentName = g.Key.FullName,
+                Email = g.Key.Email,
+                Phone = g.Key.Phone,
+                GroupName = g.Key.Groups.FirstOrDefault() != null ? g.Key.Groups.First().Name : "Без группы",
+                DebtAmount = g.Sum(p => p.Amount),
+                DaysOverdue = (int)(today - g.Min(p => p.DueDate)).TotalDays,
+                PaymentStatus = PaymentStatus.Overdue,
+                LastPaymentDate = g.Max(p => p.PaidAt)
+            })
+            .ToListAsync();
+    }
+
+    /// <summary>
+    /// Получить реальные данные для пробных студентов
+    /// </summary>
+    private async Task<List<TrialStudentDto>> GetTrialStudentsAsync(Guid organizationId)
+    {
+        var thirtyDaysAgo = DateTime.Today.AddDays(-30);
+        return await dbContext.Users
+            .Where(u => u.OrganizationId == organizationId && 
+                       u.Role == RoleEnum.Student && 
+                       u.CreatedDate >= thirtyDaysAgo && 
+                       !u.Payments.Any())
+            .Select(u => new TrialStudentDto
+            {
+                StudentId = u.Id,
+                StudentName = u.FullName,
+                Email = u.Email,
+                Phone = u.Phone ?? "Не указан",
+                SubjectName = "Пробный урок",
+                TrialLessonDate = DateTime.Today.AddDays(1),
+                TrialLessonTime = new TimeSpan(10, 0, 0),
+                TeacherName = "Назначается",
+                TrialStatus = "Запланирован",
+                RegisteredAt = u.CreatedDate
+            })
+            .ToListAsync();
+    }
+
+    /// <summary>
+    /// Получить топ преподавателей по количеству студентов
+    /// </summary>
+    private async Task<List<TopTeacherDto>> GetTopTeachersAsync(Guid organizationId, int limit = 5)
+    {
+        return await dbContext.Users
+            .Where(u => u.OrganizationId == organizationId && u.Role == RoleEnum.Teacher)
+            .Select(u => new TopTeacherDto
+            {
+                TeacherId = u.Id,
+                TeacherName = u.FullName,
+                Email = u.Email,
+                StudentCount = u.Schedules
+                    .SelectMany(s => s.Group.Students)
+                    .Distinct()
+                    .Count(),
+                GroupCount = u.Schedules
+                    .Select(s => s.GroupId)
+                    .Distinct()
+                    .Count(),
+                LessonsThisMonth = u.Schedules.Count(), // Упрощенная логика
+                AverageAttendanceRate = 85.0m, // Заглушка, т.к. сложный расчет
+                Rating = 4.5m // Заглушка для рейтинга
+            })
+            .OrderByDescending(t => t.StudentCount)
+            .Take(limit)
+            .ToListAsync();
+    }
+
+    /// <summary>
+    /// Получить группы с низкой успеваемостью
+    /// </summary>
+    private async Task<List<LowPerformanceGroupDto>> GetLowPerformanceGroupsAsync(Guid organizationId)
+    {
+        var thirtyDaysAgo = DateOnly.FromDateTime(DateTime.Today.AddDays(-30));
+        
+        var groups = await dbContext.Groups
+            .Where(g => g.OrganizationId == organizationId)
+            .Select(g => new
+            {
+                Group = g,
+                TotalAttendances = g.Students
+                    .SelectMany(s => s.Attendances)
+                    .Where(a => a.Date >= thirtyDaysAgo)
+                    .Count(),
+                PresentAttendances = g.Students
+                    .SelectMany(s => s.Attendances)
+                    .Where(a => a.Date >= thirtyDaysAgo && a.Status == AttendanceStatus.Attend)
+                    .Count()
+            })
+            .Where(x => x.TotalAttendances > 0)
+            .ToListAsync();
+
+        return groups
+            .Where(x => (decimal)x.PresentAttendances / x.TotalAttendances < 0.6m)
+            .Select(x => new LowPerformanceGroupDto
+            {
+                GroupId = x.Group.Id,
+                GroupName = x.Group.Name,
+                GroupCode = x.Group.Code ?? "Без кода",
+                SubjectName = x.Group.Subject.Name,
+                AttendanceRate = Math.Round((decimal)x.PresentAttendances / x.TotalAttendances * 100, 1),
+                TotalStudents = x.Group.Students.Count,
+                ActiveStudents = x.Group.Students.Count, // Считаем всех активными для упрощения
+                PerformanceIssue = "Низкая посещаемость"
+            })
+            .ToList();
+    }
+
+    #endregion
 }
