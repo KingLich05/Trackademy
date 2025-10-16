@@ -155,6 +155,7 @@ public class LessonService(
     {
         var query = dbContext.Lessons
             .Include(x => x.Group)
+                .ThenInclude(g => g.Subject)
             .Include(x => x.Teacher)
             .Include(x => x.Room)
             .Where(x => x.ScheduleId == scheduleId);
@@ -178,6 +179,7 @@ public class LessonService(
     {
         var lesson = await dbContext.Lessons
             .Include(x => x.Group)
+                .ThenInclude(g => g.Subject)
             .Include(x => x.Teacher)
             .Include(x => x.Room)
             .FirstOrDefaultAsync(x => x.Id == id);
