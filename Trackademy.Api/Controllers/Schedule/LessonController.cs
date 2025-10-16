@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Trackademy.Application.Lessons;
 using Trackademy.Application.Lessons.Models;
+using Trackademy.Application.Shared.Exception;
 using Trackademy.Domain.Enums;
 
 namespace Trackademy.Api.Controllers.Schedule;
@@ -31,13 +32,21 @@ public class LessonController(ILessonService service) : ControllerBase
 
     [HttpPatch("{id}/status")]
     public async Task<IActionResult> UpdateLessonStatus(
-        Guid id)
-    { //TODO: здесь подумать каким образом именно будет меняться статус так как нужно будет в будущем еще проставлять attendance
-        var updated = await service.UpdateLessonStatusAsync(id, LessonStatus.Completed);
-        if (!updated)
-            return NotFound();
+        Guid id,
+        [FromBody] LessonStatusUpdateModel model)
+    {
+        try
+        {
+            var updated = await service.UpdateLessonStatusAsync(id, model.LessonStatus);
+            if (!updated)
+                return NotFound("Урок не найден");
 
-        return Ok();
+            return Ok();
+        }
+        catch (ConflictException ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     [HttpGet("by-schedule/{scheduleId}")]

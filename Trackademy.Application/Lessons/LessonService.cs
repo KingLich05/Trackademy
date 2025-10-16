@@ -131,6 +131,18 @@ public class LessonService(
         if (lesson == null)
             return false;
 
+        // Проверяем, что нельзя завершать уроки в будущем
+        if (newStatus == LessonStatus.Completed)
+        {
+            var timeZone = TimeZoneInfo.FindSystemTimeZoneById("Asia/Almaty");
+            var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, timeZone));
+            
+            if (lesson.Date > today)
+            {
+                throw new ConflictException("Нельзя завершить урок, который еще не прошел.");
+            }
+        }
+
         lesson.LessonStatus = newStatus;
         await dbContext.SaveChangesAsync();
         return true;
