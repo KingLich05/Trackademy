@@ -41,6 +41,27 @@ public class AttendanceService : IAttendanceService
             throw new ConflictException("Нельзя отмечать посещаемость для будущих уроков.");
         }
 
+        // Валидация: проверяем, что все пользователи являются студентами
+        var userIds = model.Attendances.Select(a => a.StudentId).ToList();
+        var users = await _context.Users
+            .Where(u => userIds.Contains(u.Id))
+            .ToListAsync();
+
+        var nonStudents = users.Where(u => u.Role != RoleEnum.Student).ToList();
+        if (nonStudents.Any())
+        {
+            var nonStudentNames = string.Join(", ", nonStudents.Select(u => u.FullName));
+            throw new ConflictException($"Нельзя отмечать посещаемость для учителей или других ролей: {nonStudentNames}");
+        }
+
+        // Проверяем, что все студенты принадлежат к группе урока
+        var groupStudentIds = lesson.Group.Students.Select(s => s.Id).ToHashSet();
+        var notInGroup = userIds.Where(id => !groupStudentIds.Contains(id)).ToList();
+        if (notInGroup.Any())
+        {
+            throw new ConflictException("Некоторые студенты не принадлежат к группе данного урока");
+        }
+
         var currentDate = DateOnly.FromDateTime(DateTime.Today);
 
         var existingAttendances = await _context.Attendances
@@ -110,6 +131,13 @@ public class AttendanceService : IAttendanceService
 
     public async Task<PagedResult<AttendanceDto>> GetAttendancesAsync(AttendanceFilterModel filter)
     {
+        var organizationExists = await _context.Organizations
+            .AnyAsync(o => o.Id == filter.OrganizationId);
+        if (!organizationExists)
+        {
+            throw new ConflictException("Организация не найдена");
+        }
+
         var query = _context.Attendances
             .AsNoTracking()
             .Where(a => a.Student.OrganizationId == filter.OrganizationId)
@@ -259,6 +287,54 @@ public class AttendanceService : IAttendanceService
 
     public async Task<byte[]> ExportAttendanceReportAsync(AttendanceExportFilterModel filter)
     {
+        if (filter.FromDate > filter.ToDate)
+        {
+            throw new ConflictException("Дата начала не может быть больше даты окончания");
+        }
+
+        // Валидация организации (обязательное поле)
+        var organizationExists = await _context.Organizations
+            .AnyAsync(o => o.Id == filter.OrganizationId);
+        if (!organizationExists)
+        {
+            throw new ConflictException("Организация не найдена");
+        }
+
+        // Валидация группы с проверкой принадлежности к организации
+        if (filter.GroupId.HasValue)
+        {
+            var groupExists = await _context.Groups
+                .AnyAsync(g => g.Id == filter.GroupId.Value && g.OrganizationId == filter.OrganizationId);
+            if (!groupExists)
+            {
+                throw new ConflictException("Группа не найдена в указанной организации");
+            }
+        }
+
+        // Валидация предмета с проверкой принадлежности к организации
+        if (filter.SubjectId.HasValue)
+        {
+            var subjectExists = await _context.Subjects
+                .AnyAsync(s => s.Id == filter.SubjectId.Value && s.OrganizationId == filter.OrganizationId);
+            if (!subjectExists)
+            {
+                throw new ConflictException("Предмет не найден в указанной организации");
+            }
+        }
+
+        // Валидация студента с проверкой принадлежности к организации
+        if (filter.StudentId.HasValue)
+        {
+            var studentExists = await _context.Users
+                .AnyAsync(u => u.Id == filter.StudentId.Value && 
+                             u.Role == RoleEnum.Student && 
+                             u.OrganizationId == filter.OrganizationId);
+            if (!studentExists)
+            {
+                throw new ConflictException("Студент не найден в указанной организации");
+            }
+        }
+
         var attendanceFilter = new AttendanceFilterModel
         {
             OrganizationId = filter.OrganizationId,
@@ -278,6 +354,11 @@ public class AttendanceService : IAttendanceService
             attendanceData.Items = attendanceData.Items
                 .Where(a => a.StudentId == filter.StudentId.Value)
                 .ToList();
+        }
+
+        if (!attendanceData.Items.Any())
+        {
+            throw new ConflictException("Нет данных для экспорта за указанный период с выбранными фильтрами");
         }
 
         return await _excelExportService.ExportAttendanceReportAsync(attendanceData.Items, filter);

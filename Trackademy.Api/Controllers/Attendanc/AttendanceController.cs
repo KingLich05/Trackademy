@@ -65,8 +65,15 @@ public class AttendanceController : ControllerBase
     [HttpPost("get-all-attendances")]
     public async Task<IActionResult> GetAttendances([FromBody] AttendanceFilterModel filter)
     {
-        var result = await _attendanceService.GetAttendancesAsync(filter);
-        return Ok(result);
+        try
+        {
+            var result = await _attendanceService.GetAttendancesAsync(filter);
+            return Ok(result);
+        }
+        catch (ConflictException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     /// <summary>
@@ -113,9 +120,16 @@ public class AttendanceController : ControllerBase
     [HttpPost("export")]
     public async Task<IActionResult> ExportAttendanceReport([FromBody] AttendanceExportFilterModel filter)
     {
-        var excelBytes = await _attendanceService.ExportAttendanceReportAsync(filter);
-        var fileName = $"attendance_report_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
-        
-        return File(excelBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+        try
+        {
+            var excelBytes = await _attendanceService.ExportAttendanceReportAsync(filter);
+            var fileName = $"attendance_report_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+            
+            return File(excelBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+        }
+        catch (ConflictException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 }

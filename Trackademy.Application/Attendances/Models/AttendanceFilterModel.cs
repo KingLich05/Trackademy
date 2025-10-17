@@ -4,7 +4,7 @@ namespace Trackademy.Application.Attendances.Models;
 
 public class AttendanceFilterModel
 {
-    public Guid? OrganizationId { get; set; }
+    public Guid OrganizationId { get; set; }
     public string? StudentSearch { get; set; }
     public Guid? GroupId { get; set; }
     public Guid? SubjectId { get; set; }

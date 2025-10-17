@@ -7,6 +7,9 @@ public class AttendanceFilterModelValidator : AbstractValidator<AttendanceFilter
 {
     public AttendanceFilterModelValidator()
     {
+        RuleFor(x => x.OrganizationId)
+            .NotEmpty().WithMessage("Организация обязательна");
+
         RuleFor(x => x.PageNumber)
             .GreaterThan(0).WithMessage("Номер страницы должен быть больше 0");
 
