@@ -27,7 +27,6 @@ public class ScheduleService(
         if (schedule == null)
             return null;
 
-        // Загружаем уроки отдельно, так как у Schedule нет прямой связи с Lesson
         var lessons = await dbContext.Lessons
             .Where(l => l.ScheduleId == schedule.Id)
             .Include(l => l.Group)

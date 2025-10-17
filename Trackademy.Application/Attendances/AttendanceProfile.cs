@@ -12,6 +12,7 @@ public class AttendanceProfile : Profile
         CreateMap<Attendance, AttendanceDto>()
             .ForMember(dest => dest.StudentName, opt => opt.MapFrom(src => src.Student.FullName))
             .ForMember(dest => dest.StudentLogin, opt => opt.MapFrom(src => src.Student.Login))
+            .ForMember(dest => dest.PlannedLessonDate, opt => opt.MapFrom(src => src.Lesson.Date))  // Запланированная дата урока
             .ForMember(dest => dest.StatusName, opt => opt.MapFrom(src => GetStatusName(src.Status)))
             .ForMember(dest => dest.SubjectName, opt => opt.MapFrom(src => src.Lesson.Group.Subject.Name))
             .ForMember(dest => dest.GroupName, opt => opt.MapFrom(src => src.Lesson.Group.Name))

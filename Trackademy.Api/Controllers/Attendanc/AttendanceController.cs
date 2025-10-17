@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Trackademy.Application.Attendances;
 using Trackademy.Application.Attendances.Models;
+using Trackademy.Application.Shared.Exception;
 
 namespace Trackademy.Api.Controllers.Attendanc;
 
@@ -21,8 +22,15 @@ public class AttendanceController : ControllerBase
     [HttpPost("mark-bulk")]
     public async Task<IActionResult> MarkAttendancesBulk([FromBody] AttendanceBulkCreateModel model)
     {
-        var result = await _attendanceService.MarkAttendancesAsync(model);
-        return Ok(new { success = result });
+        try
+        {
+            var result = await _attendanceService.MarkAttendancesAsync(model);
+            return Ok(new { success = result });
+        }
+        catch (ConflictException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     /// <summary>
@@ -83,11 +91,9 @@ public class AttendanceController : ControllerBase
         [FromQuery] DateOnly? fromDate = null,
         [FromQuery] DateOnly? toDate = null)
     {
-        // Устанавливаем значения по умолчанию если даты не переданы
         var actualFromDate = fromDate ?? DateOnly.FromDateTime(DateTime.Today.AddDays(-30)); // Последние 30 дней
         var actualToDate = toDate ?? DateOnly.FromDateTime(DateTime.Today);
 
-        // Валидация: fromDate не должна быть больше toDate
         if (actualFromDate > actualToDate)
         {
             return BadRequest(new { 
@@ -122,11 +128,9 @@ public class AttendanceController : ControllerBase
         [FromQuery] DateOnly? fromDate = null,
         [FromQuery] DateOnly? toDate = null)
     {
-        // Устанавливаем значения по умолчанию если даты не переданы
         var actualFromDate = fromDate ?? DateOnly.FromDateTime(DateTime.Today.AddDays(-30)); // Последние 30 дней
         var actualToDate = toDate ?? DateOnly.FromDateTime(DateTime.Today);
 
-        // Валидация: fromDate не должна быть больше toDate
         if (actualFromDate > actualToDate)
         {
             return BadRequest(new { 
@@ -136,7 +140,6 @@ public class AttendanceController : ControllerBase
             });
         }
 
-        // Валидация: период не должен превышать 1 год
         if (actualToDate.DayNumber - actualFromDate.DayNumber > 365)
         {
             return BadRequest(new { 
@@ -148,7 +151,6 @@ public class AttendanceController : ControllerBase
 
         var groupReport = await _attendanceService.GetGroupAttendanceReportAsync(groupId, actualFromDate, actualToDate);
         
-        // Получим название группы для файла - возьмем первые 8 символов ID как название
         var groupName = groupId.ToString()[..8]; 
         
         var excelBytes = await _attendanceService.ExportGroupReportToExcelAsync(groupReport, groupName, actualFromDate, actualToDate);

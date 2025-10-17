@@ -33,7 +33,14 @@ public class AttendanceService : IAttendanceService
         if (lesson == null)
             throw new ConflictException("Урок не найден");
 
-        // Используем текущую дату вместо передаваемой из модели
+        var timeZone = TimeZoneInfo.FindSystemTimeZoneById("Asia/Almaty");
+        var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, timeZone));
+        
+        if (lesson.Date > today)
+        {
+            throw new ConflictException("Нельзя отмечать посещаемость для будущих уроков.");
+        }
+
         var currentDate = DateOnly.FromDateTime(DateTime.Today);
 
         var existingAttendances = await _context.Attendances
@@ -47,19 +54,17 @@ public class AttendanceService : IAttendanceService
 
             if (existing != null)
             {
-                // Обновляем существующую запись
                 existing.Status = attendanceRecord.Status;
-                existing.Date = currentDate; // Проставляем текущую дату
+                existing.Date = currentDate;
             }
             else
             {
-                // Создаем новую запись
                 var attendance = new Attendance
                 {
                     Id = Guid.NewGuid(),
                     StudentId = attendanceRecord.StudentId,
                     LessonId = model.LessonId,
-                    Date = currentDate, // Проставляем текущую дату
+                    Date = currentDate,
                     Status = attendanceRecord.Status
                 };
 
@@ -148,10 +153,8 @@ public class AttendanceService : IAttendanceService
             query = query.Where(a => a.Date <= filter.ToDate.Value);
         }
 
-        // Получаем общее количество записей
         var totalCount = await query.CountAsync();
 
-        // Применяем пагинацию
         var items = await query
             .OrderByDescending(a => a.Date)
             .ThenBy(a => a.Student.FullName)
@@ -277,7 +280,6 @@ public class AttendanceService : IAttendanceService
                 .ToList();
         }
 
-        // Экспортируем в Excel
         return await _excelExportService.ExportAttendanceReportAsync(attendanceData.Items, filter);
     }
 

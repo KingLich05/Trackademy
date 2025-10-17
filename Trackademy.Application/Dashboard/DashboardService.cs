@@ -24,7 +24,6 @@ public class DashboardService : IDashboardService
     {
         var organizationId = GetOrganizationIdFromFilter(filter);
 
-        // Получаем базовые метрики
         var studentCounts = await GetBasicStudentCountsAsync(organizationId);
         var groupCounts = await GetBasicGroupCountsAsync(organizationId);
         var todayLessons = await GetTodayLessonsCountAsync(organizationId);
@@ -55,7 +54,6 @@ public class DashboardService : IDashboardService
     {
         var organizationId = GetOrganizationIdFromFilter(filter);
 
-        // Получаем детальные данные
         var studentStats = await GetDetailedStudentStatsAsync(organizationId);
         var groupStats = await GetDetailedGroupStatsAsync(organizationId);
         var lessonStats = await GetDetailedLessonStatsAsync(organizationId);
@@ -199,8 +197,8 @@ public class DashboardService : IDashboardService
         return new LessonStatsDto
         {
             LessonsToday = todayLessons,
-            CompletedLessonsToday = 89, // Заглушка
-            CancelledLessonsToday = 3, // Заглушка
+            CompletedLessonsToday = 89,
+            CancelledLessonsToday = 3,
             LessonsThisMonth = monthlyLessons
         };
     }
@@ -454,7 +452,7 @@ public class DashboardService : IDashboardService
                 SubjectName = x.Group.Subject.Name,
                 AttendanceRate = Math.Round((decimal)x.PresentAttendances / x.TotalAttendances * 100, 1),
                 TotalStudents = x.Group.Students.Count,
-                ActiveStudents = x.Group.Students.Count, // Считаем всех активными для упрощения
+                ActiveStudents = x.Group.Students.Count,
                 PerformanceIssue = "Низкая посещаемость"
             })
             .ToList();
