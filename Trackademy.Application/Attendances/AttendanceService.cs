@@ -283,11 +283,6 @@ public class AttendanceService : IAttendanceService
         return await _excelExportService.ExportAttendanceReportAsync(attendanceData.Items, filter);
     }
 
-    public async Task<byte[]> ExportGroupReportToExcelAsync(List<AttendanceReportDto> groupReport, string groupName, DateOnly fromDate, DateOnly toDate)
-    {
-        return await _excelExportService.ExportGroupAttendanceReportAsync(groupReport, groupName, fromDate, toDate);
-    }
-
     private static string GetStatusName(AttendanceStatus status)
     {
         return status switch

@@ -118,44 +118,4 @@ public class AttendanceController : ControllerBase
         
         return File(excelBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
     }
-
-    /// <summary>
-    /// Экспорт детального отчета посещаемости для группы в Excel
-    /// </summary>
-    [HttpGet("export/group/{groupId}")]
-    public async Task<IActionResult> ExportGroupAttendanceReport(
-        Guid groupId,
-        [FromQuery] DateOnly? fromDate = null,
-        [FromQuery] DateOnly? toDate = null)
-    {
-        var actualFromDate = fromDate ?? DateOnly.FromDateTime(DateTime.Today.AddDays(-30)); // Последние 30 дней
-        var actualToDate = toDate ?? DateOnly.FromDateTime(DateTime.Today);
-
-        if (actualFromDate > actualToDate)
-        {
-            return BadRequest(new { 
-                error = "Дата начала не может быть больше даты окончания",
-                fromDate = actualFromDate,
-                toDate = actualToDate
-            });
-        }
-
-        if (actualToDate.DayNumber - actualFromDate.DayNumber > 365)
-        {
-            return BadRequest(new { 
-                error = "Период отчета не может превышать 365 дней",
-                fromDate = actualFromDate,
-                toDate = actualToDate
-            });
-        }
-
-        var groupReport = await _attendanceService.GetGroupAttendanceReportAsync(groupId, actualFromDate, actualToDate);
-        
-        var groupName = groupId.ToString()[..8]; 
-        
-        var excelBytes = await _attendanceService.ExportGroupReportToExcelAsync(groupReport, groupName, actualFromDate, actualToDate);
-        var fileName = $"group_{groupName}_attendance_{actualFromDate:yyyyMMdd}_{actualToDate:yyyyMMdd}.xlsx";
-        
-        return File(excelBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
-    }
 }
