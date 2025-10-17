@@ -4,6 +4,8 @@ using Microsoft.EntityFrameworkCore;
 using Trackademy.Application.authenticator.Models;
 using Trackademy.Application.Persistance;
 using Trackademy.Application.Shared.Exception;
+using Trackademy.Application.Shared.Extensions;
+using Trackademy.Application.Shared.Models;
 using Trackademy.Application.Users.Interfaces;
 using Trackademy.Application.Users.Models;
 using Trackademy.Domain.Enums;
@@ -13,7 +15,7 @@ namespace Trackademy.Application.Users.Services;
 public class UserServices(TrackademyDbContext dbContext, IMapper mapper) :
     IUserServices
 {
-    public async Task<List<UserDto>> GetUsers(GetUserRequest getUserRequest)
+    public async Task<PagedResult<UserDto>> GetUsers(GetUserRequest getUserRequest)
     {
         var usersQuery = dbContext.Users
             .Where(x => x.Role != RoleEnum.Administrator && x.OrganizationId == getUserRequest.OrganizationId)
@@ -36,12 +38,12 @@ public class UserServices(TrackademyDbContext dbContext, IMapper mapper) :
                 x.Groups.Any(g => getUserRequest.GroupIds.Contains(g.Id)));
         }
 
-        var users = await usersQuery
+        var pagedUsers = await usersQuery
             .ProjectTo<UserDto>(mapper.ConfigurationProvider)
             .OrderBy(x => x.Name)
-            .ToListAsync();
+            .ToPagedResultAsync(getUserRequest);
 
-        return users;
+        return pagedUsers;
     }
 
     public async Task<UserByIdDto> GetById(Guid id)

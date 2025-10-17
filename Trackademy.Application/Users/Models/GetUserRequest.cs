@@ -1,8 +1,9 @@
-﻿using Trackademy.Domain.Enums;
+﻿using Trackademy.Application.Shared.Models;
+using Trackademy.Domain.Enums;
 
 namespace Trackademy.Application.Users.Models;
 
-public class GetUserRequest
+public class GetUserRequest : PagedRequest
 {
     public string? search {get;set;}
     

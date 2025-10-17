@@ -49,13 +49,10 @@ public class LessonController(ILessonService service) : ControllerBase
         }
     }
 
-    [HttpGet("by-schedule/{scheduleId}")]
-    public async Task<IActionResult> GetLessonsBySchedule(
-        Guid scheduleId,
-        [FromQuery] DateOnly? fromDate,
-        [FromQuery] DateOnly? toDate)
+    [HttpPost("by-schedule")]
+    public async Task<IActionResult> GetLessonsBySchedule([FromBody] GetLessonsByScheduleRequest request)
     {
-        var result = await service.GetLessonsByScheduleAsync(scheduleId, fromDate, toDate);
+        var result = await service.GetLessonsByScheduleAsync(request);
         return Ok(result);
     }
     

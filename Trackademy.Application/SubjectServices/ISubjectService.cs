@@ -7,5 +7,5 @@ namespace Trackademy.Application.SubjectServices;
 
 public interface ISubjectService : IBaseService<Subject, SubjectDto, SubjectAddModel,SubjectUpdateModel>
 {
-    Task<IEnumerable<SubjectDto>> GetAllAsync(RequestIdOrganization request);
+    Task<PagedResult<SubjectDto>> GetAllAsync(GetSubjectsRequest request);
 }

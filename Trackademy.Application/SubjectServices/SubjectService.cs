@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Trackademy.Application.Persistance;
 using Trackademy.Application.Shared.BaseCrud;
 using Trackademy.Application.Shared.Exception;
+using Trackademy.Application.Shared.Extensions;
 using Trackademy.Application.Shared.Models;
 using Trackademy.Application.SubjectServices.Models;
 using Trackademy.Domain.Users;
@@ -13,23 +14,21 @@ public class SubjectService :
     BaseService<Subject, SubjectDto, SubjectAddModel,SubjectUpdateModel>,
     ISubjectService
 {
-    private TrackademyDbContext _context;
-    private readonly IMapper _mapper;
-
     public SubjectService(TrackademyDbContext context, IMapper mapper)
         : base(context, mapper)
     {
-        _context = context;
-        _mapper = mapper;
     }
 
-    public async Task<IEnumerable<SubjectDto>> GetAllAsync(RequestIdOrganization request)
+    public async Task<PagedResult<SubjectDto>> GetAllAsync(GetSubjectsRequest request)
     {
-        var subjects = await _context.Subjects
-            .Where(x => x.OrganizationId == request.OrganizationId)
-            .ToListAsync();
+        var trackademyContext = (TrackademyDbContext)_context;
+        var query = trackademyContext.Subjects
+            .Where(x => x.OrganizationId == request.OrganizationId);
 
-        return _mapper.Map<IEnumerable<SubjectDto>>(subjects);
+        return await query.ToPagedResultAsync<Subject, SubjectDto>(
+            request.PageNumber,
+            request.PageSize,
+            _mapper);
     }
 
     public override async Task<Guid> CreateAsync(SubjectAddModel dto)
@@ -41,7 +40,8 @@ public class SubjectService :
 
         dto.Name = dto.Name.Trim();
 
-        var isExists = await _context.Subjects.AnyAsync(s =>
+        var trackademyContext = (TrackademyDbContext)_context;
+        var isExists = await trackademyContext.Subjects.AnyAsync(s =>
             s.OrganizationId == dto.OrganizationId &&
             s.Name.ToLower() == dto.Name.ToLower());
 
@@ -55,7 +55,8 @@ public class SubjectService :
 
     public override async Task<Guid> UpdateAsync(Guid id, SubjectUpdateModel dto)
     {
-        var entity = await _context.Subjects.FirstOrDefaultAsync(s => s.Id == id);
+        var trackademyContext = (TrackademyDbContext)_context;
+        var entity = await trackademyContext.Subjects.FirstOrDefaultAsync(s => s.Id == id);
 
         if (entity is null) return Guid.Empty;
 
@@ -68,7 +69,8 @@ public class SubjectService :
 
         if (!dto.Name.Equals(entity.Name, StringComparison.OrdinalIgnoreCase))
         {
-            var isExists = await _context.Subjects.AnyAsync(s =>
+            var trackademyContext2 = (TrackademyDbContext)_context;
+            var isExists = await trackademyContext2.Subjects.AnyAsync(s =>
                 s.OrganizationId == entity.OrganizationId &&
                 s.Name.ToLower() == dto.Name.ToLower() &&
                 s.Id != entity.Id);

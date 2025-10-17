@@ -4,6 +4,8 @@ using Trackademy.Application.Lessons.Models;
 using Trackademy.Application.Persistance;
 using Trackademy.Application.Schedule.Model;
 using Trackademy.Application.Shared.Exception;
+using Trackademy.Application.Shared.Extensions;
+using Trackademy.Application.Shared.Models;
 using Trackademy.Domain.Enums;
 using Trackademy.Domain.Users;
 
@@ -190,5 +192,32 @@ public class LessonService(
         }
 
         return mapper.Map<LessonViewModel>(lesson);
+    }
+
+    public async Task<PagedResult<LessonViewModel>> GetLessonsByScheduleAsync(GetLessonsByScheduleRequest request)
+    {
+        var query = dbContext.Lessons
+            .Include(x => x.Group)
+                .ThenInclude(g => g.Subject)
+            .Include(x => x.Teacher)
+            .Include(x => x.Room)
+            .Where(x => x.ScheduleId == request.ScheduleId);
+
+        if (request.FromDate.HasValue)
+        {
+            query = query.Where(x => x.Date >= request.FromDate.Value);
+        }
+
+        if (request.ToDate.HasValue)
+        {
+            query = query.Where(x => x.Date <= request.ToDate.Value);
+        }
+
+        var pagedLessons = await query
+            .OrderBy(x => x.Date)
+            .Select(lesson => mapper.Map<LessonViewModel>(lesson))
+            .ToPagedResultAsync(request);
+
+        return pagedLessons;
     }
 }

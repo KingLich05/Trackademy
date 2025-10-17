@@ -10,11 +10,10 @@ namespace Trackademy.Api.Controllers.SubjectDir;
 public class SubjectController(ISubjectService service) :
     BaseCrudController<Subject, SubjectDto, SubjectAddModel,SubjectUpdateModel>(service)
 {
-    [HttpGet("GetAllSubjects")]
-    public new async Task<IActionResult> GetAllSubjects(
-        [FromQuery] RequestIdOrganization request)
+    [HttpPost("GetAllSubjects")]
+    public async Task<IActionResult> GetAllSubjects([FromBody] GetSubjectsRequest request)
     {
-        var items = await service.GetAllAsync(request);
-        return Ok(items);
+        var result = await service.GetAllAsync(request);
+        return Ok(result);
     }
 }

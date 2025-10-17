@@ -5,6 +5,8 @@ using Microsoft.Extensions.Logging;
 using Trackademy.Application.Persistance;
 using Trackademy.Application.Schedule.Model;
 using Trackademy.Application.Shared.Exception;
+using Trackademy.Application.Shared.Extensions;
+using Trackademy.Application.Shared.Models;
 using Trackademy.Domain.Enums;
 
 namespace Trackademy.Application.Schedule;
@@ -41,7 +43,7 @@ public class ScheduleService(
         return result;
     }
 
-    public async Task<List<ScheduleViewModel>> GetAllSchedulesAsync(ScheduleRequest scheduleRequest)
+    public async Task<PagedResult<ScheduleViewModel>> GetAllSchedulesAsync(ScheduleRequest scheduleRequest)
     {
         var scheduleQuery = dbContext.Schedules
             .Where(x => x.OrganizationId == scheduleRequest.OrganizationId)
@@ -51,9 +53,14 @@ public class ScheduleService(
             .ThenInclude(x => x.Subject)
             .AsQueryable();
 
-        var schedule = await Filtration(scheduleRequest, scheduleQuery);
+        var filteredQuery = ApplyFilters(scheduleRequest, scheduleQuery);
+        
+        var pagedSchedules = await filteredQuery
+            .OrderBy(x => x.Group.Name)
+            .Select(schedule => mapper.Map<ScheduleViewModel>(schedule))
+            .ToPagedResultAsync(scheduleRequest);
 
-        return mapper.Map<List<ScheduleViewModel>>(schedule);
+        return pagedSchedules;
     }
 
     public async Task<bool> DeleteAsync(Guid id)
@@ -287,6 +294,33 @@ public class ScheduleService(
         }
 
         return await schedules.ToListAsync();
+    }
+
+    private IQueryable<Domain.Users.Schedule> ApplyFilters(
+        ScheduleRequest req,
+        IQueryable<Domain.Users.Schedule> schedules)
+    {
+        if (req.SubjectId.HasValue && req.SubjectId != Guid.Empty)
+        {
+            schedules = schedules.Where(x => x.Group.SubjectId == req.SubjectId);
+        }
+
+        if (req.RoomId.HasValue && req.RoomId != Guid.Empty)
+        {
+            schedules = schedules.Where(x => x.RoomId == req.RoomId);
+        }
+
+        if (req.TeacherId.HasValue && req.TeacherId != Guid.Empty)
+        {
+            schedules = schedules.Where(x => x.TeacherId == req.TeacherId);
+        }
+
+        if (req.GroupId.HasValue && req.GroupId != Guid.Empty)
+        {
+            schedules = schedules.Where(x => x.GroupId == req.GroupId);
+        }
+
+        return schedules;
     }
 
     private async Task<int> CreateLessonsAsync(Domain.Users.Schedule schedule, DateTime? overrideStartDate = null)

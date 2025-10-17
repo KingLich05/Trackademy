@@ -10,11 +10,10 @@ namespace Trackademy.Api.Controllers;
 public class RoomController(IRoomService service) :
     BaseCrudController<Room, RoomDto, RoomAddModel, RoomUpdateModel>(service)
 {
-    [HttpGet("GetAllRooms")]
-    public new async Task<IActionResult> GetAllRooms(
-        [FromQuery] RequestIdOrganization request)
+    [HttpPost("GetAllRooms")]
+    public async Task<IActionResult> GetAllRooms([FromBody] GetRoomsRequest request)
     {
-        var items = await service.GetAllAsync(request);
-        return Ok(items);
+        var result = await service.GetAllAsync(request);
+        return Ok(result);
     }
 }

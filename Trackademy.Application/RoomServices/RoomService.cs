@@ -4,6 +4,7 @@ using Trackademy.Application.Persistance;
 using Trackademy.Application.RoomServices.Models;
 using Trackademy.Application.Shared.BaseCrud;
 using Trackademy.Application.Shared.Exception;
+using Trackademy.Application.Shared.Extensions;
 using Trackademy.Application.Shared.Models;
 using Trackademy.Domain.Users;
 
@@ -13,22 +14,21 @@ public class RoomService :
     BaseService<Room, RoomDto, RoomAddModel, RoomUpdateModel>,
     IRoomService
 {
-    private TrackademyDbContext _context;
-    private readonly IMapper _mapper;
     public RoomService(TrackademyDbContext context, IMapper mapper) 
         : base(context, mapper)
     {
-        _context = context;
-        _mapper = mapper;
     }
 
-    public async Task<IEnumerable<RoomDto>> GetAllAsync(RequestIdOrganization request)
+    public async Task<PagedResult<RoomDto>> GetAllAsync(GetRoomsRequest request)
     {
-        var rooms = await _context.Rooms
-            .Where(x => x.OrganizationId == request.OrganizationId)
-            .ToListAsync();
-        
-        return _mapper.Map<IEnumerable<RoomDto>>(rooms);
+        var trackademyContext = (TrackademyDbContext)_context;
+        var query = trackademyContext.Rooms
+            .Where(x => x.OrganizationId == request.OrganizationId);
+
+        return await query.ToPagedResultAsync<Room, RoomDto>(
+            request.PageNumber,
+            request.PageSize,
+            _mapper);
     }
 
     public override async Task<Guid> CreateAsync(RoomAddModel dto)
@@ -38,7 +38,8 @@ public class RoomService :
             throw new ConflictException($"Кабинет не должен быть с нулевой вместимостью.");
         }
 
-        var isExists = await _context.Rooms.AnyAsync(r =>
+        var trackademyContext = (TrackademyDbContext)_context;
+        var isExists = await trackademyContext.Rooms.AnyAsync(r =>
             r.OrganizationId == dto.OrganizationId &&
             r.Name.ToLower() == dto.Name.ToLower());
 
@@ -52,7 +53,8 @@ public class RoomService :
 
     public override async Task<Guid> UpdateAsync(Guid id, RoomUpdateModel dto)
     {
-        var entity = await _context.Rooms.FirstOrDefaultAsync(r => r.Id == id);
+        var trackademyContext = (TrackademyDbContext)_context;
+        var entity = await trackademyContext.Rooms.FirstOrDefaultAsync(r => r.Id == id);
         if (entity is null)
             return Guid.Empty;
 
@@ -64,7 +66,8 @@ public class RoomService :
         if (!string.IsNullOrWhiteSpace(dto.Name) &&
             !dto.Name.Equals(entity.Name, StringComparison.OrdinalIgnoreCase))
         {
-            var isExists = await _context.Rooms.AnyAsync(r =>
+            var trackademyContext2 = (TrackademyDbContext)_context;
+            var isExists = await trackademyContext2.Rooms.AnyAsync(r =>
                 r.OrganizationId == entity.OrganizationId &&
                 r.Name.ToLower() == dto.Name.ToLower() &&
                 r.Id != entity.Id);

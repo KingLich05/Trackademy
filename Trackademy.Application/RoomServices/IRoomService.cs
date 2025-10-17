@@ -7,5 +7,5 @@ namespace Trackademy.Application.RoomServices;
 
 public interface IRoomService : IBaseService<Room, RoomDto, RoomAddModel, RoomUpdateModel>
 {
-    Task<IEnumerable<RoomDto>> GetAllAsync(RequestIdOrganization request);
+    Task<PagedResult<RoomDto>> GetAllAsync(GetRoomsRequest request);
 }

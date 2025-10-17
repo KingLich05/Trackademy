@@ -4,6 +4,8 @@ using Trackademy.Application.GroupServices.Models;
 using Trackademy.Application.Persistance;
 using Trackademy.Application.Shared.BaseCrud;
 using Trackademy.Application.Shared.Exception;
+using Trackademy.Application.Shared.Extensions;
+using Trackademy.Application.Shared.Models;
 using Trackademy.Domain.Users;
 
 namespace Trackademy.Application.GroupServices;
@@ -127,6 +129,21 @@ public class GroupService:
         await _context.Groups.AddAsync(group);
         await _context.SaveChangesAsync();
         return group.Id;
+    }
+
+    public async Task<PagedResult<GroupsDto>> GetAllAsync(GetGroupsRequest request)
+    {
+        var query = _context.Groups
+            .Include(x => x.Subject)
+            .Include(x => x.Students)
+            .Where(x => x.OrganizationId == request.OrganizationId);
+
+        var pagedGroups = await query
+            .OrderBy(x => x.Name)
+            .Select(group => _mapper.Map<GroupsDto>(group))
+            .ToPagedResultAsync(request);
+
+        return pagedGroups;
     }
 
     private static string GenerateCode()

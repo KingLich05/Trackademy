@@ -2,8 +2,10 @@
 
 namespace Trackademy.Application.Schedule.Model;
 
-public class ScheduleRequest : RequestIdOrganization
+public class ScheduleRequest : PagedRequest
 {
+    public Guid OrganizationId { get; set; }
+    
     public Guid? GroupId { get; set; }
 
     public Guid? TeacherId { get; set; }

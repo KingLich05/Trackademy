@@ -9,11 +9,10 @@ namespace Trackademy.Api.Controllers.Group;
 public class GroupController(IGroupService service) :
     BaseCrudController<Groups, GroupsDto, GroupsAddModel, GroupsUpdateModel>(service)
 {
-    [HttpGet("get-groups")]
-    public async Task<IActionResult> GetGroups(
-        [FromQuery] Guid organizationId)
+    [HttpPost("get-groups")]
+    public async Task<IActionResult> GetGroups([FromBody] GetGroupsRequest request)
     {
-        var groups = await service.GetAllAsync(organizationId);
+        var groups = await service.GetAllAsync(request);
         return Ok(groups);
     }
 
