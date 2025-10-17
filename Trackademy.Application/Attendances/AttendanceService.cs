@@ -41,11 +41,18 @@ public class AttendanceService : IAttendanceService
             throw new ConflictException("Нельзя отмечать посещаемость для будущих уроков.");
         }
 
-        // Валидация: проверяем, что все пользователи являются студентами
         var userIds = model.Attendances.Select(a => a.StudentId).ToList();
         var users = await _context.Users
             .Where(u => userIds.Contains(u.Id))
             .ToListAsync();
+
+        var foundUserIds = users.Select(u => u.Id).ToHashSet();
+        var notFoundUserIds = userIds.Where(id => !foundUserIds.Contains(id)).ToList();
+        if (notFoundUserIds.Any())
+        {
+            var notFoundIdsString = string.Join(", ", notFoundUserIds);
+            throw new ConflictException($"Указанные студенты не найдены: {notFoundIdsString}");
+        }
 
         var nonStudents = users.Where(u => u.Role != RoleEnum.Student).ToList();
         if (nonStudents.Any())
@@ -54,7 +61,6 @@ public class AttendanceService : IAttendanceService
             throw new ConflictException($"Нельзя отмечать посещаемость для учителей или других ролей: {nonStudentNames}");
         }
 
-        // Проверяем, что все студенты принадлежат к группе урока
         var groupStudentIds = lesson.Group.Students.Select(s => s.Id).ToHashSet();
         var notInGroup = userIds.Where(id => !groupStudentIds.Contains(id)).ToList();
         if (notInGroup.Any())
