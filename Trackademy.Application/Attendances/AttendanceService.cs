@@ -328,16 +328,21 @@ public class AttendanceService : IAttendanceService
             }
         }
 
-        // Валидация студента с проверкой принадлежности к организации
-        if (filter.StudentId.HasValue)
+        // Валидация студентов с проверкой принадлежности к организации
+        if (filter.StudentIds != null && filter.StudentIds.Any())
         {
-            var studentExists = await _context.Users
-                .AnyAsync(u => u.Id == filter.StudentId.Value && 
-                             u.Role == RoleEnum.Student && 
-                             u.OrganizationId == filter.OrganizationId);
-            if (!studentExists)
+            var foundStudents = await _context.Users
+                .Where(u => filter.StudentIds.Contains(u.Id) && 
+                           u.Role == RoleEnum.Student && 
+                           u.OrganizationId == filter.OrganizationId)
+                .Select(u => u.Id)
+                .ToListAsync();
+                
+            var notFoundStudentIds = filter.StudentIds.Except(foundStudents).ToList();
+            if (notFoundStudentIds.Any())
             {
-                throw new ConflictException("Студент не найден в указанной организации");
+                var notFoundIdsString = string.Join(", ", notFoundStudentIds);
+                throw new ConflictException($"Следующие студенты не найдены в указанной организации: {notFoundIdsString}");
             }
         }
 
@@ -355,10 +360,11 @@ public class AttendanceService : IAttendanceService
 
         var attendanceData = await GetAttendancesAsync(attendanceFilter);
         
-        if (filter.StudentId.HasValue)
+        // Фильтруем по выбранным студентам, если указаны
+        if (filter.StudentIds != null && filter.StudentIds.Any())
         {
             attendanceData.Items = attendanceData.Items
-                .Where(a => a.StudentId == filter.StudentId.Value)
+                .Where(a => filter.StudentIds.Contains(a.StudentId))
                 .ToList();
         }
 

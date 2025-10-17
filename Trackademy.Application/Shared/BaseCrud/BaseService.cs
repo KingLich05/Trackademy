@@ -10,9 +10,9 @@ public class BaseService<T, TDto, TAddDto, TUpdateDto> : IBaseService<T, TDto, T
     where TAddDto : class
     where TUpdateDto : class
 {
-    private readonly DbContext _context;
-    private readonly IMapper _mapper;
-    private readonly DbSet<T> _dbSet;
+    protected readonly DbContext _context;
+    protected readonly IMapper _mapper;
+    protected readonly DbSet<T> _dbSet;
 
     public BaseService(DbContext context, IMapper mapper)
     {
