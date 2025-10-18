@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Trackademy.Api.BaseController;
-using Trackademy.Application.Shared.Models;
 using Trackademy.Application.SubjectServices;
 using Trackademy.Application.SubjectServices.Models;
 using Trackademy.Domain.Users;
@@ -15,5 +14,11 @@ public class SubjectController(ISubjectService service) :
     {
         var result = await service.GetAllAsync(request);
         return Ok(result);
+    }
+
+    [NonAction]
+    public override async Task<IActionResult> GetAll()
+    {
+        return await base.GetAll();
     }
 }

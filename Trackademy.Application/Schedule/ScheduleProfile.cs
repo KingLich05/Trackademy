@@ -15,8 +15,7 @@ public class ScheduleProfile : Profile
             .ForMember(d => d.Subject, opt => opt.MapFrom(s => s.Group.Subject))
             .ForMember(d => d.Group, opt => opt.MapFrom(s => s.Group))
             .ForMember(d => d.Teacher, opt => opt.MapFrom(s => s.Teacher))
-            .ForMember(d => d.Room, opt => opt.MapFrom(s => s.Room))
-            .ForMember(d => d.Lessons, opt => opt.Ignore()); // Загружаем отдельно
+            .ForMember(d => d.Room, opt => opt.MapFrom(s => s.Room));
 
         CreateMap<Lesson, LessonViewModel>()
             .ForMember(d => d.Subject, opt => opt.MapFrom(s => s.Group.Subject))

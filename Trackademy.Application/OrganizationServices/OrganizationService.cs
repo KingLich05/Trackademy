@@ -24,7 +24,7 @@ public class OrganizationService :
         
         if (existingOrganization != null)
         {
-            throw new ConflictException("Данный адрес уже имеется в базу");
+            throw new ConflictException("Данный адрес уже имеется в базе");
         }
 
         return await base.CreateAsync(dto);

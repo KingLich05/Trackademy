@@ -2,7 +2,6 @@
 using Trackademy.Api.BaseController;
 using Trackademy.Application.RoomServices;
 using Trackademy.Application.RoomServices.Models;
-using Trackademy.Application.Shared.Models;
 using Trackademy.Domain.Users;
 
 namespace Trackademy.Api.Controllers;
@@ -15,5 +14,11 @@ public class RoomController(IRoomService service) :
     {
         var result = await service.GetAllAsync(request);
         return Ok(result);
+    }
+    
+    [NonAction]
+    public override async Task<IActionResult> GetAll()
+    {
+        return await base.GetAll();
     }
 }

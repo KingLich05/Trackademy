@@ -1,5 +1,4 @@
 ﻿using AutoMapper;
-using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Trackademy.Application.Persistance;
@@ -29,16 +28,7 @@ public class ScheduleService(
         if (schedule == null)
             return null;
 
-        var lessons = await dbContext.Lessons
-            .Where(l => l.ScheduleId == schedule.Id)
-            .Include(l => l.Group)
-                .ThenInclude(g => g.Subject)
-            .Include(l => l.Teacher)
-            .Include(l => l.Room)
-            .ToListAsync();
-
         var result = mapper.Map<ScheduleViewModel>(schedule);
-        result.Lessons = mapper.Map<List<LessonViewModel>>(lessons);
 
         return result;
     }
@@ -267,33 +257,6 @@ public class ScheduleService(
         }
 
         await CreateLessonsAsync(schedule, DateTime.Now);
-    }
-
-    private async Task<List<Domain.Users.Schedule>> Filtration(
-        ScheduleRequest req,
-        IQueryable<Domain.Users.Schedule> schedules)
-    {
-        if (req.SubjectId.HasValue && req.SubjectId != Guid.Empty)
-        {
-            schedules = schedules.Where(x => x.Group.SubjectId == req.SubjectId);
-        }
-
-        if (req.RoomId.HasValue && req.RoomId != Guid.Empty)
-        {
-            schedules = schedules.Where(x => x.RoomId == req.RoomId);
-        }
-
-        if (req.TeacherId.HasValue && req.TeacherId != Guid.Empty)
-        {
-            schedules = schedules.Where(x => x.TeacherId == req.TeacherId);
-        }
-
-        if (req.GroupId.HasValue && req.GroupId != Guid.Empty)
-        {
-            schedules = schedules.Where(x => x.GroupId == req.GroupId);
-        }
-
-        return await schedules.ToListAsync();
     }
 
     private IQueryable<Domain.Users.Schedule> ApplyFilters(
