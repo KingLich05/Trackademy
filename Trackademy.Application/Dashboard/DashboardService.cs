@@ -66,10 +66,10 @@ public class DashboardService : IDashboardService
             LessonStats = lessonStats,
             AttendanceStats = attendanceStats,
             LowPerformanceGroups = await GetLowPerformanceGroupsAsync(organizationId),
-            UnpaidStudents = new List<UnpaidStudentDto>(),
-            TrialStudents = new List<TrialStudentDto>(),
+            UnpaidStudents = await GetUnpaidStudentsAsync(organizationId),
+            TrialStudents = await GetTrialStudentsAsync(organizationId),
             TopTeachers = await GetTopTeachersAsync(organizationId),
-            GroupAttendanceRates = new List<GroupAttendanceDto>(),
+            GroupAttendanceRates = await GetGroupAttendanceRatesAsync(organizationId),
             GeneratedAt = DateTime.UtcNow,
             ReportPeriod = GetReportPeriod(filter)
         };
@@ -257,7 +257,7 @@ public class DashboardService : IDashboardService
             PresentStudentsToday = presentToday,
             AbsentStudentsToday = absentToday,
             LateStudentsToday = lateToday,
-            GroupAttendanceRates = new List<GroupAttendanceSummaryDto>()
+            GroupAttendanceRates = await GetGroupAttendanceSummaryAsync(organizationId)
         };
     }
 
@@ -513,6 +513,113 @@ public class DashboardService : IDashboardService
                 PerformanceIssue = "Низкая посещаемость (менее 50%)"
             })
             .ToList();
+    }
+
+    /// <summary>
+    /// Получить детальную статистику посещаемости по группам
+    /// </summary>
+    private async Task<List<GroupAttendanceDto>> GetGroupAttendanceRatesAsync(Guid organizationId)
+    {
+        var utcNow = DateTime.UtcNow.Date;
+        var today = DateOnly.FromDateTime(utcNow);
+        var weekAgo = DateOnly.FromDateTime(utcNow.AddDays(-7));
+        var monthAgo = DateOnly.FromDateTime(utcNow.AddDays(-30));
+
+        var groups = await dbContext.Groups
+            .Where(g => g.OrganizationId == organizationId)
+            .Include(g => g.Subject)
+            .Include(g => g.Students)
+            .Select(g => new
+            {
+                Group = g,
+                // Статистика за сегодня
+                TodayAttendances = g.Students
+                    .SelectMany(s => s.Attendances)
+                    .Where(a => a.Date == today),
+                // Статистика за неделю
+                WeekAttendances = g.Students
+                    .SelectMany(s => s.Attendances)
+                    .Where(a => a.Date >= weekAgo),
+                // Статистика за месяц
+                MonthAttendances = g.Students
+                    .SelectMany(s => s.Attendances)
+                    .Where(a => a.Date >= monthAgo),
+                // Общее количество уроков
+                TotalLessons = dbContext.Lessons
+                    .Where(l => l.GroupId == g.Id)
+                    .Count()
+            })
+            .ToListAsync();
+
+        return groups.Select(x => 
+        {
+            var todayTotal = x.TodayAttendances.Count();
+            var todayPresent = x.TodayAttendances.Count(a => a.Status == AttendanceStatus.Attend);
+            var todayAbsent = x.TodayAttendances.Count(a => a.Status == AttendanceStatus.NotAttend);
+            var todayLate = x.TodayAttendances.Count(a => a.Status == AttendanceStatus.Late);
+
+            var weekTotal = x.WeekAttendances.Count();
+            var weekPresent = x.WeekAttendances.Count(a => a.Status == AttendanceStatus.Attend);
+            var weeklyRate = weekTotal > 0 ? Math.Round((decimal)weekPresent / weekTotal * 100, 1) : 0;
+
+            var monthTotal = x.MonthAttendances.Count();
+            var monthPresent = x.MonthAttendances.Count(a => a.Status == AttendanceStatus.Attend);
+            var monthlyRate = monthTotal > 0 ? Math.Round((decimal)monthPresent / monthTotal * 100, 1) : 0;
+
+            var averageRate = (weeklyRate + monthlyRate) / 2;
+
+            return new GroupAttendanceDto
+            {
+                GroupId = x.Group.Id,
+                GroupName = x.Group.Name,
+                GroupCode = x.Group.Code ?? "Без кода",
+                SubjectName = x.Group.Subject.Name,
+                TotalStudents = x.Group.Students.Count,
+                AverageAttendanceRate = Math.Round(averageRate, 1),
+                PresentToday = todayPresent,
+                AbsentToday = todayAbsent,
+                LateToday = todayLate,
+                TotalLessons = x.TotalLessons,
+                WeeklyAttendanceRate = weeklyRate,
+                MonthlyAttendanceRate = monthlyRate
+            };
+        }).ToList();
+    }
+
+    /// <summary>
+    /// Получить краткую статистику посещаемости по группам
+    /// </summary>
+    private async Task<List<GroupAttendanceSummaryDto>> GetGroupAttendanceSummaryAsync(Guid organizationId)
+    {
+        var thirtyDaysAgo = DateOnly.FromDateTime(DateTime.UtcNow.Date.AddDays(-30));
+
+        var groupStats = await dbContext.Groups
+            .Where(g => g.OrganizationId == organizationId)
+            .Select(g => new
+            {
+                Group = g,
+                TotalAttendances = g.Students
+                    .SelectMany(s => s.Attendances)
+                    .Where(a => a.Date >= thirtyDaysAgo)
+                    .Count(),
+                PresentAttendances = g.Students
+                    .SelectMany(s => s.Attendances)
+                    .Where(a => a.Date >= thirtyDaysAgo && a.Status == AttendanceStatus.Attend)
+                    .Count()
+            })
+            .ToListAsync();
+
+        return groupStats.Select(x => new GroupAttendanceSummaryDto
+        {
+            GroupId = x.Group.Id,
+            GroupName = x.Group.Name,
+            GroupCode = x.Group.Code ?? "Без кода",
+            AttendanceRate = x.TotalAttendances > 0 
+                ? Math.Round((decimal)x.PresentAttendances / x.TotalAttendances * 100, 1) 
+                : 0,
+            TotalStudents = x.Group.Students.Count,
+            ActiveStudents = x.Group.Students.Count
+        }).ToList();
     }
 
     #endregion
