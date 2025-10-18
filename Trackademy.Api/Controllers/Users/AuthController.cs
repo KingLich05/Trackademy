@@ -22,6 +22,7 @@ public class AuthController(
     ExtensionString str) : ControllerBase
 {
     [HttpPost("create")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> CreateUser([FromBody] CreateUserRequest request)
     {
         if (!ValidateData(request))
@@ -109,6 +110,7 @@ public class AuthController(
     }
 
     [HttpPost("login")]
+    [AllowAnonymous]
     public async Task<IActionResult> Login(
         [FromBody] LogRequest request)
     {

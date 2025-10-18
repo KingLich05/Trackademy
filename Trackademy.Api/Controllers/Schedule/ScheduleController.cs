@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Trackademy.Application.Schedule;
 using Trackademy.Application.Schedule.Model;
 
@@ -6,6 +7,7 @@ namespace Trackademy.Api.Controllers.Schedule;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class ScheduleController(IScheduleService service) : ControllerBase
 {
     [HttpGet("[action]/{id}")]

@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Trackademy.Application.authenticator.Models;
 using Trackademy.Application.Users.Interfaces;
 using Trackademy.Application.Users.Models;
@@ -7,6 +8,7 @@ namespace Trackademy.Api.Controllers.Users;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class UserController(IUserServices service) : ControllerBase
 {
     

@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Trackademy.Api.BaseController;
 using Trackademy.Application.SubjectServices;
 using Trackademy.Application.SubjectServices.Models;
@@ -6,6 +7,7 @@ using Trackademy.Domain.Users;
 
 namespace Trackademy.Api.Controllers.SubjectDir;
 
+[Authorize]
 public class SubjectController(ISubjectService service) :
     BaseCrudController<Subject, SubjectDto, SubjectAddModel,SubjectUpdateModel>(service)
 {

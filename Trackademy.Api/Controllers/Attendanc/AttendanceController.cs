@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Trackademy.Application.Attendances;
 using Trackademy.Application.Attendances.Models;
 using Trackademy.Application.Shared.Exception;
@@ -7,6 +8,7 @@ namespace Trackademy.Api.Controllers.Attendanc;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class AttendanceController : ControllerBase
 {
     private readonly IAttendanceService _attendanceService;

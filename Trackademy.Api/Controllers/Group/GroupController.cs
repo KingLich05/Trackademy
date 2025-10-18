@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Trackademy.Api.BaseController;
 using Trackademy.Application.GroupServices;
 using Trackademy.Application.GroupServices.Models;
@@ -6,6 +7,7 @@ using Trackademy.Domain.Users;
 
 namespace Trackademy.Api.Controllers.Group;
 
+[Authorize]
 public class GroupController(IGroupService service) :
     BaseCrudController<Groups, GroupsDto, GroupsAddModel, GroupsUpdateModel>(service)
 {

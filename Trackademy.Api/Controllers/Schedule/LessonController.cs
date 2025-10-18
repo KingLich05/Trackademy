@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Trackademy.Application.Lessons;
 using Trackademy.Application.Lessons.Models;
 using Trackademy.Application.Shared.Exception;
@@ -8,6 +9,7 @@ namespace Trackademy.Api.Controllers.Schedule;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class LessonController(ILessonService service) : ControllerBase
 {
     [HttpPatch("{id}/reschedule")]
