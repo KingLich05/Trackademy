@@ -41,14 +41,9 @@ public class DashboardDetailedDto
     public List<TrialStudentDto> TrialStudents { get; set; } = new();
     
     /// <summary>
-    /// Топ преподаватели (топ 5)
+    /// Топ преподаватели (по производительности/рейтингу)
     /// </summary>
     public List<TopTeacherDto> TopTeachers { get; set; } = new();
-    
-    /// <summary>
-    /// Последнее обновление расписания
-    /// </summary>
-    public LatestScheduleUpdateDto? LatestScheduleUpdate { get; set; }
     
     /// <summary>
     /// Посещаемость по группам (топ 10)

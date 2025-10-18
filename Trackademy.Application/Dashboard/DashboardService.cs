@@ -65,11 +65,10 @@ public class DashboardService : IDashboardService
             GroupStats = groupStats,
             LessonStats = lessonStats,
             AttendanceStats = attendanceStats,
-            LowPerformanceGroups = new List<LowPerformanceGroupDto>(),
+            LowPerformanceGroups = await GetLowPerformanceGroupsAsync(organizationId),
             UnpaidStudents = new List<UnpaidStudentDto>(),
             TrialStudents = new List<TrialStudentDto>(),
-            TopTeachers = new List<TopTeacherDto>(),
-            LatestScheduleUpdate = null,
+            TopTeachers = await GetTopTeachersAsync(organizationId),
             GroupAttendanceRates = new List<GroupAttendanceDto>(),
             GeneratedAt = DateTime.UtcNow,
             ReportPeriod = GetReportPeriod(filter)
@@ -174,11 +173,13 @@ public class DashboardService : IDashboardService
             .Where(g => g.OrganizationId == organizationId)
             .CountAsync();
 
+        var averageGroupSize = await GetAverageGroupSizeAsync(organizationId);
+
         return new GroupStatsDto
         {
             TotalGroups = totalGroups,
             ActiveGroups = activeGroups,
-            AverageGroupSize = 8.5m
+            AverageGroupSize = averageGroupSize
         };
     }
 
@@ -196,11 +197,23 @@ public class DashboardService : IDashboardService
             .Where(l => l.Group.OrganizationId == organizationId && l.Date >= monthStart)
             .CountAsync();
 
+        var completedLessonsToday = await dbContext.Lessons
+            .Where(l => l.Group.OrganizationId == organizationId && 
+                       l.Date == today && 
+                       l.LessonStatus == LessonStatus.Completed)
+            .CountAsync();
+
+        var cancelledLessonsToday = await dbContext.Lessons
+            .Where(l => l.Group.OrganizationId == organizationId && 
+                       l.Date == today && 
+                       l.LessonStatus == LessonStatus.Cancelled)
+            .CountAsync();
+
         return new LessonStatsDto
         {
             LessonsToday = todayLessons,
-            CompletedLessonsToday = 89,
-            CancelledLessonsToday = 3,
+            CompletedLessonsToday = completedLessonsToday,
+            CancelledLessonsToday = cancelledLessonsToday,
             LessonsThisMonth = monthlyLessons
         };
     }
@@ -247,6 +260,21 @@ public class DashboardService : IDashboardService
             GroupAttendanceRates = new List<GroupAttendanceSummaryDto>()
         };
     }
+
+    /// <summary>
+    /// Получить средний размер активных групп
+    /// </summary>
+    private async Task<decimal> GetAverageGroupSizeAsync(Guid organizationId)
+    {
+        var groups = await dbContext.Groups
+            .Where(g => g.OrganizationId == organizationId)
+            .Select(g => g.Students.Count)
+            .ToListAsync();
+
+        return groups.Count > 0 ? Math.Round((decimal)groups.Average(), 1) : 0;
+    }
+
+
 
     private Guid GetOrganizationIdFromFilter(DashboardFilterDto? filter)
     {
@@ -335,7 +363,7 @@ public class DashboardService : IDashboardService
             .ToListAsync();
 
         return groupAttendanceRates
-            .Where(x => (decimal)x.PresentAttendances / x.TotalAttendances < 0.6m)
+            .Where(x => (decimal)x.PresentAttendances / x.TotalAttendances < 0.5m)
             .Count();
     }
 
@@ -393,17 +421,30 @@ public class DashboardService : IDashboardService
     }
 
     /// <summary>
-    /// Получить топ преподавателей по количеству студентов
+    /// Получить топ преподавателей с посещаемостью выше 90%
     /// </summary>
-    private async Task<List<TopTeacherDto>> GetTopTeachersAsync(Guid organizationId, int limit = 5)
+    private async Task<List<TopTeacherDto>> GetTopTeachersAsync(Guid organizationId, int limit = 10)
     {
-        return await dbContext.Users
+        var thirtyDaysAgo = DateOnly.FromDateTime(DateTime.UtcNow.Date.AddDays(-30));
+        var monthStart = DateOnly.FromDateTime(new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1));
+
+        var teachersStats = await dbContext.Users
             .Where(u => u.OrganizationId == organizationId && u.Role == RoleEnum.Teacher)
-            .Select(u => new TopTeacherDto
+            .Select(u => new
             {
-                TeacherId = u.Id,
-                TeacherName = u.FullName,
-                Email = u.Email,
+                Teacher = u,
+                TotalAttendances = dbContext.Lessons
+                    .Where(l => l.TeacherId == u.Id && l.Date >= thirtyDaysAgo)
+                    .SelectMany(l => l.Attendances)
+                    .Count(),
+                PresentAttendances = dbContext.Lessons
+                    .Where(l => l.TeacherId == u.Id && l.Date >= thirtyDaysAgo)
+                    .SelectMany(l => l.Attendances)
+                    .Where(a => a.Status == AttendanceStatus.Attend)
+                    .Count(),
+                LessonsThisMonth = dbContext.Lessons
+                    .Where(l => l.TeacherId == u.Id && l.Date >= monthStart)
+                    .Count(),
                 StudentCount = u.Schedules
                     .SelectMany(s => s.Group.Students)
                     .Distinct()
@@ -411,14 +452,27 @@ public class DashboardService : IDashboardService
                 GroupCount = u.Schedules
                     .Select(s => s.GroupId)
                     .Distinct()
-                    .Count(),
-                LessonsThisMonth = u.Schedules.Count(), // Упрощенная логика
-                AverageAttendanceRate = 85.0m, // Заглушка, т.к. сложный расчет
-                Rating = 4.5m // Заглушка для рейтинга
+                    .Count()
             })
-            .OrderByDescending(t => t.StudentCount)
-            .Take(limit)
+            .Where(x => x.TotalAttendances > 0)
             .ToListAsync();
+
+        return teachersStats
+            .Where(x => (decimal)x.PresentAttendances / x.TotalAttendances > 0.9m)
+            .Select(x => new TopTeacherDto
+            {
+                TeacherId = x.Teacher.Id,
+                TeacherName = x.Teacher.FullName,
+                Email = x.Teacher.Email,
+                StudentCount = x.StudentCount,
+                GroupCount = x.GroupCount,
+                LessonsThisMonth = x.LessonsThisMonth,
+                AverageAttendanceRate = Math.Round((decimal)x.PresentAttendances / x.TotalAttendances * 100, 1),
+                Rating = Math.Round((decimal)x.PresentAttendances / x.TotalAttendances * 5, 1)
+            })
+            .OrderByDescending(t => t.AverageAttendanceRate)
+            .Take(limit)
+            .ToList();
     }
 
     /// <summary>
@@ -446,7 +500,7 @@ public class DashboardService : IDashboardService
             .ToListAsync();
 
         return groups
-            .Where(x => (decimal)x.PresentAttendances / x.TotalAttendances < 0.6m)
+            .Where(x => (decimal)x.PresentAttendances / x.TotalAttendances < 0.5m)
             .Select(x => new LowPerformanceGroupDto
             {
                 GroupId = x.Group.Id,
@@ -456,7 +510,7 @@ public class DashboardService : IDashboardService
                 AttendanceRate = Math.Round((decimal)x.PresentAttendances / x.TotalAttendances * 100, 1),
                 TotalStudents = x.Group.Students.Count,
                 ActiveStudents = x.Group.Students.Count,
-                PerformanceIssue = "Низкая посещаемость"
+                PerformanceIssue = "Низкая посещаемость (менее 50%)"
             })
             .ToList();
     }
