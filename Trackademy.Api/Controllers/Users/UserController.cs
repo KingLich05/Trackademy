@@ -25,7 +25,7 @@ public class UserController(IUserServices service) : ControllerBase
     }
 
     [HttpPost("create")]
-    // [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> CreateUser([FromBody] CreateUserRequest request)
     {
         var result = await service.CreateUser(request);
