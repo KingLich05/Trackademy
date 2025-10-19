@@ -13,7 +13,7 @@ public interface IUserServices
     
     Task<UserCreationResult> CreateUser(CreateUserRequest request);
     
-    Task<Guid> UpdateUser(Guid id, CreateUserRequest updateUserRequest);
+    Task<Guid> UpdateUser(Guid id, UserUpdateModel updateUserRequest);
     
     Task<bool> DeleteUser(Guid id);
 }

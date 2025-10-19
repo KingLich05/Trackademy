@@ -139,14 +139,22 @@ public class UserServices(TrackademyDbContext dbContext, IMapper mapper) :
         };
     }
 
-    public async Task<Guid> UpdateUser(Guid id, CreateUserRequest request)
+    public async Task<Guid> UpdateUser(Guid id, UserUpdateModel request)
     {
         var user = await dbContext.Users.FindAsync(id);
         if (user is null)
         {
             throw new ConflictException("Пользователя с таким идентификатором не существует");
         }
+        var exists = await dbContext.Users
+            .AnyAsync(u => u.Login == request.Login && u.Id != id);
 
+        if (exists)
+        {
+            throw new ConflictException("Такой логин уже существует");
+        }
+
+        user.Login = request.Login;
         user.FullName = request.FullName;
         user.Email = request.Email;
         user.Phone = request.Phone;
