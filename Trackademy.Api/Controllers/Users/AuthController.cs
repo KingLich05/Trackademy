@@ -21,66 +21,6 @@ public class AuthController(
     IConfiguration config,
     ExtensionString str) : ControllerBase
 {
-    [HttpPost("create")]
-    [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> CreateUser([FromBody] CreateUserRequest request)
-    {
-        if (!ValidateData(request))
-        {
-            return Conflict("Не все поля заполнены.");
-        }
-
-        if (!VerifyNullEmailAndNicknameAndPassword(request.Email, request.Password))
-        {
-            return BadRequest("Email и пароль обязательны");
-        }
-
-        var organization = await db.Organizations
-            .Where(x => x.Id == request.OrganizationId)
-            .FirstOrDefaultAsync();
-
-        if (organization == null)
-        {
-            return BadRequest("Ошибка с организацией");
-        }
-
-        var exists = await db.Users
-            .Where(x => x.OrganizationId == request.OrganizationId)
-            .AnyAsync(u => u.Login == request.Login);
-
-        if (exists)
-        {
-            return Conflict("Пользователь с таким login уже существует");
-        }
-
-        var user = new User
-        {
-            Login = request.Login,
-            FullName = request.FullName,
-            Email = request.Email,
-            Phone = request.Phone,
-            ParentPhone = request.ParentPhone,
-            Role = request.Role,
-            Birthday = request.Birthday,
-            CreatedDate = DateTime.UtcNow,
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
-            OrganizationId = request.OrganizationId,
-            Organization = organization
-        };
-
-        await db.Users.AddAsync(user);
-        await db.SaveChangesAsync();
-
-        return CreatedAtAction(nameof(GetMe), new { id = user.Id }, new
-        {
-            user.Id,
-            user.FullName,
-            user.Login,
-            user.Email,
-            Role = user.Role.ToString()
-        });
-    }
-
     [HttpGet("me")]
     [Authorize]
     public async Task<IActionResult> GetMe()
@@ -147,17 +87,6 @@ public class AuthController(
 
     #region Private methods
 
-
-    private bool ValidateData(CreateUserRequest request)
-    {
-        if (string.IsNullOrWhiteSpace(request.FullName)) return false;
-        if (string.IsNullOrWhiteSpace(request.Phone)) return false;
-        if (string.IsNullOrWhiteSpace(request.Password)) return false;
-        if (!Enum.IsDefined(typeof(RoleEnum), request.Role)) return false;
-
-        return true;
-    }
-
     private string GenerateJwtToken(User user)
     {
         var jwtSection = config.GetSection("Jwt");
@@ -188,17 +117,6 @@ public class AuthController(
     private bool VerifyPassword(string password, string storedHash)
     {
         return BCrypt.Net.BCrypt.Verify(password, storedHash);
-    }
-
-    private bool VerifyNullEmailAndNicknameAndPassword(string? email, string? password)
-    {
-        if (string.IsNullOrWhiteSpace(email) && string.IsNullOrWhiteSpace(password))
-        {
-            
-            return false;
-        }
-
-        return true;
     }
 
     #endregion

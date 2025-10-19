@@ -11,6 +11,8 @@ public interface IUserServices
     
     Task<UserByIdDto> GetById(Guid id);
     
+    Task<UserCreationResult> CreateUser(CreateUserRequest request);
+    
     Task<Guid> UpdateUser(Guid id, CreateUserRequest updateUserRequest);
     
     Task<bool> DeleteUser(Guid id);

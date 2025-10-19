@@ -9,6 +9,7 @@ using Trackademy.Application.Shared.Models;
 using Trackademy.Application.Users.Interfaces;
 using Trackademy.Application.Users.Models;
 using Trackademy.Domain.Enums;
+using Trackademy.Domain.Users;
 
 namespace Trackademy.Application.Users.Services;
 
@@ -56,6 +57,88 @@ public class UserServices(TrackademyDbContext dbContext, IMapper mapper) :
         return mapper.Map<UserByIdDto>(user);
     }
 
+    public async Task<UserCreationResult> CreateUser(CreateUserRequest request)
+    {
+        // Валидация данных
+        if (!ValidateData(request))
+        {
+            return new UserCreationResult
+            {
+                IsSuccess = false,
+                ErrorMessage = "Не все поля заполнены."
+            };
+        }
+
+        if (!VerifyNullEmailAndPassword(request.Email, request.Password))
+        {
+            return new UserCreationResult
+            {
+                IsSuccess = false,
+                ErrorMessage = "Email и пароль обязательны"
+            };
+        }
+
+        // Проверяем существование организации
+        var organization = await dbContext.Organizations
+            .Where(x => x.Id == request.OrganizationId)
+            .FirstOrDefaultAsync();
+
+        if (organization == null)
+        {
+            return new UserCreationResult
+            {
+                IsSuccess = false,
+                ErrorMessage = "Ошибка с организацией"
+            };
+        }
+
+        // Проверяем уникальность логина в рамках организации
+        var exists = await dbContext.Users
+            .Where(x => x.OrganizationId == request.OrganizationId)
+            .AnyAsync(u => u.Login == request.Login);
+
+        if (exists)
+        {
+            return new UserCreationResult
+            {
+                IsSuccess = false,
+                ErrorMessage = "Пользователь с таким login уже существует"
+            };
+        }
+
+        // Создаем пользователя
+        var user = new User
+        {
+            Login = request.Login,
+            FullName = request.FullName,
+            Email = request.Email,
+            Phone = request.Phone,
+            ParentPhone = request.ParentPhone,
+            Role = request.Role,
+            Birthday = request.Birthday,
+            CreatedDate = DateTime.UtcNow,
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
+            OrganizationId = request.OrganizationId,
+            Organization = organization
+        };
+
+        await dbContext.Users.AddAsync(user);
+        await dbContext.SaveChangesAsync();
+
+        return new UserCreationResult
+        {
+            IsSuccess = true,
+            User = new UserCreatedDto
+            {
+                Id = user.Id,
+                FullName = user.FullName,
+                Login = user.Login,
+                Email = user.Email,
+                Role = user.Role.ToString()
+            }
+        };
+    }
+
     public async Task<Guid> UpdateUser(Guid id, CreateUserRequest request)
     {
         var user = await dbContext.Users.FindAsync(id);
@@ -87,4 +170,28 @@ public class UserServices(TrackademyDbContext dbContext, IMapper mapper) :
         await dbContext.SaveChangesAsync();
         return true;
     }
+
+    #region Private methods
+
+    private bool ValidateData(CreateUserRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.FullName)) return false;
+        if (string.IsNullOrWhiteSpace(request.Phone)) return false;
+        if (string.IsNullOrWhiteSpace(request.Password)) return false;
+        if (!Enum.IsDefined(typeof(RoleEnum), request.Role)) return false;
+
+        return true;
+    }
+
+    private bool VerifyNullEmailAndPassword(string? email, string? password)
+    {
+        if (string.IsNullOrWhiteSpace(email) && string.IsNullOrWhiteSpace(password))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    #endregion
 }

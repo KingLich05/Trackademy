@@ -24,6 +24,24 @@ public class UserController(IUserServices service) : ControllerBase
         return Ok(user);
     }
 
+    [HttpPost("create")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> CreateUser([FromBody] CreateUserRequest request)
+    {
+        var result = await service.CreateUser(request);
+
+        if (!result.IsSuccess)
+        {
+            if (result.ErrorMessage?.Contains("уже существует") == true)
+            {
+                return Conflict(result.ErrorMessage);
+            }
+            return BadRequest(result.ErrorMessage);
+        }
+
+        return CreatedAtAction(nameof(GetUserById), new { id = result.User!.Id }, result.User);
+    }
+
     [HttpPost("get-users")]
     public async Task<IActionResult> GetUsers(
         [FromBody] GetUserRequest getUserRequest)
