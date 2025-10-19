@@ -1,6 +1,6 @@
 ﻿using AutoMapper;
 using Microsoft.EntityFrameworkCore;
-using Trackademy.Domain.hz;
+using Trackademy.Domain.Common;
 
 namespace Trackademy.Application.Shared.BaseCrud;
 

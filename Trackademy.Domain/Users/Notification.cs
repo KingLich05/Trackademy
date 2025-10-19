@@ -1,6 +1,6 @@
 using System.Text.Json;
 using Trackademy.Domain.Enums;
-using Trackademy.Domain.hz;
+using Trackademy.Domain.Common;
 
 namespace Trackademy.Domain.Users;
 
@@ -15,5 +15,4 @@ public class Notification : Entity
     public NotificationStatus Status { get; set; }
     
     public User User { get; set; } = null!;
-
 }

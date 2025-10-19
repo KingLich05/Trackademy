@@ -1,5 +1,5 @@
 using Trackademy.Domain.Enums;
-using Trackademy.Domain.hz;
+using Trackademy.Domain.Common;
 
 namespace Trackademy.Domain.Users;
 

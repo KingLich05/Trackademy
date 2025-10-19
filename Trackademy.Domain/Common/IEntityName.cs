@@ -1,4 +1,4 @@
-namespace Trackademy.Domain.hz;
+namespace Trackademy.Domain.Common;
 
 public interface IEntityName
 {
