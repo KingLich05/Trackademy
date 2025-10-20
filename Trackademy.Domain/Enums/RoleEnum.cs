@@ -6,5 +6,7 @@ public enum RoleEnum
 
     Administrator = 2,
     
-    Teacher = 3
+    Teacher = 3,
+    
+    Owner = 4
 }
