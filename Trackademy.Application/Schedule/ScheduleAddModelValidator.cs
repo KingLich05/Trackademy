@@ -9,20 +9,26 @@ public class ScheduleAddModelValidator : AbstractValidator<ScheduleAddModel>
     {
         RuleFor(x => x.DaysOfWeek)
             .NotNull().WithMessage("DaysOfWeek is required")
-            .Must(d => d!.Length > 0).WithMessage("At least one day of week must be provided")
-            .Must(d => d!.All(day => day >= 1 && day <= 7))
-            .WithMessage("DaysOfWeek must be between 1 (Monday) and 7 (Sunday)");
+            .Must(d => d != null && d.Length > 0).WithMessage("At least one day of week must be provided")
+            .Must(d => d == null || d.All(day => day >= 1 && day <= 7))
+            .WithMessage("DaysOfWeek must be between 1 (Monday) and 7 (Sunday)")
+            .Must(d => d == null || d.Distinct().Count() == d.Length)
+            .WithMessage("DaysOfWeek must not contain duplicates");
 
         RuleFor(x => x.StartTime)
-            .NotEmpty().WithMessage("StartTime is required");
+            .NotEmpty().WithMessage("StartTime is required")
+            .Must(BeValidTime).WithMessage("StartTime must be a valid time");
 
         RuleFor(x => x.EndTime)
             .NotEmpty().WithMessage("EndTime is required")
+            .Must(BeValidTime).WithMessage("EndTime must be a valid time")
             .GreaterThan(x => x.StartTime)
             .WithMessage("EndTime must be later than StartTime");
 
         RuleFor(x => x.EffectiveFrom)
-            .NotEmpty().WithMessage("EffectiveFrom date is required");
+            .NotEmpty().WithMessage("EffectiveFrom date is required")
+            .GreaterThanOrEqualTo(DateOnly.FromDateTime(DateTime.UtcNow.Date))
+            .WithMessage("EffectiveFrom must be today or in the future");
 
         RuleFor(x => x.EffectiveTo)
             .GreaterThanOrEqualTo(x => x.EffectiveFrom)
@@ -40,5 +46,13 @@ public class ScheduleAddModelValidator : AbstractValidator<ScheduleAddModel>
 
         RuleFor(x => x.OrganizationId)
             .NotEqual(Guid.Empty).WithMessage("OrganizationId is required");
+    }
+
+    /// <summary>
+    /// Проверка, что время является валидным (в пределах суток)
+    /// </summary>
+    private static bool BeValidTime(TimeSpan time)
+    {
+        return time >= TimeSpan.Zero && time < TimeSpan.FromDays(1);
     }
 }
