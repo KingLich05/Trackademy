@@ -13,7 +13,7 @@ public interface ILessonService
     
     Task<PagedResult<LessonViewModel>> GetLessonsByScheduleAsync(GetLessonsByScheduleRequest request);
     
-    Task<bool> UpdateLessonStatusAsync(Guid lessonId, LessonStatus newStatus);
+    Task<bool> UpdateLessonStatusAsync(Guid lessonId, LessonStatus newStatus, string? note = null);
     
     Task<bool> RescheduleLessonAsync(Guid lessonId, LessonRescheduleModel model);
 

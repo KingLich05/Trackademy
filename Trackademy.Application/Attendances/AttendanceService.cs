@@ -99,6 +99,8 @@ public class AttendanceService : IAttendanceService
             }
         }
 
+        lesson.LessonStatus = LessonStatus.Completed;
+
         await _context.SaveChangesAsync();
         return true;
     }

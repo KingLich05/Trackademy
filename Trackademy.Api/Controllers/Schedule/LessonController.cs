@@ -12,8 +12,8 @@ namespace Trackademy.Api.Controllers.Schedule;
 [Authorize]
 public class LessonController(ILessonService service) : ControllerBase
 {
-    [HttpPatch("{id}/reschedule")]
-    public async Task<IActionResult> RescheduleLesson(
+    [HttpPatch("{id}/moved")]
+    public async Task<IActionResult> MoveLesson(
         Guid id,
         [FromBody] LessonRescheduleModel model)
     {
@@ -32,14 +32,14 @@ public class LessonController(ILessonService service) : ControllerBase
         return Ok(id);
     }
 
-    [HttpPatch("{id}/status")]
-    public async Task<IActionResult> UpdateLessonStatus(
+    [HttpPatch("{id}/cancel")]
+    public async Task<IActionResult> CancelLessonStatus(
         Guid id,
         [FromBody] LessonStatusUpdateModel model)
     {
         try
         {
-            var updated = await service.UpdateLessonStatusAsync(id, model.LessonStatus);
+            var updated = await service.UpdateLessonStatusAsync(id, model.LessonStatus, model.Note);
             if (!updated)
                 return NotFound("Урок не найден");
 

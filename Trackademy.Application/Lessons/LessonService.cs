@@ -121,13 +121,17 @@ public class LessonService(
         lesson.Date = model.Date;
         lesson.StartTime = model.StartTime;
         lesson.EndTime = model.EndTime;
+        if (model.Note != null)
+        {
+            lesson.Note = model.Note;
+        }
         lesson.LessonStatus = LessonStatus.Moved;
 
         await dbContext.SaveChangesAsync();
         return true;
     }
 
-    public async Task<bool> UpdateLessonStatusAsync(Guid lessonId, LessonStatus newStatus)
+    public async Task<bool> UpdateLessonStatusAsync(Guid lessonId, LessonStatus newStatus, string? note = null)
     {
         var lesson = await dbContext.Lessons.FirstOrDefaultAsync(l => l.Id == lessonId);
         if (lesson == null)
@@ -146,6 +150,8 @@ public class LessonService(
         }
 
         lesson.LessonStatus = newStatus;
+        if (note != null) lesson.Note = note;
+    
         await dbContext.SaveChangesAsync();
         return true;
     }
