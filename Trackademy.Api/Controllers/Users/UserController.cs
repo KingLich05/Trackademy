@@ -12,9 +12,9 @@ namespace Trackademy.Api.Controllers.Users;
 public class UserController(IUserServices service) : ControllerBase
 {
     
-    [HttpGet("GetUserById")]
+    [HttpGet("GetUserById/{id:guid}")]
     public async Task<IActionResult> GetUserById(
-        [FromQuery] Guid id)
+        Guid id)
     {
         var user = await service.GetById(id);
         
@@ -50,18 +50,18 @@ public class UserController(IUserServices service) : ControllerBase
         return Ok(users);
     }
 
-    [HttpPut("update-user")]
+    [HttpPut("update-user/{id:guid}")]
     public async Task<IActionResult> UpdateUser(
-        [FromQuery] Guid id,
-        [FromBody] CreateUserRequest getUserRequest)
+        Guid id,
+        [FromBody] UserUpdateModel getUserRequest)
     {
         var result = await service.UpdateUser(id, getUserRequest);
         return Ok(result);
     }
 
-    [HttpDelete("delete-user")]
+    [HttpDelete("delete-user/{id:guid}")]
     public async Task<IActionResult> DeleteUser(
-        [FromQuery] Guid id)
+        Guid id)
     {
         var result = await service.DeleteUser(id);
 
