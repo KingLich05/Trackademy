@@ -2,12 +2,16 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Trackademy.Application.Dashboard;
 using Trackademy.Application.Dashboard.Models;
+using Trackademy.Api.Authorization;
+using Trackademy.Domain.Enums;
 
 namespace Trackademy.Api.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
 [Authorize]
+[RoleAuthorization(RoleEnum.Administrator)]
+
 public class DashboardController : ControllerBase
 {
     private readonly IDashboardService _dashboardService;

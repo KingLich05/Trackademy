@@ -5,11 +5,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using Trackademy.Application.authenticator.Models;
 using Trackademy.Application.Helper;
 using Trackademy.Application.Persistance;
 using Trackademy.Application.Users.Models;
-using Trackademy.Domain.Enums;
 using Trackademy.Domain.Users;
 
 namespace Trackademy.Api.Controllers.Users;

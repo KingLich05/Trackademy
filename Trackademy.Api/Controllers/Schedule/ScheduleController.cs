@@ -1,7 +1,9 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Trackademy.Api.Authorization;
 using Trackademy.Application.Schedule;
 using Trackademy.Application.Schedule.Model;
+using Trackademy.Domain.Enums;
 
 namespace Trackademy.Api.Controllers.Schedule;
 
@@ -11,6 +13,7 @@ namespace Trackademy.Api.Controllers.Schedule;
 public class ScheduleController(IScheduleService service) : ControllerBase
 {
     [HttpGet("[action]/{id}")]
+    [RoleAuthorization(RoleEnum.Administrator)]
     public async Task<ScheduleViewModel?> GetScheduleById(Guid id)
     {
         var result = await service.GetSchedule(id);
@@ -18,6 +21,7 @@ public class ScheduleController(IScheduleService service) : ControllerBase
     }
 
     [HttpPost("create-schedule")]
+    [RoleAuthorization(RoleEnum.Administrator)]
     public async Task<IActionResult> CreateSchedule(
         [FromBody] ScheduleAddModel addModel)
     {
@@ -26,6 +30,7 @@ public class ScheduleController(IScheduleService service) : ControllerBase
     }
 
     [HttpPut("update-schedule/{id}")]
+    [RoleAuthorization(RoleEnum.Administrator)]
     public async Task<IActionResult> UpdateSchedule(
         Guid id,
         [FromBody] ScheduleUpdateModel model)
@@ -35,6 +40,7 @@ public class ScheduleController(IScheduleService service) : ControllerBase
     }
 
     [HttpPost("get-all-schedules")]
+    [RoleAuthorization(RoleEnum.Student)]
     public async Task<IActionResult> GetAllSchedulesAsync(
         [FromBody] ScheduleRequest request)
     {
@@ -44,6 +50,7 @@ public class ScheduleController(IScheduleService service) : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [RoleAuthorization(RoleEnum.Administrator)]
     public async Task<IActionResult> Delete(Guid id)
     {
         var result = await service.DeleteAsync(id);

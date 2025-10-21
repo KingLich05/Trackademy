@@ -1,8 +1,10 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Trackademy.Api.Authorization;
 using Trackademy.Application.Attendances;
 using Trackademy.Application.Attendances.Models;
 using Trackademy.Application.Shared.Exception;
+using Trackademy.Domain.Enums;
 
 namespace Trackademy.Api.Controllers.Attendanc;
 
@@ -22,6 +24,7 @@ public class AttendanceController : ControllerBase
     /// Массовая отметка посещаемости для урока
     /// </summary>
     [HttpPost("mark-bulk")]
+    [RoleAuthorization(RoleEnum.Teacher)]
     public async Task<IActionResult> MarkAttendancesBulk([FromBody] AttendanceBulkCreateModel model)
     {
         try
@@ -39,6 +42,7 @@ public class AttendanceController : ControllerBase
     /// Обновление статуса посещаемости для конкретного студента
     /// </summary>
     [HttpPut("update")]
+    [RoleAuthorization(RoleEnum.Teacher)]
     public async Task<IActionResult> UpdateAttendance([FromBody] AttendanceUpdateModel model)
     {
         var result = await _attendanceService.UpdateAttendanceAsync(model);
@@ -52,6 +56,7 @@ public class AttendanceController : ControllerBase
     /// Получение записи посещаемости по ID
     /// </summary>
     [HttpGet("{id}")]
+    [RoleAuthorization(RoleEnum.Administrator)]
     public async Task<IActionResult> GetAttendanceById(Guid id)
     {
         var result = await _attendanceService.GetAttendanceByIdAsync(id);
@@ -65,6 +70,7 @@ public class AttendanceController : ControllerBase
     /// Получение списка посещаемости с фильтрацией и пагинацией
     /// </summary>
     [HttpPost("get-all-attendances")]
+    [RoleAuthorization(RoleEnum.Student)]
     public async Task<IActionResult> GetAttendances([FromBody] AttendanceFilterModel filter)
     {
         try
@@ -82,6 +88,7 @@ public class AttendanceController : ControllerBase
     /// Получение статистики посещаемости студента
     /// </summary>
     [HttpGet("stats/student/{studentId}")]
+    [RoleAuthorization(RoleEnum.Student)]
     public async Task<IActionResult> GetStudentAttendanceStats(
         Guid studentId,
         [FromQuery] DateOnly? fromDate = null,
@@ -95,6 +102,7 @@ public class AttendanceController : ControllerBase
     /// Получение отчета посещаемости для группы
     /// </summary>
     [HttpGet("report/group/{groupId}")]
+    [RoleAuthorization(RoleEnum.Administrator)]
     public async Task<IActionResult> GetGroupAttendanceReport(
         Guid groupId,
         [FromQuery] DateOnly? fromDate = null,
@@ -120,6 +128,7 @@ public class AttendanceController : ControllerBase
     /// Экспорт отчета посещаемости в Excel
     /// </summary>
     [HttpPost("export")]
+    [RoleAuthorization(RoleEnum.Administrator)]
     public async Task<IActionResult> ExportAttendanceReport([FromBody] AttendanceExportFilterModel filter)
     {
         try

@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Trackademy.Api.Authorization;
 using Trackademy.Application.Lessons;
 using Trackademy.Application.Lessons.Models;
 using Trackademy.Application.Shared.Exception;
@@ -13,6 +14,7 @@ namespace Trackademy.Api.Controllers.Schedule;
 public class LessonController(ILessonService service) : ControllerBase
 {
     [HttpPatch("{id}/moved")]
+    [RoleAuthorization(RoleEnum.Teacher)]
     public async Task<IActionResult> MoveLesson(
         Guid id,
         [FromBody] LessonRescheduleModel model)
@@ -25,6 +27,7 @@ public class LessonController(ILessonService service) : ControllerBase
     }
 
     [HttpPost("custom")]
+    [RoleAuthorization(RoleEnum.Administrator)]
     public async Task<IActionResult> CreateCustomLesson(
         [FromBody] LessonCustomAddModel model)
     {
@@ -33,6 +36,7 @@ public class LessonController(ILessonService service) : ControllerBase
     }
 
     [HttpPatch("{id}/cancel")]
+    [RoleAuthorization(RoleEnum.Teacher)]
     public async Task<IActionResult> CancelLessonStatus(
         Guid id,
         [FromBody] LessonStatusUpdateModel model)
@@ -52,6 +56,7 @@ public class LessonController(ILessonService service) : ControllerBase
     }
 
     [HttpPost("by-schedule")]
+    [RoleAuthorization(RoleEnum.Student)]
     public async Task<IActionResult> GetLessonsBySchedule([FromBody] GetLessonsByScheduleRequest request)
     {
         var result = await service.GetLessonsByScheduleAsync(request);
@@ -62,6 +67,7 @@ public class LessonController(ILessonService service) : ControllerBase
     /// Получение урока по ID
     /// </summary>
     [HttpGet("[action]/{id}")]
+    [RoleAuthorization(RoleEnum.Student)]
     public async Task<IActionResult> GetLessonById(Guid id)
     {
         var result = await service.GetLessonByIdAsync(id);

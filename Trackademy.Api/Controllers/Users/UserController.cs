@@ -1,18 +1,22 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Trackademy.Api.Authorization;
 using Trackademy.Application.authenticator.Models;
 using Trackademy.Application.Users.Interfaces;
 using Trackademy.Application.Users.Models;
+using Trackademy.Domain.Enums;
 
 namespace Trackademy.Api.Controllers.Users;
 
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
+[RoleAuthorization(RoleEnum.Administrator)]
 public class UserController(IUserServices service) : ControllerBase
 {
     
     [HttpGet("GetUserById/{id:guid}")]
+    [RoleAuthorization(RoleEnum.Student)]
     public async Task<IActionResult> GetUserById(
         Guid id)
     {
@@ -25,7 +29,6 @@ public class UserController(IUserServices service) : ControllerBase
     }
 
     [HttpPost("create")]
-    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> CreateUser([FromBody] CreateUserRequest request)
     {
         var result = await service.CreateUser(request);
@@ -43,6 +46,7 @@ public class UserController(IUserServices service) : ControllerBase
     }
 
     [HttpPost("get-users")]
+    [RoleAuthorization(RoleEnum.Teacher)]
     public async Task<IActionResult> GetUsers(
         [FromBody] GetUserRequest getUserRequest)
     {
@@ -51,6 +55,7 @@ public class UserController(IUserServices service) : ControllerBase
     }
 
     [HttpPut("update-user/{id:guid}")]
+    [RoleAuthorization(RoleEnum.Student)]
     public async Task<IActionResult> UpdateUser(
         Guid id,
         [FromBody] UserUpdateModel getUserRequest)

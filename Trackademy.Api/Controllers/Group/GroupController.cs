@@ -1,17 +1,21 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Trackademy.Api.Authorization;
 using Trackademy.Api.BaseController;
 using Trackademy.Application.GroupServices;
 using Trackademy.Application.GroupServices.Models;
+using Trackademy.Domain.Enums;
 using Trackademy.Domain.Users;
 
 namespace Trackademy.Api.Controllers.Group;
 
 [Authorize]
+[RoleAuthorization(RoleEnum.Administrator)]
 public class GroupController(IGroupService service) :
     BaseCrudController<Groups, GroupsDto, GroupsAddModel, GroupsUpdateModel>(service)
 {
     [HttpPost("get-groups")]
+    [RoleAuthorization(RoleEnum.Student)]
     public async Task<IActionResult> GetGroups([FromBody] GetGroupsRequest request)
     {
         var groups = await service.GetAllAsync(request);
