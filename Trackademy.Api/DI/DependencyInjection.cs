@@ -10,6 +10,8 @@ using Trackademy.Application.Persistance;
 using Trackademy.Application.RoomServices;
 using Trackademy.Application.Schedule;
 using Trackademy.Application.Services;
+using Trackademy.Application.Shared.Models;
+using Trackademy.Application.Submissions;
 using Trackademy.Application.SubjectServices;
 using Trackademy.Application.Users.AutoMapper;
 using Trackademy.Application.Users.Interfaces;
@@ -33,6 +35,7 @@ public static class DependencyInjection
         services.AddScoped<ILessonService, LessonService>();
         services.AddScoped<IAttendanceService, AttendanceService>();
         services.AddScoped<IAssignmentService, AssignmentService>();
+        services.AddScoped<ISubmissionService, SubmissionService>();
         services.AddScoped<IDashboardService, DashboardService>();
         services.AddScoped<IExcelExportService, ExcelExportService>();
 

@@ -21,6 +21,7 @@ public class TrackademyDbContext : DbContext
     public DbSet<Attendance> Attendances { get; set; }
     public DbSet<Assignment> Assignments { get; set; }
     public DbSet<Submission> Submissions { get; set; }
+    public DbSet<SubmissionFile> SubmissionFiles { get; set; }
     public DbSet<Score> Scores { get; set; }
     public DbSet<Payment> Payments { get; set; }
     public DbSet<Notification> Notifications { get; set; }
@@ -36,6 +37,7 @@ public class TrackademyDbContext : DbContext
         modelBuilder.ApplyConfiguration(new AttendanceConfig());
         modelBuilder.ApplyConfiguration(new AssignmentConfig());
         modelBuilder.ApplyConfiguration(new SubmissionConfig());
+        modelBuilder.ApplyConfiguration(new SubmissionFileConfig());
         modelBuilder.ApplyConfiguration(new ScoreConfig());
         modelBuilder.ApplyConfiguration(new PaymentConfig());
         modelBuilder.ApplyConfiguration(new NotificationConfig());
