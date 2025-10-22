@@ -131,7 +131,7 @@ public class LessonService(
         return true;
     }
 
-    public async Task<bool> UpdateLessonStatusAsync(Guid lessonId, LessonStatus newStatus, string? note = null)
+    public async Task<bool> UpdateLessonStatusAsync(Guid lessonId, LessonStatus newStatus, string? cancelReason = null)
     {
         var lesson = await dbContext.Lessons.FirstOrDefaultAsync(l => l.Id == lessonId);
         if (lesson == null)
@@ -150,7 +150,12 @@ public class LessonService(
         }
 
         lesson.LessonStatus = newStatus;
-        if (note != null) lesson.Note = note;
+        
+        // Если урок отменяется, сохраняем причину отмены
+        if (newStatus == LessonStatus.Cancelled && cancelReason != null)
+        {
+            lesson.CancelReason = cancelReason;
+        }
     
         await dbContext.SaveChangesAsync();
         return true;
@@ -227,5 +232,16 @@ public class LessonService(
             .ToPagedResultAsync(request);
 
         return pagedLessons;
+    }
+
+    public async Task<bool> UpdateLessonNoteAsync(Guid lessonId, string note)
+    {
+        var lesson = await dbContext.Lessons.FirstOrDefaultAsync(l => l.Id == lessonId);
+        if (lesson == null)
+            return false;
+
+        lesson.Note = note;
+        await dbContext.SaveChangesAsync();
+        return true;
     }
 }

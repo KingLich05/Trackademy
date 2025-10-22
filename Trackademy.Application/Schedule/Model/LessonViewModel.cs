@@ -25,4 +25,8 @@ public class LessonViewModel
     public RoomMinimalViewModel Room { get; set; }
     
     public List<StudentMinimalViewModel> Students { get; set; } = new();
+    
+    public string? CancelReason { get; set; }
+    
+    public string? Note { get; set; }
 }

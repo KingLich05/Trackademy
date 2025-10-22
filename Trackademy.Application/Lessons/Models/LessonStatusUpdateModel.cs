@@ -5,5 +5,5 @@ namespace Trackademy.Application.Lessons.Models;
 public class LessonStatusUpdateModel
 {
     public LessonStatus LessonStatus { get; set; }
-    public string? Note { get; set; }
+    public string? CancelReason { get; set; }
 }

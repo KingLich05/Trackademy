@@ -43,7 +43,7 @@ public class LessonController(ILessonService service) : ControllerBase
     {
         try
         {
-            var updated = await service.UpdateLessonStatusAsync(id, model.LessonStatus, model.Note);
+            var updated = await service.UpdateLessonStatusAsync(id, model.LessonStatus, model.CancelReason);
             if (!updated)
                 return NotFound("Урок не найден");
 
@@ -72,5 +72,21 @@ public class LessonController(ILessonService service) : ControllerBase
     {
         var result = await service.GetLessonByIdAsync(id);
         return Ok(result);
+    }
+
+    /// <summary>
+    /// Добавление заметки к уроку
+    /// </summary>
+    [HttpPatch("{id}/note")]
+    [RoleAuthorization(RoleEnum.Teacher)]
+    public async Task<IActionResult> UpdateLessonNote(
+        Guid id,
+        [FromBody] LessonNoteModel model)
+    {
+        var updated = await service.UpdateLessonNoteAsync(id, model.Note);
+        if (!updated)
+            return NotFound("Урок не найден");
+
+        return Ok();
     }
 }

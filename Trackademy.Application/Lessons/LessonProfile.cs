@@ -17,7 +17,9 @@ public class LessonProfile : Profile
             .ForMember(d => d.Teacher, opt => opt.MapFrom(s => s.Teacher))
             .ForMember(d => d.Room, opt => opt.MapFrom(s => s.Room))
             .ForMember(d => d.Students, opt => opt.MapFrom(s => s.Group.Students))
-            .ForMember(d => d.LessonStatus, opt => opt.MapFrom(s => s.LessonStatus.ToString()));
+            .ForMember(d => d.LessonStatus, opt => opt.MapFrom(s => s.LessonStatus.ToString()))
+            .ForMember(d => d.CancelReason, opt => opt.MapFrom(s => s.CancelReason))
+            .ForMember(d => d.Note, opt => opt.MapFrom(s => s.Note));
 
         #region MinimalModels
         
