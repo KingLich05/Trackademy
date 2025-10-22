@@ -23,4 +23,6 @@ public class LessonViewModel
     public UserMinimalModel Teacher { get; set; }
 
     public RoomMinimalViewModel Room { get; set; }
+    
+    public List<StudentMinimalViewModel> Students { get; set; } = new();
 }

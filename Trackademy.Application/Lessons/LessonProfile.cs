@@ -16,6 +16,7 @@ public class LessonProfile : Profile
             .ForMember(d => d.Subject, opt => opt.MapFrom(s => s.Group.Subject))
             .ForMember(d => d.Teacher, opt => opt.MapFrom(s => s.Teacher))
             .ForMember(d => d.Room, opt => opt.MapFrom(s => s.Room))
+            .ForMember(d => d.Students, opt => opt.MapFrom(s => s.Group.Students))
             .ForMember(d => d.LessonStatus, opt => opt.MapFrom(s => s.LessonStatus.ToString()));
 
         #region MinimalModels
@@ -28,6 +29,9 @@ public class LessonProfile : Profile
 
         CreateMap<User, UserMinimalModel>()
             .ForMember(d => d.Name, opt => opt.MapFrom(u => u.FullName));
+
+        CreateMap<User, StudentMinimalViewModel>()
+            .ForMember(d => d.FullName, opt => opt.MapFrom(u => u.FullName));
 
         CreateMap<Room, RoomMinimalViewModel>();
         
