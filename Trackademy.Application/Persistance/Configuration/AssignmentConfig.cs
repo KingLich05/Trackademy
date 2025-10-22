@@ -9,10 +9,10 @@ public class AssignmentConfig : IEntityTypeConfiguration<Assignment>
     public void Configure(EntityTypeBuilder<Assignment> b)
     {
         b.HasKey(x => x.Id);
-        b.Property(x => x.Description).HasMaxLength(800);
+        b.Property(x => x.Description).HasMaxLength(1000);
 
-        b.HasOne(x => x.Subject)
-            .WithMany(s => s.Assignments)
-            .HasForeignKey(x => x.SubjectId);
+        b.HasOne(x => x.Group)
+            .WithMany(g => g.Assignments)
+            .HasForeignKey(x => x.GroupId);
     }
 }

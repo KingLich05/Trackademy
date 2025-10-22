@@ -66,4 +66,23 @@ public static class QueryableExtensions
             pagedRequest.PageSize,
             mapper);
     }
+
+    public static PagedResult<T> ToPagedResult<T>(
+        this List<T> items,
+        PagedRequest pagedRequest)
+    {
+        var totalCount = items.Count;
+        var pagedItems = items
+            .Skip((pagedRequest.PageNumber - 1) * pagedRequest.PageSize)
+            .Take(pagedRequest.PageSize)
+            .ToList();
+
+        return new PagedResult<T>
+        {
+            Items = pagedItems,
+            TotalCount = totalCount,
+            PageNumber = pagedRequest.PageNumber,
+            PageSize = pagedRequest.PageSize
+        };
+    }
 }

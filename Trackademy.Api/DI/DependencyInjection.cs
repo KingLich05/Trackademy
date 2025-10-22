@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Trackademy.Application.AssignmentServices;
 using Trackademy.Application.Attendances;
 using Trackademy.Application.Dashboard;
 using Trackademy.Application.GroupServices;
@@ -31,6 +32,7 @@ public static class DependencyInjection
         services.AddScoped<IScheduleService, ScheduleService>();
         services.AddScoped<ILessonService, LessonService>();
         services.AddScoped<IAttendanceService, AttendanceService>();
+        services.AddScoped<IAssignmentService, AssignmentService>();
         services.AddScoped<IDashboardService, DashboardService>();
         services.AddScoped<IExcelExportService, ExcelExportService>();
 

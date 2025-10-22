@@ -22,6 +22,7 @@ public class Groups : Entity
     public ICollection<User> Students { get; set; } = new List<User>();
     public Subject Subject { get; set; }
     public ICollection<Schedule> Schedules { get; set; } = new List<Schedule>();
+    public ICollection<Assignment> Assignments { get; set; } = new List<Assignment>();
     public Organization Organization { get; set; }
 
     #endregion
