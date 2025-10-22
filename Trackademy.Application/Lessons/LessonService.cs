@@ -169,8 +169,11 @@ public class LessonService(
         var query = dbContext.Lessons
             .Include(x => x.Group)
                 .ThenInclude(g => g.Subject)
+            .Include(x => x.Group)
+                .ThenInclude(g => g.Students)
             .Include(x => x.Teacher)
             .Include(x => x.Room)
+            .Include(x => x.Attendances)
             .Where(x => x.ScheduleId == scheduleId);
 
         if (fromDate.HasValue)
@@ -197,6 +200,7 @@ public class LessonService(
                 .ThenInclude(g => g.Students)
             .Include(x => x.Teacher)
             .Include(x => x.Room)
+            .Include(x => x.Attendances)
             .FirstOrDefaultAsync(x => x.Id == id);
 
         if (lesson == null)
@@ -212,8 +216,11 @@ public class LessonService(
         var query = dbContext.Lessons
             .Include(x => x.Group)
                 .ThenInclude(g => g.Subject)
+            .Include(x => x.Group)
+                .ThenInclude(g => g.Students)
             .Include(x => x.Teacher)
             .Include(x => x.Room)
+            .Include(x => x.Attendances)
             .Where(x => x.ScheduleId == request.ScheduleId);
 
         if (request.FromDate.HasValue)

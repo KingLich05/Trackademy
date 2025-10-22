@@ -16,7 +16,8 @@ public class LessonProfile : Profile
             .ForMember(d => d.Subject, opt => opt.MapFrom(s => s.Group.Subject))
             .ForMember(d => d.Teacher, opt => opt.MapFrom(s => s.Teacher))
             .ForMember(d => d.Room, opt => opt.MapFrom(s => s.Room))
-            .ForMember(d => d.Students, opt => opt.MapFrom(s => s.Group.Students))
+            .ForMember(d => d.Students, opt => opt.MapFrom((src, dest, destMember, context) => 
+                MapStudentsWithAttendance(src)))
             .ForMember(d => d.LessonStatus, opt => opt.MapFrom(s => s.LessonStatus.ToString()))
             .ForMember(d => d.CancelReason, opt => opt.MapFrom(s => s.CancelReason))
             .ForMember(d => d.Note, opt => opt.MapFrom(s => s.Note));
@@ -38,5 +39,17 @@ public class LessonProfile : Profile
         CreateMap<Room, RoomMinimalViewModel>();
         
         #endregion
+    }
+    
+    private static List<StudentMinimalViewModel> MapStudentsWithAttendance(Lesson lesson)
+    {
+        return lesson.Group.Students.Select(student => new StudentMinimalViewModel
+        {
+            Id = student.Id,
+            FullName = student.FullName,
+            PhotoPath = student.PhotoPath,
+            AttendanceStatus = lesson.Attendances
+                .FirstOrDefault(a => a.StudentId == student.Id)?.Status
+        }).ToList();
     }
 }
