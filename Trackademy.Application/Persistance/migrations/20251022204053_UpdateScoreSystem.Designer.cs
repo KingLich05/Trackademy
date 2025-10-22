@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Trackademy.Application.Persistance;
@@ -13,9 +14,11 @@ using Trackademy.Application.Persistance;
 namespace Trackademy.Application.Persistance.migrations
 {
     [DbContext(typeof(TrackademyDbContext))]
-    partial class TrackademyDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251022204053_UpdateScoreSystem")]
+    partial class UpdateScoreSystem
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -379,14 +382,23 @@ namespace Trackademy.Application.Persistance.migrations
                     b.Property<Guid?>("LessonId")
                         .HasColumnType("uuid");
 
+                    b.Property<int?>("LetterValue")
+                        .HasColumnType("integer");
+
                     b.Property<int>("MaxPoints")
                         .HasColumnType("integer");
 
                     b.Property<int?>("NumericValue")
                         .HasColumnType("integer");
 
+                    b.Property<int?>("PassFailValue")
+                        .HasColumnType("integer");
+
                     b.Property<Guid?>("PreviousVersionId")
                         .HasColumnType("uuid");
+
+                    b.Property<int>("ScoreType")
+                        .HasColumnType("integer");
 
                     b.Property<int>("Status")
                         .HasColumnType("integer");

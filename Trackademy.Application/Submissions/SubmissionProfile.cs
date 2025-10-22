@@ -10,7 +10,7 @@ namespace Trackademy.Application.Submissions
         {
             CreateMap<Submission, SubmissionResponseModel>()
                 .ForMember(dest => dest.StudentName, opt => opt.MapFrom(src => src.Student.FullName))
-                .ForMember(dest => dest.Score, opt => opt.MapFrom(src => src.Scores.FirstOrDefault().Points))
+                .ForMember(dest => dest.Score, opt => opt.MapFrom(src => src.Scores.FirstOrDefault() != null ? src.Scores.FirstOrDefault()!.NumericValue : null))
                 .ForMember(dest => dest.Files, opt => opt.MapFrom(src => src.Files));
 
             CreateMap<SubmissionFile, SubmissionFileResponseModel>()

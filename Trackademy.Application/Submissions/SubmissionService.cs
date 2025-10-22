@@ -154,7 +154,7 @@ namespace Trackademy.Application.Submissions
             var existingScore = await _context.Scores.FirstOrDefaultAsync(s => s.SubmissionId == submissionId);
             if (existingScore != null)
             {
-                existingScore.Points = model.Score;
+                existingScore.NumericValue = model.Score;
                 existingScore.AwardedAt = DateTime.UtcNow;
             }
             else
@@ -163,7 +163,8 @@ namespace Trackademy.Application.Submissions
                 {
                     Id = Guid.NewGuid(),
                     SubmissionId = submissionId,
-                    Points = model.Score,
+                    TeacherId = teacherId,
+                    NumericValue = model.Score,
                     AwardedAt = DateTime.UtcNow
                 };
                 _context.Scores.Add(score);
@@ -336,7 +337,7 @@ namespace Trackademy.Application.Submissions
                 StudentName = submission.Student?.FullName,
                 TextContent = submission.TextContent,
                 Status = submission.Status,
-                Score = submission.Scores?.FirstOrDefault()?.Points,
+                Score = submission.Scores?.FirstOrDefault()?.NumericValue,
                 TeacherComment = submission.TeacherComment,
                 CreatedAt = submission.CreatedAt,
                 UpdatedAt = submission.UpdatedAt,
