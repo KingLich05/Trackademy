@@ -64,7 +64,7 @@ public class UserController(IUserServices service) : ControllerBase
         return Ok(result);
     }
 
-    [HttpDelete("delete-user/{id:guid}")]
+    [HttpDelete("{id:guid}")]
     public async Task<IActionResult> DeleteUser(
         Guid id)
     {
