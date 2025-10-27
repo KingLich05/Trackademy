@@ -25,7 +25,10 @@ public class UserServices(TrackademyDbContext dbContext, IMapper mapper) :
 
         if (getUserRequest.search is { Length: > 0 } && !string.IsNullOrWhiteSpace(getUserRequest.search))
         {
-            usersQuery = usersQuery.Where(x => x.FullName.Contains(getUserRequest.search));
+            usersQuery = usersQuery.Where(x =>
+                x.FullName.Contains(getUserRequest.search) ||
+                x.Login.Contains(getUserRequest.search)
+            );
         }
 
         if (getUserRequest.RoleIds != null && getUserRequest.RoleIds.Count != 0)
