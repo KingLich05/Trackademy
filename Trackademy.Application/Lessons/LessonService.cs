@@ -221,7 +221,12 @@ public class LessonService(
             .Include(x => x.Teacher)
             .Include(x => x.Room)
             .Include(x => x.Attendances)
-            .Where(x => x.ScheduleId == request.ScheduleId);
+            .Where(x => x.Group.OrganizationId == request.OrganizationId);
+
+        if (request.ScheduleId.HasValue)
+        {
+            query = query.Where(x => x.ScheduleId == request.ScheduleId.Value);
+        }
 
         if (request.FromDate.HasValue)
         {
