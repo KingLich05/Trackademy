@@ -11,7 +11,6 @@ namespace Trackademy.Api.Controllers.Users;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-[RoleAuthorization(RoleEnum.Administrator)]
 public class UserController(IUserServices service) : ControllerBase
 {
     
@@ -29,6 +28,7 @@ public class UserController(IUserServices service) : ControllerBase
     }
 
     [HttpPost("create")]
+    [RoleAuthorization(RoleEnum.Administrator)]
     public async Task<IActionResult> CreateUser([FromBody] CreateUserRequest request)
     {
         var result = await service.CreateUser(request);
@@ -65,6 +65,7 @@ public class UserController(IUserServices service) : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
+    [RoleAuthorization(RoleEnum.Administrator)]
     public async Task<IActionResult> DeleteUser(
         Guid id)
     {
