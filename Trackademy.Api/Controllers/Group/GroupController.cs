@@ -10,7 +10,6 @@ using Trackademy.Domain.Users;
 namespace Trackademy.Api.Controllers.Group;
 
 [Authorize]
-[RoleAuthorization(RoleEnum.Administrator)]
 public class GroupController(IGroupService service) :
     BaseCrudController<Groups, GroupsDto, GroupsAddModel, GroupsUpdateModel>(service)
 {
@@ -23,13 +22,35 @@ public class GroupController(IGroupService service) :
     }
 
     [HttpPost("create-group")]
+    [RoleAuthorization(RoleEnum.Administrator)]
     public async Task<IActionResult> CreateGroup(
     [FromBody] GroupsAddModel addGroupModel)
     {
         var result = await service.CreateGroup(addGroupModel);
         return Ok(result);
     }
-    
+
+    [HttpGet("{id}")]
+    [RoleAuthorization(RoleEnum.Student)]
+    public override async Task<IActionResult> GetById(Guid id)
+    {
+        return await base.GetById(id);
+    }
+
+    [HttpPut("{id}")]
+    [RoleAuthorization(RoleEnum.Administrator)]
+    public override async Task<IActionResult> Update(Guid id, [FromBody] GroupsUpdateModel dto)
+    {
+        return await base.Update(id, dto);
+    }
+
+    [HttpDelete("{id}")]
+    [RoleAuthorization(RoleEnum.Administrator)]
+    public override async Task<IActionResult> Delete(Guid id)
+    {
+        return await base.Delete(id);
+    }
+
     [NonAction]
     public override Task<IActionResult> Create([FromBody] GroupsAddModel dto)
     {
