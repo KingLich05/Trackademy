@@ -85,6 +85,11 @@ public class LessonService(
 
     public async Task<bool> RescheduleLessonAsync(Guid lessonId, LessonRescheduleModel model)
     {
+        if (model.CancelReason == null)
+        {
+            throw new ConflictException("Заполните поле причину переноса занятия.");
+        }
+
         var lesson = await dbContext.Lessons
             .AsTracking()
             .FirstOrDefaultAsync(l => l.Id == lessonId);
@@ -121,10 +126,7 @@ public class LessonService(
         lesson.Date = model.Date;
         lesson.StartTime = model.StartTime;
         lesson.EndTime = model.EndTime;
-        if (model.Note != null)
-        {
-            lesson.Note = model.Note;
-        }
+        lesson.CancelReason = model.CancelReason;
         lesson.LessonStatus = LessonStatus.Moved;
 
         await dbContext.SaveChangesAsync();
