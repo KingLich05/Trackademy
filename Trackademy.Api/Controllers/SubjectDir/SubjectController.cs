@@ -10,7 +10,6 @@ using Trackademy.Domain.Users;
 namespace Trackademy.Api.Controllers.SubjectDir;
 
 [Authorize]
-[RoleAuthorization(RoleEnum.Administrator)]
 public class SubjectController(ISubjectService service) :
     BaseCrudController<Subject, SubjectDto, SubjectAddModel,SubjectUpdateModel>(service)
 {
@@ -23,8 +22,38 @@ public class SubjectController(ISubjectService service) :
     }
 
     [NonAction]
+    [HttpGet]
+    [RoleAuthorization(RoleEnum.Administrator)]
     public override async Task<IActionResult> GetAll()
     {
         return await base.GetAll();
+    }
+
+    [HttpGet("{id}")]
+    [RoleAuthorization(RoleEnum.Student)]
+    public override async Task<IActionResult> GetById(Guid id)
+    {
+        return await base.GetById(id);
+    }
+
+    [HttpPost("create")]
+    [RoleAuthorization(RoleEnum.Administrator)]
+    public override async Task<IActionResult> Create([FromBody] SubjectAddModel dto)
+    {
+        return await base.Create(dto);
+    }
+
+    [HttpPut("{id}")]
+    [RoleAuthorization(RoleEnum.Administrator)]
+    public override async Task<IActionResult> Update(Guid id, [FromBody] SubjectUpdateModel dto)
+    {
+        return await base.Update(id, dto);
+    }
+
+    [HttpDelete("{id}")]
+    [RoleAuthorization(RoleEnum.Administrator)]
+    public override async Task<IActionResult> Delete(Guid id)
+    {
+        return await base.Delete(id);
     }
 }
