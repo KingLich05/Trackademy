@@ -19,7 +19,9 @@ public class UserServices(TrackademyDbContext dbContext, IMapper mapper) :
     public async Task<PagedResult<UserDto>> GetUsers(GetUserRequest getUserRequest)
     {
         var usersQuery = dbContext.Users
-            .Where(x => x.Role != RoleEnum.Administrator && x.OrganizationId == getUserRequest.OrganizationId)
+            .Where(x => x.Role != RoleEnum.Administrator 
+                        && x.Role != RoleEnum.Owner
+                        && x.OrganizationId == getUserRequest.OrganizationId)
             .Include(x => x.Groups)
             .AsQueryable();
 
