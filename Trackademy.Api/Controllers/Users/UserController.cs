@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Trackademy.Api.Authorization;
 using Trackademy.Application.authenticator.Models;
@@ -60,14 +61,14 @@ public class UserController(IUserServices service) : ControllerBase
         Guid id,
         [FromBody] UserUpdateModel getUserRequest)
     {
-        var currentUserIdClaim = User.FindFirst("Id");
+        var currentUserIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
         if (currentUserIdClaim == null)
             return Unauthorized("Не удалось определить текущего пользователя");
 
         if (!Guid.TryParse(currentUserIdClaim.Value, out var currentUserId))
             return Unauthorized("Неверный ID пользователя");
 
-        var userRole = User.FindFirst("Role")?.Value;
+        var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
 
         if (userRole == RoleEnum.Administrator.ToString() || userRole == RoleEnum.Owner.ToString())
         {
