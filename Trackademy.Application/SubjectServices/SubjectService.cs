@@ -19,6 +19,27 @@ public class SubjectService :
     {
     }
 
+    public override async Task<bool> DeleteAsync(Guid id)
+    {
+        var trackademyContext = (TrackademyDbContext)_context;
+
+        var subject = await trackademyContext.Subjects.FindAsync(id);
+        if (subject == null)
+        {
+            throw new ConflictException($"Предмет с ID {id} не найден");
+        }
+
+        var hasGroups = await trackademyContext.Groups
+            .AnyAsync(g => g.SubjectId == id);
+
+        if (hasGroups)
+        {
+            throw new ConflictException("Нельзя удалить предмет, у которого есть связанные группы.");
+        }
+
+        return await base.DeleteAsync(id);
+    }
+
     public async Task<PagedResult<SubjectDto>> GetAllAsync(GetSubjectsRequest request)
     {
         var trackademyContext = (TrackademyDbContext)_context;
