@@ -25,6 +25,11 @@ public class User : Entity
 
     public RoleEnum Role { get; set; } = RoleEnum.Student;
     
+    /// <summary>
+    /// Флаг указывающий, что пользователь записан на пробный урок
+    /// </summary>
+    public bool IsTrial { get; set; } = false;
+    
     public Guid OrganizationId { get; set; }
     
     public List<Guid> GroupIds { get; set; } = new List<Guid>();

@@ -27,7 +27,7 @@ public class DashboardService : IDashboardService
         var studentCounts = await GetBasicStudentCountsAsync(organizationId);
         var groupCounts = await GetBasicGroupCountsAsync(organizationId);
         var todayLessons = await GetTodayLessonsCountAsync(organizationId);
-        var weeklyLessons = await GetWeeklyLessonsCountAsync(organizationId);
+        var completedLessonsToday = await GetCompletedLessonsTodayAsync(organizationId);
         var attendanceRate = await GetBasicAttendanceRateAsync(organizationId);
 
         return new DashboardSummaryDto
@@ -37,7 +37,7 @@ public class DashboardService : IDashboardService
             TotalGroups = groupCounts.Total,
             ActiveGroups = groupCounts.Active,
             LessonsToday = todayLessons,
-            CompletedLessonsToday = weeklyLessons,
+            CompletedLessonsToday = completedLessonsToday,
             AverageAttendanceRate = attendanceRate,
             LowPerformanceGroupsCount = await GetLowPerformanceGroupsCountAsync(organizationId),
             UnpaidStudentsCount = await GetUnpaidStudentsCountAsync(organizationId),
@@ -81,8 +81,13 @@ public class DashboardService : IDashboardService
             .Where(u => u.OrganizationId == organizationId && u.Role == RoleEnum.Student)
             .CountAsync();
 
+        var today = DateOnly.FromDateTime(DateTime.UtcNow.Date);
+        
+        // Активные студенты - те, у которых есть уроки в будущем
         var active = await dbContext.Users
             .Where(u => u.OrganizationId == organizationId && u.Role == RoleEnum.Student)
+            .Where(u => u.Groups.Any(g => 
+                dbContext.Lessons.Any(l => l.GroupId == g.Id && l.Date > today)))
             .CountAsync();
 
         return (total, active);
@@ -94,14 +99,26 @@ public class DashboardService : IDashboardService
             .Where(g => g.OrganizationId == organizationId)
             .CountAsync();
 
+        var today = DateOnly.FromDateTime(DateTime.UtcNow.Date);
+        
+        // Активные группы - те, у которых есть уроки в будущем
         var active = await dbContext.Groups
             .Where(g => g.OrganizationId == organizationId)
+            .Where(g => dbContext.Lessons.Any(l => l.GroupId == g.Id && l.Date > today))
             .CountAsync();
 
         return (total, active);
     }
 
     private async Task<int> GetTodayLessonsCountAsync(Guid organizationId)
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow.Date);
+        return await dbContext.Lessons
+            .Where(l => l.Group.OrganizationId == organizationId && l.Date == today)
+            .CountAsync();
+    }
+
+    private async Task<int> GetCompletedLessonsTodayAsync(Guid organizationId)
     {
         var today = DateOnly.FromDateTime(DateTime.UtcNow.Date);
         return await dbContext.Lessons
@@ -327,16 +344,14 @@ public class DashboardService : IDashboardService
     }
 
     /// <summary>
-    /// Получить количество пробных студентов (созданных в последние 30 дней без платежей)
+    /// Получить количество пробных студентов (с флагом IsTrial = true)
     /// </summary>
     private async Task<int> GetTrialStudentsCountAsync(Guid organizationId)
     {
-        var thirtyDaysAgo = DateTime.UtcNow.Date.AddDays(-30);
         return await dbContext.Users
             .Where(u => u.OrganizationId == organizationId && 
                        u.Role == RoleEnum.Student && 
-                       u.CreatedDate >= thirtyDaysAgo && 
-                       !u.Payments.Any())
+                       u.IsTrial == true)
             .CountAsync();
     }
 

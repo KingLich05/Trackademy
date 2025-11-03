@@ -19,5 +19,10 @@ public record CreateUserRequest
 
     public RoleEnum Role { get; set; }
     
+    /// <summary>
+    /// Флаг указывающий, что пользователь записан на пробный урок
+    /// </summary>
+    public bool IsTrial { get; set; } = false;
+    
     public Guid OrganizationId { get; set; }
 }

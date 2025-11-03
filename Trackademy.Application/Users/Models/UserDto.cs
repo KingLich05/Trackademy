@@ -13,4 +13,9 @@ public class UserDto
     public DateOnly? Birthday { get; set; }
     public List<GroupMinimalViewModel> Groups { get; set; }
     public RoleEnum Role { get; set; }
+    
+    /// <summary>
+    /// Флаг указывающий, что пользователь записан на пробный урок
+    /// </summary>
+    public bool IsTrial { get; set; }
 }

@@ -124,7 +124,8 @@ public class UserServices(TrackademyDbContext dbContext, IMapper mapper) :
             CreatedDate = DateTime.UtcNow,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
             OrganizationId = request.OrganizationId,
-            Organization = organization
+            Organization = organization,
+            IsTrial = request.IsTrial
         };
 
         await dbContext.Users.AddAsync(user);
@@ -166,6 +167,7 @@ public class UserServices(TrackademyDbContext dbContext, IMapper mapper) :
         user.ParentPhone = request.ParentPhone;
         user.Role = request.Role;
         user.Birthday = request.Birthday;
+        user.IsTrial = request.IsTrial;
 
         await dbContext.SaveChangesAsync();
         return user.Id;
