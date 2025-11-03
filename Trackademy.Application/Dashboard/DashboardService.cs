@@ -128,17 +128,6 @@ public class DashboardService : IDashboardService
             .CountAsync();
     }
 
-    private async Task<int> GetWeeklyLessonsCountAsync(Guid organizationId)
-    {
-        var utcNow = DateTime.UtcNow.Date;
-        var weekStart = DateOnly.FromDateTime(utcNow.AddDays(-(int)utcNow.DayOfWeek));
-        var weekEnd = weekStart.AddDays(7);
-        return await dbContext.Lessons
-            .Where(l => l.Group.OrganizationId == organizationId && 
-                       l.Date >= weekStart && l.Date < weekEnd)
-            .CountAsync();
-    }
-
     private async Task<decimal> GetBasicAttendanceRateAsync(Guid organizationId)
     {
         var thirtyDaysAgo = DateOnly.FromDateTime(DateTime.UtcNow.Date.AddDays(-30));
