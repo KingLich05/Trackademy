@@ -105,7 +105,9 @@ public class DashboardService : IDashboardService
     {
         var today = DateOnly.FromDateTime(DateTime.UtcNow.Date);
         return await dbContext.Lessons
-            .Where(l => l.Group.OrganizationId == organizationId && l.Date == today && l.LessonStatus == LessonStatus.Completed)
+            .Where(l => l.Group.OrganizationId == organizationId &&
+                        l.Date == today &&
+                        l.LessonStatus == LessonStatus.Completed)
             .CountAsync();
     }
 
