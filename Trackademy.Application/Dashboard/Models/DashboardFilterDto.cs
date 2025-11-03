@@ -11,16 +11,6 @@ public class DashboardFilterDto
     public Guid OrganizationId { get; set; }
     
     /// <summary>
-    /// Дата начала периода для статистики
-    /// </summary>
-    public DateOnly? StartDate { get; set; }
-    
-    /// <summary>
-    /// Дата окончания периода для статистики
-    /// </summary>
-    public DateOnly? EndDate { get; set; }
-    
-    /// <summary>
     /// Конкретные группы для анализа
     /// </summary>
     public List<Guid>? GroupIds { get; set; }

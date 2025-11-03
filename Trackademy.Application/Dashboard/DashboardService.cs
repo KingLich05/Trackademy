@@ -43,7 +43,7 @@ public class DashboardService : IDashboardService
             UnpaidStudentsCount = await GetUnpaidStudentsCountAsync(organizationId),
             TrialStudentsCount = await GetTrialStudentsCountAsync(organizationId),
             TotalDebt = await GetTotalDebtAsync(organizationId),
-            LastUpdated = DateTime.UtcNow
+            LastUpdated = DateTime.Now
         };
     }
 
@@ -306,10 +306,6 @@ public class DashboardService : IDashboardService
 
     private string GetReportPeriod(DashboardFilterDto? filter)
     {
-        if (filter?.StartDate != null && filter?.EndDate != null)
-        {
-            return $"С {filter.StartDate:dd.MM.yyyy} по {filter.EndDate:dd.MM.yyyy}";
-        }
         return "За последние 30 дней";
     }
 
