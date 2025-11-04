@@ -83,10 +83,8 @@ public class LessonController(ILessonService service) : ControllerBase
         Guid id,
         [FromBody] LessonNoteModel model)
     {
-        var updated = await service.UpdateLessonNoteAsync(id, model.Note);
-        if (!updated)
-            return NotFound("Урок не найден");
+        var guid = await service.UpdateLessonNoteAsync(id, model.Note);
 
-        return Ok();
+        return Ok(guid);
     }
 }

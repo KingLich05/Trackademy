@@ -97,6 +97,11 @@ public class LessonService(
         if (lesson == null)
             return false;
 
+        if (lesson.LessonStatus == LessonStatus.Completed)
+        {
+            throw new ConflictException("Нельзя перенести завершенный урок.");
+        }
+
         if (model.EndTime <= model.StartTime)
             throw new ConflictException("Время окончания должно быть позже времени начала.");
 
@@ -248,14 +253,16 @@ public class LessonService(
         return pagedLessons;
     }
 
-    public async Task<bool> UpdateLessonNoteAsync(Guid lessonId, string note)
+    public async Task<Guid> UpdateLessonNoteAsync(Guid lessonId, string note)
     {
         var lesson = await dbContext.Lessons.FirstOrDefaultAsync(l => l.Id == lessonId);
         if (lesson == null)
-            return false;
+        {
+            throw new ConflictException("Урок не найден.");
+        }
 
         lesson.Note = note;
         await dbContext.SaveChangesAsync();
-        return true;
+        return lessonId;
     }
 }

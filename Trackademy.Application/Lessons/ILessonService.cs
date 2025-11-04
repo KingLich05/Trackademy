@@ -19,5 +19,5 @@ public interface ILessonService
 
     Task<Guid> CreateCustomLessonAsync(LessonCustomAddModel model);
     
-    Task<bool> UpdateLessonNoteAsync(Guid lessonId, string note);
+    Task<Guid> UpdateLessonNoteAsync(Guid lessonId, string note);
 }
