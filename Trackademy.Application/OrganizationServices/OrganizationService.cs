@@ -29,4 +29,18 @@ public class OrganizationService :
 
         return await base.CreateAsync(dto);
     }
+
+    public override async Task<Guid> UpdateAsync(Guid id, OrganizationAddModel dto)
+    {
+        var trackademyContext = (TrackademyDbContext)_context;
+        var existingOrganization = await trackademyContext.Organizations
+            .FirstOrDefaultAsync(o => o.Address.ToLower() == dto.Address.ToLower() && o.Id != id);
+        
+        if (existingOrganization != null)
+        {
+            throw new ConflictException("Данный адрес уже имеется в базе");
+        }
+
+        return await base.UpdateAsync(id, dto);
+    }
 }
