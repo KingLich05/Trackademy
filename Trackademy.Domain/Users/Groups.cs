@@ -23,6 +23,7 @@ public class Groups : Entity
     public Subject Subject { get; set; }
     public ICollection<Schedule> Schedules { get; set; } = new List<Schedule>();
     public ICollection<Assignment> Assignments { get; set; } = new List<Assignment>();
+    public ICollection<Payment> Payments { get; set; } = new List<Payment>();
     public Organization Organization { get; set; }
 
     #endregion

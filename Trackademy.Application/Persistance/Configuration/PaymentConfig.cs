@@ -15,5 +15,28 @@ public class PaymentConfig : IEntityTypeConfiguration<Payment>
         b.HasOne(x => x.Student)
             .WithMany(u => u.Payments)
             .HasForeignKey(x => x.StudentId);
+
+        b.HasOne(x => x.Group)
+            .WithMany(g => g.Payments)
+            .HasForeignKey(x => x.GroupId);
+
+        b.Property(x => x.Description)
+            .HasMaxLength(500)
+            .IsRequired();
+
+        b.Property(x => x.OriginalAmount)
+            .HasPrecision(18, 2);
+
+        b.Property(x => x.DiscountPercentage)
+            .HasPrecision(5, 2);
+
+        b.Property(x => x.Amount)
+            .HasPrecision(18, 2);
+
+        b.Property(x => x.DiscountReason)
+            .HasMaxLength(200);
+
+        b.Property(x => x.CancelReason)
+            .HasMaxLength(500);
     }
 }

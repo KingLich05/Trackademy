@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Trackademy.Api.BackgroundServices;
 using Trackademy.Application.AssignmentServices;
 using Trackademy.Application.Attendances;
 using Trackademy.Application.Dashboard;
@@ -6,6 +7,7 @@ using Trackademy.Application.GroupServices;
 using Trackademy.Application.Helper;
 using Trackademy.Application.Lessons;
 using Trackademy.Application.OrganizationServices;
+using Trackademy.Application.PaymentServices;
 using Trackademy.Application.Persistance;
 using Trackademy.Application.RoomServices;
 using Trackademy.Application.Schedule;
@@ -38,10 +40,14 @@ public static class DependencyInjection
         services.AddScoped<IAssignmentService, AssignmentService>();
         services.AddScoped<ISubmissionService, SubmissionService>();
         services.AddScoped<IScoreService, ScoreService>();
+        services.AddScoped<IPaymentService, PaymentService>();
         services.AddScoped<IDashboardService, DashboardService>();
         services.AddScoped<IExcelExportService, ExcelExportService>();
 
         services.AddSingleton<ExtensionString>();
+        
+        // Фоновые службы
+        services.AddHostedService<PaymentBackgroundService>();
         
         services.AddAutoMapper(typeof(UserProfile).Assembly);
         return services;
