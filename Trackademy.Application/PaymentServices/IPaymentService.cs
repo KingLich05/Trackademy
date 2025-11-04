@@ -60,4 +60,9 @@ public interface IPaymentService
     /// Получение платежей, требующих уведомления (за 3 дня до DueDate)
     /// </summary>
     Task<List<PaymentDto>> GetPaymentsForNotificationAsync();
+
+    /// <summary>
+    /// Получение статистики платежей
+    /// </summary>
+    Task<PaymentStatsDto> GetPaymentStatsAsync(Guid? groupId = null, Guid? studentId = null);
 }

@@ -271,4 +271,35 @@ public class PaymentService(
 
         return mapper.Map<List<PaymentDto>>(payments);
     }
+
+    public async Task<PaymentStatsDto> GetPaymentStatsAsync(Guid? groupId = null, Guid? studentId = null)
+    {
+        var query = dbContext.Payments.AsQueryable();
+
+        if (groupId.HasValue)
+        {
+            query = query.Where(p => p.GroupId == groupId.Value);
+        }
+
+        if (studentId.HasValue)
+        {
+            query = query.Where(p => p.StudentId == studentId.Value);
+        }
+
+        var payments = await query.ToListAsync();
+
+        return new PaymentStatsDto
+        {
+            TotalPayments = payments.Count,
+            PendingPayments = payments.Count(p => p.Status == PaymentStatus.Pending),
+            PaidPayments = payments.Count(p => p.Status == PaymentStatus.Paid),
+            OverduePayments = payments.Count(p => p.Status == PaymentStatus.Overdue),
+            CancelledPayments = payments.Count(p => p.Status == PaymentStatus.Cancelled),
+            RefundedPayments = payments.Count(p => p.Status == PaymentStatus.Refunded),
+            TotalAmount = payments.Sum(p => p.Amount),
+            PaidAmount = payments.Where(p => p.Status == PaymentStatus.Paid).Sum(p => p.Amount),
+            PendingAmount = payments.Where(p => p.Status == PaymentStatus.Pending).Sum(p => p.Amount),
+            OverdueAmount = payments.Where(p => p.Status == PaymentStatus.Overdue).Sum(p => p.Amount)
+        };
+    }
 }

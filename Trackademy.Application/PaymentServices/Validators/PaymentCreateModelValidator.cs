@@ -41,5 +41,16 @@ public class PaymentCreateModelValidator : AbstractValidator<PaymentCreateModel>
             .MaximumLength(200)
             .WithMessage("Причина скидки не может превышать 200 символов")
             .When(x => !string.IsNullOrEmpty(x.DiscountReason));
+
+        // Валидация что если есть скидка, то должна быть причина
+        RuleFor(x => x.DiscountReason)
+            .NotEmpty()
+            .WithMessage("При наличии скидки необходимо указать причину")
+            .When(x => x.DiscountPercentage > 0);
+
+        // Валидация дат периода
+        RuleFor(x => x.PeriodEnd)
+            .GreaterThan(x => x.PeriodStart)
+            .WithMessage("Дата окончания периода должна быть позже начала");
     }
 }

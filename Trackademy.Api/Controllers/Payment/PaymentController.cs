@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Trackademy.Api.Authorization;
@@ -44,12 +45,11 @@ public class PaymentController(IPaymentService paymentService) : ControllerBase
             return NotFound("Платеж не найден");
 
         // Студенты могут видеть только свои платежи
-        if (User.IsInRole(RoleEnum.Student.ToString()))
+        if (GetCurrentUserRole() == RoleEnum.Student.ToString())
         {
-            // TODO: Получить ID текущего пользователя из токена
-            // var currentUserId = GetCurrentUserId();
-            // if (payment.StudentId != currentUserId)
-            //     return Forbid();
+            var currentUserId = GetCurrentUserId();
+            if (payment.StudentId != currentUserId)
+                return Forbid("Доступ запрещен");
         }
 
         return Ok(payment);
@@ -63,12 +63,26 @@ public class PaymentController(IPaymentService paymentService) : ControllerBase
     public async Task<IActionResult> GetStudentPayments(Guid studentId)
     {
         // Студенты могут видеть только свои платежи
-        if (User.IsInRole(RoleEnum.Student.ToString()))
+        if (GetCurrentUserRole() == RoleEnum.Student.ToString())
         {
-            // TODO: Проверить, что studentId соответствует текущему пользователю
+            var currentUserId = GetCurrentUserId();
+            if (studentId != currentUserId)
+                return Forbid("Доступ запрещен");
         }
 
         var payments = await paymentService.GetStudentPaymentsAsync(studentId);
+        return Ok(payments);
+    }
+
+    /// <summary>
+    /// Получение собственных платежей текущего студента
+    /// </summary>
+    [HttpGet("my")]
+    [RoleAuthorization(RoleEnum.Student)]
+    public async Task<IActionResult> GetMyPayments()
+    {
+        var currentUserId = GetCurrentUserId();
+        var payments = await paymentService.GetStudentPaymentsAsync(currentUserId);
         return Ok(payments);
     }
 
@@ -193,5 +207,29 @@ public class PaymentController(IPaymentService paymentService) : ControllerBase
     {
         var payments = await paymentService.GetPaymentsForNotificationAsync();
         return Ok(payments);
+    }
+
+    /// <summary>
+    /// Получение статистики платежей
+    /// </summary>
+    [HttpGet("stats")]
+    [RoleAuthorization(RoleEnum.Administrator)]
+    public async Task<IActionResult> GetPaymentStats(
+        [FromQuery] Guid? groupId = null,
+        [FromQuery] Guid? studentId = null)
+    {
+        var stats = await paymentService.GetPaymentStatsAsync(groupId, studentId);
+        return Ok(stats);
+    }
+
+    private Guid GetCurrentUserId()
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        return Guid.Parse(userIdClaim ?? throw new UnauthorizedAccessException());
+    }
+
+    private string GetCurrentUserRole()
+    {
+        return User.FindFirst(ClaimTypes.Role)?.Value ?? throw new UnauthorizedAccessException();
     }
 }
