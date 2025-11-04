@@ -89,7 +89,7 @@ public class UserServices(TrackademyDbContext dbContext, IMapper mapper) :
 
         if (exists)
         {
-            throw new ConflictException("Пользователь с таким login уже существуе.");
+            throw new ConflictException("Пользователь с таким login уже существует.");
         }
 
         var user = new User
@@ -137,7 +137,7 @@ public class UserServices(TrackademyDbContext dbContext, IMapper mapper) :
 
         if (exists)
         {
-            throw new ConflictException("Такой логин уже существует");
+            throw new ConflictException("Такой логин уже существует.");
         }
 
         user.Login = request.Login;
