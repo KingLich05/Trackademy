@@ -4,6 +4,7 @@ using Trackademy.Api.Authorization;
 using Trackademy.Application.PaymentServices;
 using Trackademy.Application.PaymentServices.Models;
 using Trackademy.Application.Shared.Exception;
+using Trackademy.Application.Shared.Models;
 using Trackademy.Domain.Enums;
 
 namespace Trackademy.Api.Controllers.Payment;
@@ -72,27 +73,40 @@ public class PaymentController(IPaymentService paymentService) : ControllerBase
     }
 
     /// <summary>
-    /// Получение платежей группы
-    /// </summary>
-    [HttpGet("group/{groupId}")]
-    [RoleAuthorization(RoleEnum.Administrator)]
-    public async Task<IActionResult> GetGroupPayments(Guid groupId, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
-    {
-        var payments = await paymentService.GetGroupPaymentsAsync(groupId, page, pageSize);
-        return Ok(payments);
-    }
-
-    /// <summary>
-    /// Получение всех платежей с фильтрами
+    /// Получение платежей с расширенными фильтрами
+    /// Параметры фильтрации:
+    /// - groupId: ID группы (опционально)
+    /// - studentId: ID студента (опционально) 
+    /// - status: статус платежа (опционально)
+    /// - type: тип платежа - Monthly/OneTime (опционально)
+    /// - fromDate: дата создания от (опционально)
+    /// - toDate: дата создания до (опционально)
+    /// - page: номер страницы (по умолчанию 1)
+    /// - pageSize: размер страницы (по умолчанию 10)
     /// </summary>
     [HttpGet]
     [RoleAuthorization(RoleEnum.Administrator)]
     public async Task<IActionResult> GetAllPayments(
+        [FromQuery] Guid? groupId = null,
         [FromQuery] PaymentStatus? status = null,
+        [FromQuery] PaymentType? type = null,
+        [FromQuery] DateTime? fromDate = null,
+        [FromQuery] DateTime? toDate = null,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10)
     {
-        var payments = await paymentService.GetAllPaymentsAsync(status, page, pageSize);
+        var request = new PaymentFilterRequest
+        {
+            GroupId = groupId,
+            Status = status,
+            Type = type,
+            FromDate = fromDate,
+            ToDate = toDate,
+            Page = page,
+            PageSize = pageSize
+        };
+
+        var payments = await paymentService.GetPaymentsWithFiltersAsync(request);
         return Ok(payments);
     }
 

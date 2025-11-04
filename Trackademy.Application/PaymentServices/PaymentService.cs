@@ -122,6 +122,49 @@ public class PaymentService(
             .ToPagedResultAsync(page, pageSize);
     }
 
+    public async Task<PagedResult<PaymentDto>> GetPaymentsWithFiltersAsync(PaymentFilterRequest request)
+    {
+        var query = dbContext.Payments
+            .Include(p => p.Student)
+            .Include(p => p.Group)
+            .AsQueryable();
+
+        // Фильтр по группе
+        if (request.GroupId.HasValue)
+        {
+            query = query.Where(p => p.GroupId == request.GroupId.Value);
+        }
+
+        // Фильтр по статусу
+        if (request.Status.HasValue)
+        {
+            query = query.Where(p => p.Status == request.Status.Value);
+        }
+
+        // Фильтр по типу платежа
+        if (request.Type.HasValue)
+        {
+            query = query.Where(p => p.Type == request.Type.Value);
+        }
+
+        // Фильтр по дате создания
+        if (request.FromDate.HasValue)
+        {
+            query = query.Where(p => p.CreatedAt >= request.FromDate.Value);
+        }
+
+        if (request.ToDate.HasValue)
+        {
+            query = query.Where(p => p.CreatedAt <= request.ToDate.Value);
+        }
+
+        query = query.OrderByDescending(p => p.CreatedAt);
+
+        return await query
+            .Select(p => mapper.Map<PaymentDto>(p))
+            .ToPagedResultAsync(request.Page, request.PageSize);
+    }
+
     public async Task<PagedResult<PaymentDto>> GetAllPaymentsAsync(PaymentStatus? status = null, int page = 1, int pageSize = 10)
     {
         var query = dbContext.Payments
