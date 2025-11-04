@@ -27,6 +27,11 @@ public interface IPaymentService
     Task<PagedResult<PaymentDto>> GetGroupPaymentsAsync(Guid groupId, int page = 1, int pageSize = 10);
     
     /// <summary>
+    /// Получение всех платежей с расширенными фильтрами (для админов)
+    /// </summary>
+    Task<PagedResult<PaymentDto>> GetPaymentsWithFiltersAsync(PaymentFilterRequest request);
+    
+    /// <summary>
     /// Получение всех платежей с фильтрами (для админов)
     /// </summary>
     Task<PagedResult<PaymentDto>> GetAllPaymentsAsync(PaymentStatus? status = null, int page = 1, int pageSize = 10);
