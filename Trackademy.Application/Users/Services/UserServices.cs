@@ -64,54 +64,34 @@ public class UserServices(TrackademyDbContext dbContext, IMapper mapper) :
 
     public async Task<UserCreationResult> CreateUser(CreateUserRequest request)
     {
-        // Валидация данных
         if (!ValidateData(request))
         {
-            return new UserCreationResult
-            {
-                IsSuccess = false,
-                ErrorMessage = "Не все поля заполнены."
-            };
+            throw new ConflictException("Не все поля заполнены.");
         }
 
         if (!VerifyNullEmailAndPassword(request.Email, request.Password))
         {
-            return new UserCreationResult
-            {
-                IsSuccess = false,
-                ErrorMessage = "Email и пароль обязательны"
-            };
+            throw new ConflictException("Email и пароль обязательны");
         }
 
-        // Проверяем существование организации
         var organization = await dbContext.Organizations
             .Where(x => x.Id == request.OrganizationId)
             .FirstOrDefaultAsync();
 
         if (organization == null)
         {
-            return new UserCreationResult
-            {
-                IsSuccess = false,
-                ErrorMessage = "Ошибка с организацией"
-            };
+            throw new ConflictException("Ошибка с организацией.");
         }
 
-        // Проверяем уникальность логина в рамках организации
         var exists = await dbContext.Users
             .Where(x => x.OrganizationId == request.OrganizationId)
             .AnyAsync(u => u.Login == request.Login);
 
         if (exists)
         {
-            return new UserCreationResult
-            {
-                IsSuccess = false,
-                ErrorMessage = "Пользователь с таким login уже существует"
-            };
+            throw new ConflictException("Пользователь с таким login уже существуе.");
         }
 
-        // Создаем пользователя
         var user = new User
         {
             Login = request.Login,

@@ -34,15 +34,6 @@ public class UserController(IUserServices service) : ControllerBase
     {
         var result = await service.CreateUser(request);
 
-        if (!result.IsSuccess)
-        {
-            if (result.ErrorMessage?.Contains("уже существует") == true)
-            {
-                return Conflict(result.ErrorMessage);
-            }
-            return BadRequest(result.ErrorMessage);
-        }
-
         return CreatedAtAction(nameof(GetUserById), new { id = result.User!.Id }, result.User);
     }
 
