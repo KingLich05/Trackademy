@@ -156,6 +156,11 @@ public class LessonService(
             }
         }
 
+        if (lesson.LessonStatus == LessonStatus.Completed)
+        {
+            throw new ConflictException("Нельзя отменить завершенный урок.");
+        }
+
         lesson.LessonStatus = newStatus;
         
         // Если урок отменяется, сохраняем причину отмены
