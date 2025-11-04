@@ -5,7 +5,6 @@ using Trackademy.Api.Authorization;
 using Trackademy.Application.PaymentServices;
 using Trackademy.Application.PaymentServices.Models;
 using Trackademy.Application.Shared.Exception;
-using Trackademy.Application.Shared.Models;
 using Trackademy.Domain.Enums;
 
 namespace Trackademy.Api.Controllers.Payment;
