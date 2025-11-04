@@ -7,7 +7,7 @@ public class Payment : Entity
 {
     public Guid StudentId { get; set; }
     public Guid GroupId { get; set; }
-    public string Description { get; set; } = string.Empty;
+    public string? Description { get; set; }
     public PaymentType Type { get; set; }
     public decimal OriginalAmount { get; set; }
     public decimal DiscountPercentage { get; set; } = 0;

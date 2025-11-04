@@ -16,33 +16,28 @@ public class PaymentService(
 {
     public async Task<Guid> CreatePaymentAsync(PaymentCreateModel model)
     {
-        // Валидация DueDate не в прошлом
         if (model.DueDate.Date < DateTime.UtcNow.Date)
         {
             throw new ConflictException("Срок оплаты не может быть в прошлом.");
         }
 
-        // Валидация периода
         if (model.PeriodStart >= model.PeriodEnd)
         {
             throw new ConflictException("Дата начала периода должна быть раньше даты окончания.");
         }
 
-        // Проверка существования студента
         var student = await dbContext.Users.FirstOrDefaultAsync(u => u.Id == model.StudentId && u.Role == RoleEnum.Student);
         if (student == null)
         {
             throw new ConflictException("Студент не найден.");
         }
 
-        // Проверка существования группы
         var group = await dbContext.Groups.FirstOrDefaultAsync(g => g.Id == model.GroupId);
         if (group == null)
         {
             throw new ConflictException("Группа не найдена.");
         }
 
-        // Проверка, что студент состоит в этой группе
         var isStudentInGroup = await dbContext.Groups
             .Where(g => g.Id == model.GroupId)
             .SelectMany(g => g.Students)
@@ -53,13 +48,11 @@ public class PaymentService(
             throw new ConflictException("Студент не состоит в указанной группе.");
         }
 
-        // Валидация скидки
-        if (model.DiscountPercentage < 0 || model.DiscountPercentage > 100)
+        if (model.DiscountPercentage > 100)
         {
             throw new ConflictException("Скидка должна быть от 0 до 100%.");
         }
 
-        // Расчет итоговой суммы
         var discountAmount = model.OriginalAmount * (model.DiscountPercentage / 100);
         var finalAmount = model.OriginalAmount - discountAmount;
 
