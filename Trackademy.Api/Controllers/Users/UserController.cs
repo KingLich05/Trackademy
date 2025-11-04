@@ -71,14 +71,14 @@ public class UserController(IUserServices service) : ControllerBase
         {
             if (currentUserId != id)
             {
-                return Forbid("Вы можете редактировать только свой профиль");
+                return Forbid();
             }
 
             var result = await service.UpdateUser(id, getUserRequest);
             return Ok(result);
         }
 
-        return Forbid("Недостаточно прав для выполнения операции");
+        return Forbid();
     }
 
     [HttpDelete("{id:guid}")]
