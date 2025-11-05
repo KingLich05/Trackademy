@@ -32,11 +32,6 @@ public interface IPaymentService
     Task<PagedResult<PaymentDto>> GetPaymentsWithFiltersAsync(PaymentFilterRequest request);
     
     /// <summary>
-    /// Получение всех платежей с фильтрами (для админов)
-    /// </summary>
-    Task<PagedResult<PaymentDto>> GetAllPaymentsAsync(PaymentStatus? status = null, int page = 1, int pageSize = 10);
-    
-    /// <summary>
     /// Пометить платеж как оплаченный
     /// </summary>
     Task<bool> MarkPaymentAsPaidAsync(Guid paymentId, PaymentMarkAsPaidModel model);
@@ -64,7 +59,7 @@ public interface IPaymentService
     /// <summary>
     /// Получение статистики платежей
     /// </summary>
-    Task<PaymentStatsDto> GetPaymentStatsAsync(Guid? groupId = null, Guid? studentId = null);
+    Task<PaymentStatsDto> GetPaymentStatsAsync(Guid organizationId, Guid? groupId = null, Guid? studentId = null);
 
     /// <summary>
     /// Массовое создание ежемесячных платежей для группы

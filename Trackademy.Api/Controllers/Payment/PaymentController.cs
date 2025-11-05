@@ -87,6 +87,7 @@ public class PaymentController(IPaymentService paymentService) : ControllerBase
     /// <summary>
     /// Получение платежей с расширенными фильтрами
     /// Параметры фильтрации:
+    /// - organizationId: ID организации по которой происходит фильтрация (обязательно)
     /// - groupId: ID группы (опционально)
     /// - studentId: ID студента (опционально) 
     /// - status: статус платежа (опционально)
@@ -99,6 +100,7 @@ public class PaymentController(IPaymentService paymentService) : ControllerBase
     [HttpGet]
     [RoleAuthorization(RoleEnum.Administrator)]
     public async Task<IActionResult> GetAllPayments(
+        [FromQuery] Guid organizationId,
         [FromQuery] Guid? groupId = null,
         [FromQuery] PaymentStatus? status = null,
         [FromQuery] PaymentType? type = null,
@@ -109,6 +111,7 @@ public class PaymentController(IPaymentService paymentService) : ControllerBase
     {
         var request = new PaymentFilterRequest
         {
+            OrganizationId = organizationId,
             GroupId = groupId,
             Status = status,
             Type = type,
@@ -213,10 +216,11 @@ public class PaymentController(IPaymentService paymentService) : ControllerBase
     [HttpGet("stats")]
     [RoleAuthorization(RoleEnum.Administrator)]
     public async Task<IActionResult> GetPaymentStats(
+        [FromQuery] Guid organizationId,
         [FromQuery] Guid? groupId = null,
         [FromQuery] Guid? studentId = null)
     {
-        var stats = await paymentService.GetPaymentStatsAsync(groupId, studentId);
+        var stats = await paymentService.GetPaymentStatsAsync(organizationId, groupId, studentId);
         return Ok(stats);
     }
 

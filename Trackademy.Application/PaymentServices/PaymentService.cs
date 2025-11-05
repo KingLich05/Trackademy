@@ -26,7 +26,9 @@ public class PaymentService(
             throw new ConflictException("Дата начала периода должна быть раньше даты окончания.");
         }
 
-        var student = await dbContext.Users.FirstOrDefaultAsync(u => u.Id == model.StudentId && u.Role == RoleEnum.Student);
+        var student = await dbContext.Users
+            .FirstOrDefaultAsync(u => u.Id == model.StudentId && u.Role == RoleEnum.Student);
+        
         if (student == null)
         {
             throw new ConflictException("Студент не найден.");
@@ -119,27 +121,24 @@ public class PaymentService(
         var query = dbContext.Payments
             .Include(p => p.Student)
             .Include(p => p.Group)
+            .Where(x => x.Group.OrganizationId == request.OrganizationId)
             .AsQueryable();
 
-        // Фильтр по группе
         if (request.GroupId.HasValue)
         {
             query = query.Where(p => p.GroupId == request.GroupId.Value);
         }
 
-        // Фильтр по статусу
         if (request.Status.HasValue)
         {
             query = query.Where(p => p.Status == request.Status.Value);
         }
 
-        // Фильтр по типу платежа
         if (request.Type.HasValue)
         {
             query = query.Where(p => p.Type == request.Type.Value);
         }
 
-        // Фильтр по дате создания
         if (request.FromDate.HasValue)
         {
             query = query.Where(p => p.CreatedAt >= request.FromDate.Value);
@@ -155,25 +154,6 @@ public class PaymentService(
         return await query
             .Select(p => mapper.Map<PaymentDto>(p))
             .ToPagedResultAsync(request.Page, request.PageSize);
-    }
-
-    public async Task<PagedResult<PaymentDto>> GetAllPaymentsAsync(PaymentStatus? status = null, int page = 1, int pageSize = 10)
-    {
-        var query = dbContext.Payments
-            .Include(p => p.Student)
-            .Include(p => p.Group)
-            .AsQueryable();
-
-        if (status.HasValue)
-        {
-            query = query.Where(p => p.Status == status.Value);
-        }
-
-        query = query.OrderByDescending(p => p.CreatedAt);
-
-        return await query
-            .Select(p => mapper.Map<PaymentDto>(p))
-            .ToPagedResultAsync(page, pageSize);
     }
 
     public async Task<bool> MarkPaymentAsPaidAsync(Guid paymentId, PaymentMarkAsPaidModel model)
@@ -271,9 +251,14 @@ public class PaymentService(
         return mapper.Map<List<PaymentDto>>(payments);
     }
 
-    public async Task<PaymentStatsDto> GetPaymentStatsAsync(Guid? groupId = null, Guid? studentId = null)
+    public async Task<PaymentStatsDto> GetPaymentStatsAsync(
+        Guid organizationId,
+        Guid? groupId = null,
+        Guid? studentId = null)
     {
-        var query = dbContext.Payments.AsQueryable();
+        var query = dbContext.Payments
+            .Include(x => x.Group)
+            .Where(x => x.Group.OrganizationId == organizationId).AsQueryable();
 
         if (groupId.HasValue)
         {
@@ -302,7 +287,8 @@ public class PaymentService(
         };
     }
 
-    public async Task<List<Guid>> CreateMonthlyPaymentsForGroupAsync(Guid groupId, decimal amount, DateOnly periodEnd, string paymentPeriod)
+    public async Task<List<Guid>> CreateMonthlyPaymentsForGroupAsync(Guid groupId, decimal amount, DateOnly periodEnd,
+        string paymentPeriod)
     {
         var group = await dbContext.Groups
             .Include(g => g.Students)
@@ -325,9 +311,9 @@ public class PaymentService(
         {
             // Проверяем, нет ли уже платежа за этот период
             var existingPayment = await dbContext.Payments
-                .AnyAsync(p => p.StudentId == student.Id && 
-                               p.GroupId == groupId && 
-                               p.PeriodStart == periodStart && 
+                .AnyAsync(p => p.StudentId == student.Id &&
+                               p.GroupId == groupId &&
+                               p.PeriodStart == periodStart &&
                                p.PeriodEnd == periodEnd);
 
             if (!existingPayment)

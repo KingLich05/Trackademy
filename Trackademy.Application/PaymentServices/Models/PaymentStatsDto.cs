@@ -18,6 +18,7 @@ public class PaymentStatsDto
 
 public class PaymentFilterRequest
 {
+    public Guid OrganizationId { get; set; }
     public Guid? GroupId { get; set; }
     public PaymentStatus? Status { get; set; }
     public PaymentType? Type { get; set; }
