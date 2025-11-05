@@ -43,12 +43,11 @@ public class PaymentController(IPaymentService paymentService) : ControllerBase
         if (payment == null)
             return NotFound("Платеж не найден");
 
-        // Студенты могут видеть только свои платежи
         if (GetCurrentUserRole() == RoleEnum.Student.ToString())
         {
             var currentUserId = GetCurrentUserId();
             if (payment.StudentId != currentUserId)
-                return Forbid("Доступ запрещен");
+                return Forbid();
         }
 
         return Ok(payment);
@@ -66,7 +65,7 @@ public class PaymentController(IPaymentService paymentService) : ControllerBase
         {
             var currentUserId = GetCurrentUserId();
             if (studentId != currentUserId)
-                return Forbid("Доступ запрещен");
+                return Forbid();
         }
 
         var payments = await paymentService.GetStudentPaymentsAsync(studentId);
