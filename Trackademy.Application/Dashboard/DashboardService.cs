@@ -305,11 +305,11 @@ public class DashboardService : IDashboardService
     /// </summary>
     private async Task<int> GetUnpaidStudentsCountAsync(Guid organizationId)
     {
-        var today = DateTime.UtcNow.Date;
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
         return await dbContext.Payments
             .Where(p => p.Student.OrganizationId == organizationId && 
                        p.Status == PaymentStatus.Overdue && 
-                       p.DueDate <= today)
+                       p.PeriodEnd <= today)
             .Select(p => p.StudentId)
             .Distinct()
             .CountAsync();
@@ -320,11 +320,11 @@ public class DashboardService : IDashboardService
     /// </summary>
     private async Task<decimal> GetTotalDebtAsync(Guid organizationId)
     {
-        var today = DateTime.UtcNow.Date;
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
         return await dbContext.Payments
             .Where(p => p.Student.OrganizationId == organizationId && 
                        (p.Status == PaymentStatus.Overdue || p.Status == PaymentStatus.Pending) && 
-                       p.DueDate <= today)
+                       p.PeriodEnd <= today)
             .SumAsync(p => p.Amount);
     }
 
@@ -374,11 +374,11 @@ public class DashboardService : IDashboardService
     /// </summary>
     private async Task<List<UnpaidStudentDto>> GetUnpaidStudentsAsync(Guid organizationId)
     {
-        var today = DateTime.UtcNow.Date;
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
         return await dbContext.Payments
             .Where(p => p.Student.OrganizationId == organizationId && 
                        p.Status == PaymentStatus.Overdue && 
-                       p.DueDate <= today)
+                       p.PeriodEnd <= today)
             .GroupBy(p => p.Student)
             .Select(g => new UnpaidStudentDto
             {
@@ -388,7 +388,7 @@ public class DashboardService : IDashboardService
                 Phone = g.Key.Phone,
                 GroupName = g.Key.Groups.FirstOrDefault() != null ? g.Key.Groups.First().Name : "Без группы",
                 DebtAmount = g.Sum(p => p.Amount),
-                DaysOverdue = (int)(today - g.Min(p => p.DueDate)).TotalDays,
+                DaysOverdue = today.DayNumber - g.Min(p => p.PeriodEnd).DayNumber,
                 PaymentStatus = PaymentStatus.Overdue,
                 LastPaymentDate = g.Max(p => p.PaidAt)
             })
