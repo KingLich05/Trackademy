@@ -57,7 +57,7 @@ public interface IPaymentService
     Task UpdateOverduePaymentsAsync();
     
     /// <summary>
-    /// Получение платежей, требующих уведомления (за 3 дня до DueDate)
+    /// Получение платежей, требующих уведомления (за 3 дня до окончания периода)
     /// </summary>
     Task<List<PaymentDto>> GetPaymentsForNotificationAsync();
 
@@ -65,4 +65,9 @@ public interface IPaymentService
     /// Получение статистики платежей
     /// </summary>
     Task<PaymentStatsDto> GetPaymentStatsAsync(Guid? groupId = null, Guid? studentId = null);
+
+    /// <summary>
+    /// Массовое создание ежемесячных платежей для группы
+    /// </summary>
+    Task<List<Guid>> CreateMonthlyPaymentsForGroupAsync(Guid groupId, decimal amount, DateOnly periodEnd, string paymentPeriod);
 }

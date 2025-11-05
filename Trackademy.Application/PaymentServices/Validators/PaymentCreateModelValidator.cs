@@ -15,11 +15,11 @@ public class PaymentCreateModelValidator : AbstractValidator<PaymentCreateModel>
             .NotEmpty()
             .WithMessage("ID группы обязателен");
 
-        RuleFor(x => x.Description)
+        RuleFor(x => x.PaymentPeriod)
             .NotEmpty()
-            .WithMessage("Описание платежа обязательно")
+            .WithMessage("Период оплаты обязателен")
             .MaximumLength(500)
-            .WithMessage("Описание не может превышать 500 символов");
+            .WithMessage("Период оплаты не может превышать 500 символов");
 
         RuleFor(x => x.OriginalAmount)
             .GreaterThan(0)
@@ -33,9 +33,13 @@ public class PaymentCreateModelValidator : AbstractValidator<PaymentCreateModel>
             .LessThan(x => x.PeriodEnd)
             .WithMessage("Дата начала периода должна быть раньше даты окончания");
 
-        RuleFor(x => x.DueDate)
-            .GreaterThanOrEqualTo(DateTime.Today)
-            .WithMessage("Срок оплаты не может быть в прошлом");
+        RuleFor(x => x.PeriodEnd)
+            .GreaterThanOrEqualTo(DateOnly.FromDateTime(DateTime.Today))
+            .WithMessage("Период окончания не может быть в прошлом");
+
+        RuleFor(x => x.PeriodEnd)
+            .LessThanOrEqualTo(DateOnly.FromDateTime(DateTime.Today.AddYears(2)))
+            .WithMessage("Период окончания не может быть более чем через 2 года");
 
         RuleFor(x => x.DiscountReason)
             .MaximumLength(200)
@@ -47,10 +51,5 @@ public class PaymentCreateModelValidator : AbstractValidator<PaymentCreateModel>
             .NotEmpty()
             .WithMessage("При наличии скидки необходимо указать причину")
             .When(x => x.DiscountPercentage > 0);
-
-        // Валидация дат периода
-        RuleFor(x => x.PeriodEnd)
-            .GreaterThan(x => x.PeriodStart)
-            .WithMessage("Дата окончания периода должна быть позже начала");
     }
 }

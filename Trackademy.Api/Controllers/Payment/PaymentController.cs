@@ -221,6 +221,29 @@ public class PaymentController(IPaymentService paymentService) : ControllerBase
         return Ok(stats);
     }
 
+    /// <summary>
+    /// Массовое создание ежемесячных платежей для группы
+    /// </summary>
+    [HttpPost("bulk/monthly")]
+    [RoleAuthorization(RoleEnum.Administrator)]
+    public async Task<IActionResult> CreateMonthlyPaymentsForGroup([FromBody] BulkPaymentCreateModel model)
+    {
+        try
+        {
+            var paymentIds = await paymentService.CreateMonthlyPaymentsForGroupAsync(
+                model.GroupId, 
+                model.OriginalAmount, 
+                model.PeriodEnd, 
+                model.PaymentPeriod);
+
+            return Ok(new { CreatedPayments = paymentIds.Count, PaymentIds = paymentIds });
+        }
+        catch (ConflictException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
     private Guid GetCurrentUserId()
     {
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;

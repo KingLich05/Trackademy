@@ -16,9 +16,9 @@ public class PaymentService(
 {
     public async Task<Guid> CreatePaymentAsync(PaymentCreateModel model)
     {
-        if (model.DueDate.Date < DateTime.UtcNow.Date)
+        if (model.PeriodEnd < DateOnly.FromDateTime(DateTime.UtcNow))
         {
-            throw new ConflictException("Срок оплаты не может быть в прошлом.");
+            throw new ConflictException("Период окончания не может быть в прошлом.");
         }
 
         if (model.PeriodStart >= model.PeriodEnd)
@@ -61,7 +61,7 @@ public class PaymentService(
             Id = Guid.NewGuid(),
             StudentId = model.StudentId,
             GroupId = model.GroupId,
-            Description = model.Description,
+            PaymentPeriod = model.PaymentPeriod,
             Type = model.Type,
             OriginalAmount = model.OriginalAmount,
             DiscountPercentage = model.DiscountPercentage,
@@ -69,7 +69,6 @@ public class PaymentService(
             DiscountReason = model.DiscountReason,
             PeriodStart = model.PeriodStart,
             PeriodEnd = model.PeriodEnd,
-            DueDate = model.DueDate,
             Status = PaymentStatus.Pending,
             CreatedAt = DateTime.UtcNow
         };
@@ -244,7 +243,7 @@ public class PaymentService(
     public async Task UpdateOverduePaymentsAsync()
     {
         var overduePayments = await dbContext.Payments
-            .Where(p => p.Status == PaymentStatus.Pending && p.DueDate.Date < DateTime.UtcNow.Date)
+            .Where(p => p.Status == PaymentStatus.Pending && p.PeriodEnd < DateOnly.FromDateTime(DateTime.UtcNow))
             .ToListAsync();
 
         foreach (var payment in overduePayments)
@@ -260,12 +259,12 @@ public class PaymentService(
 
     public async Task<List<PaymentDto>> GetPaymentsForNotificationAsync()
     {
-        var notificationDate = DateTime.UtcNow.AddDays(3).Date;
+        var notificationDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(3));
 
         var payments = await dbContext.Payments
             .Include(p => p.Student)
             .Include(p => p.Group)
-            .Where(p => p.Status == PaymentStatus.Pending && p.DueDate.Date == notificationDate)
+            .Where(p => p.Status == PaymentStatus.Pending && p.PeriodEnd == notificationDate)
             .OrderBy(p => p.Student.FullName)
             .ToListAsync();
 
@@ -301,5 +300,60 @@ public class PaymentService(
             PendingAmount = payments.Where(p => p.Status == PaymentStatus.Pending).Sum(p => p.Amount),
             OverdueAmount = payments.Where(p => p.Status == PaymentStatus.Overdue).Sum(p => p.Amount)
         };
+    }
+
+    public async Task<List<Guid>> CreateMonthlyPaymentsForGroupAsync(Guid groupId, decimal amount, DateOnly periodEnd, string paymentPeriod)
+    {
+        var group = await dbContext.Groups
+            .Include(g => g.Students)
+            .FirstOrDefaultAsync(g => g.Id == groupId);
+
+        if (group == null)
+        {
+            throw new ConflictException("Группа не найдена.");
+        }
+
+        if (!group.Students.Any())
+        {
+            throw new ConflictException("В группе нет студентов.");
+        }
+
+        var createdPaymentIds = new List<Guid>();
+        var periodStart = new DateOnly(periodEnd.Year, periodEnd.Month, 1); // Начало месяца
+
+        foreach (var student in group.Students)
+        {
+            // Проверяем, нет ли уже платежа за этот период
+            var existingPayment = await dbContext.Payments
+                .AnyAsync(p => p.StudentId == student.Id && 
+                               p.GroupId == groupId && 
+                               p.PeriodStart == periodStart && 
+                               p.PeriodEnd == periodEnd);
+
+            if (!existingPayment)
+            {
+                var payment = new Payment
+                {
+                    Id = Guid.NewGuid(),
+                    StudentId = student.Id,
+                    GroupId = groupId,
+                    PaymentPeriod = paymentPeriod,
+                    Type = PaymentType.Monthly,
+                    OriginalAmount = amount,
+                    DiscountPercentage = 0,
+                    Amount = amount,
+                    PeriodStart = periodStart,
+                    PeriodEnd = periodEnd,
+                    Status = PaymentStatus.Pending,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                await dbContext.Payments.AddAsync(payment);
+                createdPaymentIds.Add(payment.Id);
+            }
+        }
+
+        await dbContext.SaveChangesAsync();
+        return createdPaymentIds;
     }
 }

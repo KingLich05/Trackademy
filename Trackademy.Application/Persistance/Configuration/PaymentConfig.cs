@@ -10,7 +10,7 @@ public class PaymentConfig : IEntityTypeConfiguration<Payment>
     {
         b.HasKey(x => x.Id);
      
-        b.HasIndex(x => new { x.StudentId, x.DueDate });
+        b.HasIndex(x => new { x.StudentId, x.PeriodEnd });
 
         b.HasOne(x => x.Student)
             .WithMany(u => u.Payments)
@@ -20,7 +20,7 @@ public class PaymentConfig : IEntityTypeConfiguration<Payment>
             .WithMany(g => g.Payments)
             .HasForeignKey(x => x.GroupId);
 
-        b.Property(x => x.Description)
+        b.Property(x => x.PaymentPeriod)
             .HasMaxLength(500)
             .IsRequired();
 
