@@ -85,7 +85,7 @@ public class PaymentController(IPaymentService paymentService) : ControllerBase
     }
 
     /// <summary>
-    /// Получение платежей с расширенными фильтрами
+    /// Получение платежей с расширенными фильтрами, сгруппированных по студентам
     /// Параметры фильтрации:
     /// - organizationId: ID организации по которой происходит фильтрация (обязательно)
     /// - groupId: ID группы (опционально)
@@ -96,6 +96,20 @@ public class PaymentController(IPaymentService paymentService) : ControllerBase
     /// - toDate: дата создания до (опционально)
     /// - page: номер страницы (по умолчанию 1)
     /// - pageSize: размер страницы (по умолчанию 10)
+    /// 
+    /// Возвращает структуру:
+    /// {
+    ///   "items": [
+    ///     {
+    ///       "studentId": "guid",
+    ///       "studentName": "Имя студента",
+    ///       "payments": [список платежей студента]
+    ///     }
+    ///   ],
+    ///   "totalCount": число,
+    ///   "page": номер,
+    ///   "pageSize": размер
+    /// }
     /// </summary>
     [HttpGet]
     [RoleAuthorization(RoleEnum.Administrator)]
@@ -121,8 +135,8 @@ public class PaymentController(IPaymentService paymentService) : ControllerBase
             PageSize = pageSize
         };
 
-        var payments = await paymentService.GetPaymentsWithFiltersAsync(request);
-        return Ok(payments);
+        var result = await paymentService.GetGroupedPaymentsAsync(request);
+        return Ok(result);
     }
 
     /// <summary>

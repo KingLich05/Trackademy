@@ -32,6 +32,11 @@ public interface IPaymentService
     Task<PagedResult<PaymentDto>> GetPaymentsWithFiltersAsync(PaymentFilterRequest request);
     
     /// <summary>
+    /// Получение платежей, сгруппированных по студентам
+    /// </summary>
+    Task<GroupedPaymentResult> GetGroupedPaymentsAsync(PaymentFilterRequest request);
+    
+    /// <summary>
     /// Пометить платеж как оплаченный
     /// </summary>
     Task<bool> MarkPaymentAsPaidAsync(Guid paymentId, PaymentMarkAsPaidModel model);

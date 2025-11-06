@@ -156,6 +156,53 @@ public class PaymentService(
             .ToPagedResultAsync(request.Page, request.PageSize);
     }
 
+    public async Task<GroupedPaymentResult> GetGroupedPaymentsAsync(PaymentFilterRequest request)
+    {
+        // Получаем платежи с помощью существующего метода
+        var pagedPayments = await GetPaymentsWithFiltersAsync(request);
+        
+        // Группируем платежи по студентам
+        var groupedPayments = pagedPayments.Items
+            .GroupBy(p => new { p.StudentId, p.StudentName })
+            .Select(g => {
+                var sortedPayments = g.OrderByDescending(p => p.CreatedAt).ToList();
+                var lastPayment = sortedPayments.First(); // Последний (самый новый) платеж
+                
+                return new GroupedPaymentDto
+                {
+                    StudentId = g.Key.StudentId,
+                    StudentName = g.Key.StudentName,
+                    // Информация о последнем платеже на уровне студента
+                    LastPaymentId = lastPayment.Id,
+                    LastPaymentAmount = lastPayment.Amount,
+                    LastPaymentStatus = lastPayment.Status,
+                    LastPaymentStatusName = lastPayment.StatusName,
+                    LastPaymentType = lastPayment.Type,
+                    LastPaymentTypeName = lastPayment.TypeName,
+                    LastPaymentPeriod = lastPayment.PaymentPeriod,
+                    LastPaymentCreatedAt = lastPayment.CreatedAt,
+                    LastPaymentPaidAt = lastPayment.PaidAt,
+                    LastPaymentPeriodStart = lastPayment.PeriodStart,
+                    LastPaymentPeriodEnd = lastPayment.PeriodEnd,
+                    LastPaymentDiscountReason = lastPayment.DiscountReason,
+                    LastPaymentOriginalAmount = lastPayment.OriginalAmount,
+                    LastPaymentDiscountPercentage = lastPayment.DiscountPercentage,
+                    // Все платежи студента (включая последний)
+                    Payments = sortedPayments
+                };
+            })
+            .OrderBy(s => s.StudentName)
+            .ToList();
+
+        return new GroupedPaymentResult
+        {
+            Items = groupedPayments,
+            TotalCount = pagedPayments.TotalCount,
+            PageNumber = pagedPayments.PageNumber,
+            PageSize = pagedPayments.PageSize
+        };
+    }
+
     public async Task<bool> MarkPaymentAsPaidAsync(Guid paymentId, PaymentMarkAsPaidModel model)
     {
         var payment = await dbContext.Payments.FirstOrDefaultAsync(p => p.Id == paymentId);
