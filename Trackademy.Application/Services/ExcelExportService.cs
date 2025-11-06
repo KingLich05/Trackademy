@@ -33,9 +33,13 @@ public class ExcelExportService : IExcelExportService
         {
             CreateSummaryWorksheet(workbook, attendances, filter);
 
+            // Получаем уникальные GroupId из данных посещаемости
+            var groupIds = attendances.Select(a => a.GroupId).Distinct().ToList();
+
+            // Загружаем группы по найденным ID
             var groupsWithData = await _context.Groups
                 .Where(g => g.OrganizationId == filter.OrganizationId && 
-                           attendances.Any(a => a.GroupId == g.Id))
+                           groupIds.Contains(g.Id))
                 .OrderBy(g => g.CreatedAt)
                 .ToListAsync();
 
