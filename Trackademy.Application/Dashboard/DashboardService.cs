@@ -323,8 +323,8 @@ public class DashboardService : IDashboardService
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
         return await dbContext.Payments
             .Where(p => p.Student.OrganizationId == organizationId && 
-                       (p.Status == PaymentStatus.Overdue || p.Status == PaymentStatus.Pending) && 
-                       p.PeriodEnd <= today)
+                       (p.Status == PaymentStatus.Pending || // Все Pending как долг
+                        (p.Status == PaymentStatus.Overdue && p.PeriodEnd < today))) // Только просроченные Overdue
             .SumAsync(p => p.Amount);
     }
 
