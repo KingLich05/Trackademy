@@ -134,7 +134,7 @@ public class AttendanceController : ControllerBase
         try
         {
             var excelBytes = await _attendanceService.ExportAttendanceReportAsync(filter);
-            var fileName = $"attendance_report_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+            var fileName = $"attendance_report_{DateTime.Now:yyyy-MM-dd}.xlsx";
             
             return File(excelBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
         }
