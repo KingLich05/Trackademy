@@ -8,6 +8,7 @@ public class AttendanceDto
     public Guid StudentId { get; set; }
     public string StudentName { get; set; } = string.Empty;
     public string StudentLogin { get; set; } = string.Empty;
+    public Guid GroupId { get; set; }
     public Guid LessonId { get; set; }
     public DateOnly Date { get; set; }
     public DateOnly PlannedLessonDate { get; set; }
