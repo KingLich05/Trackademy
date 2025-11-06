@@ -60,9 +60,4 @@ public interface IPaymentService
     /// Получение статистики платежей
     /// </summary>
     Task<PaymentStatsDto> GetPaymentStatsAsync(Guid organizationId, Guid? groupId = null, Guid? studentId = null);
-
-    /// <summary>
-    /// Массовое создание ежемесячных платежей для группы
-    /// </summary>
-    Task<List<Guid>> CreateMonthlyPaymentsForGroupAsync(Guid groupId, decimal amount, DateOnly periodEnd, string paymentPeriod);
 }
