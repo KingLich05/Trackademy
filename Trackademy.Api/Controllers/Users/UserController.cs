@@ -81,6 +81,46 @@ public class UserController(IUserServices service) : ControllerBase
         return Forbid();
     }
 
+    [HttpPut("update-password")]
+    [RoleAuthorization(RoleEnum.Student)]
+    public async Task<IActionResult> UpdatePassword([FromBody] UpdatePasswordRequest request)
+    {
+        var currentUserIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+        if (currentUserIdClaim == null)
+            return Unauthorized("Не удалось определить текущего пользователя");
+
+        if (!Guid.TryParse(currentUserIdClaim.Value, out var currentUserId))
+            return Unauthorized("Неверный ID пользователя");
+
+        var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+
+        // Администраторы и владельцы могут менять пароль любому пользователю
+        if (userRole == RoleEnum.Administrator.ToString() || userRole == RoleEnum.Owner.ToString())
+        {
+            var result = await service.UpdatePassword(request);
+            if (!result)
+                return BadRequest("Не удалось обновить пароль. Проверьте правильность текущего пароля и существование пользователя.");
+            
+            return Ok(new { message = "Пароль успешно обновлен" });
+        }
+
+        if (userRole == RoleEnum.Teacher.ToString() || userRole == RoleEnum.Student.ToString())
+        {
+            if (currentUserId != request.StudentId)
+            {
+                return Forbid();
+            }
+
+            var result = await service.UpdatePassword(request);
+            if (!result)
+                return BadRequest("Не удалось обновить пароль. Проверьте правильность текущего пароля.");
+            
+            return Ok(new { message = "Пароль успешно обновлен" });
+        }
+
+        return Forbid();
+    }
+
     [HttpDelete("{id:guid}")]
     [RoleAuthorization(RoleEnum.Administrator)]
     public async Task<IActionResult> DeleteUser(

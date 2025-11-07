@@ -15,5 +15,7 @@ public interface IUserServices
     
     Task<Guid> UpdateUser(Guid id, UserUpdateModel updateUserRequest);
     
+    Task<bool> UpdatePassword(UpdatePasswordRequest request);
+    
     Task<bool> DeleteUser(Guid id);
 }

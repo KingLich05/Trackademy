@@ -166,6 +166,32 @@ public class UserServices(TrackademyDbContext dbContext, IMapper mapper) :
         return true;
     }
 
+    public async Task<bool> UpdatePassword(UpdatePasswordRequest request)
+    {
+        var user = await dbContext.Users
+            .FirstOrDefaultAsync(u => u.Id == request.StudentId);
+
+        if (user == null)
+        {
+            return false;
+        }
+
+        // Проверяем текущий пароль
+        if (!BCrypt.Net.BCrypt.Verify(request.CurrentPassword, user.PasswordHash))
+        {
+            return false;
+        }
+
+        // Хешируем новый пароль
+        var newPasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+        
+        // Обновляем пароль
+        user.PasswordHash = newPasswordHash;
+        
+        await dbContext.SaveChangesAsync();
+        return true;
+    }
+
     #region Private methods
 
     private bool ValidateData(CreateUserRequest request)
