@@ -30,6 +30,7 @@ public static class DependencyInjection
             options.UseNpgsql(configuration.GetConnectionString("TrackademyDbContext")));
 
         services.AddScoped<IUserServices, UserServices>();
+        services.AddScoped<IExcelImportService, ExcelImportService>();
         services.AddScoped<IGroupService, GroupService>();
         services.AddScoped<IOrganizationService, OrganizationService>();
         services.AddScoped<ISubjectService, SubjectService>();

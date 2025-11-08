@@ -17,5 +17,7 @@ public interface IUserServices
     
     Task<bool> UpdatePassword(UpdatePasswordRequest request);
     
+    Task<UserImportResult> ImportUsersFromExcel(List<UserImportRow> rows, Guid organizationId);
+    
     Task<bool> DeleteUser(Guid id);
 }

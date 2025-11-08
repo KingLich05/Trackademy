@@ -121,6 +121,48 @@ public class UserController(IUserServices service) : ControllerBase
         return Forbid();
     }
 
+    [HttpPost("import-excel")]
+    [RoleAuthorization(RoleEnum.Administrator)]
+    public async Task<IActionResult> ImportUsersFromExcel(
+        [FromForm] IFormFile file,
+        [FromForm] Guid organizationId)
+    {
+        if (file == null || file.Length == 0)
+            return BadRequest("Файл не загружен");
+
+        // Проверка типа файла
+        var extension = Path.GetExtension(file.FileName).ToLower();
+        if (extension != ".xlsx" && extension != ".xls")
+            return BadRequest("Допустимы только файлы Excel (.xlsx, .xls)");
+
+        try
+        {
+            // Парсим Excel файл
+            var excelService = HttpContext.RequestServices.GetRequiredService<IExcelImportService>();
+            var rows = await excelService.ParseExcelFile(file);
+
+            if (!rows.Any())
+                return BadRequest("Файл не содержит данных для импорта");
+
+            // Импортируем пользователей
+            var result = await service.ImportUsersFromExcel(rows, organizationId);
+
+            // Возвращаем результат с детальной информацией
+            return Ok(new
+            {
+                result.TotalRows,
+                result.SuccessCount,
+                result.ErrorCount,
+                result.CreatedUsers,
+                result.Errors
+            });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest($"Ошибка при обработке файла: {ex.Message}");
+        }
+    }
+
     [HttpDelete("{id:guid}")]
     [RoleAuthorization(RoleEnum.Administrator)]
     public async Task<IActionResult> DeleteUser(

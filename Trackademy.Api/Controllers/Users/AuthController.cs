@@ -92,9 +92,14 @@ public class AuthController(
         var claims = new List<Claim>
         {
             new Claim(ClaimTypes.NameIdentifier, str.Str(user.Id)),
-            new Claim(ClaimTypes.Email, user.Email ?? throw new InvalidOperationException()),
             new Claim(ClaimTypes.Role, str.Str(user.Role))
         };
+        
+        // Добавляем email в claims только если он указан
+        if (!string.IsNullOrWhiteSpace(user.Email))
+        {
+            claims.Add(new Claim(ClaimTypes.Email, user.Email));
+        }
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSection["Key"]!));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
