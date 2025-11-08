@@ -69,9 +69,10 @@ public class UserServices(TrackademyDbContext dbContext, IMapper mapper) :
             throw new ConflictException("Не все поля заполнены.");
         }
 
-        if (!VerifyNullEmailAndPassword(request.Email, request.Password))
+        // Пароль обязателен для создания через API (email необязателен)
+        if (string.IsNullOrWhiteSpace(request.Password))
         {
-            throw new ConflictException("Email и пароль обязательны");
+            throw new ConflictException("Пароль обязателен");
         }
 
         var organization = await dbContext.Organizations
@@ -316,16 +317,6 @@ public class UserServices(TrackademyDbContext dbContext, IMapper mapper) :
         if (string.IsNullOrWhiteSpace(request.Phone)) return false;
         if (string.IsNullOrWhiteSpace(request.Password)) return false;
         if (!Enum.IsDefined(typeof(RoleEnum), request.Role)) return false;
-
-        return true;
-    }
-
-    private bool VerifyNullEmailAndPassword(string? email, string? password)
-    {
-        if (string.IsNullOrWhiteSpace(email) && string.IsNullOrWhiteSpace(password))
-        {
-            return false;
-        }
 
         return true;
     }
