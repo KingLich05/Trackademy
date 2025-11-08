@@ -158,21 +158,18 @@ public class PaymentService(
 
     public async Task<GroupedPaymentResult> GetGroupedPaymentsAsync(PaymentFilterRequest request)
     {
-        // Получаем платежи с помощью существующего метода
         var pagedPayments = await GetPaymentsWithFiltersAsync(request);
         
-        // Группируем платежи по студентам
         var groupedPayments = pagedPayments.Items
             .GroupBy(p => new { p.StudentId, p.StudentName })
             .Select(g => {
                 var sortedPayments = g.OrderByDescending(p => p.CreatedAt).ToList();
-                var lastPayment = sortedPayments.First(); // Последний (самый новый) платеж
+                var lastPayment = sortedPayments.First();
                 
                 return new GroupedPaymentDto
                 {
                     StudentId = g.Key.StudentId,
                     StudentName = g.Key.StudentName,
-                    // Информация о последнем платеже на уровне студента
                     LastPaymentId = lastPayment.Id,
                     LastPaymentAmount = lastPayment.Amount,
                     LastPaymentStatus = lastPayment.Status,
@@ -187,7 +184,6 @@ public class PaymentService(
                     LastPaymentDiscountReason = lastPayment.DiscountReason,
                     LastPaymentOriginalAmount = lastPayment.OriginalAmount,
                     LastPaymentDiscountPercentage = lastPayment.DiscountPercentage,
-                    // Все платежи студента (включая последний)
                     Payments = sortedPayments
                 };
             })
@@ -209,7 +205,6 @@ public class PaymentService(
         if (payment == null)
             return false;
 
-        // Проверка, что платеж можно оплатить
         if (payment.Status != PaymentStatus.Pending && payment.Status != PaymentStatus.Overdue)
         {
             throw new ConflictException("Можно оплатить только ожидающие оплаты или просроченные платежи.");
@@ -228,7 +223,6 @@ public class PaymentService(
         if (payment == null)
             return false;
 
-        // Проверка, что платеж можно отменить
         if (payment.Status == PaymentStatus.Paid)
         {
             throw new ConflictException("Нельзя отменить оплаченный платеж. Используйте возврат.");
@@ -251,9 +245,10 @@ public class PaymentService(
     {
         var payment = await dbContext.Payments.FirstOrDefaultAsync(p => p.Id == paymentId);
         if (payment == null)
+        {
             return false;
+        }
 
-        // Проверка, что можно сделать возврат
         if (payment.Status != PaymentStatus.Paid)
         {
             throw new ConflictException("Возврат возможен только для оплаченных платежей.");
