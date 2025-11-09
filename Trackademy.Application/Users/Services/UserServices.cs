@@ -221,7 +221,7 @@ public class UserServices(TrackademyDbContext dbContext, IMapper mapper) :
             if (!string.IsNullOrWhiteSpace(row.Role) && 
                 !Enum.TryParse<RoleEnum>(row.Role, true, out var roleEnum))
             {
-                errors.Add($"Неверная роль. Допустимые значения: {string.Join(", ", Enum.GetNames<RoleEnum>())}");
+                errors.Add($"Неверная роль. Допустимые значения: Student или Teacher");
             }
 
             // Если есть ошибки валидации - добавляем в список ошибок и пропускаем
