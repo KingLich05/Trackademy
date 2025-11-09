@@ -138,6 +138,22 @@ public class GroupService:
             .Include(x => x.Students)
             .Where(x => x.OrganizationId == request.OrganizationId);
 
+        // Фильтрация по предмету (необязательно)
+        if (request.SubjectId.HasValue)
+        {
+            query = query.Where(x => x.SubjectId == request.SubjectId.Value);
+        }
+
+        // Поиск по названию группы или имени студента (необязательно)
+        if (!string.IsNullOrWhiteSpace(request.Search))
+        {
+            var searchLower = request.Search.ToLower();
+            query = query.Where(x => 
+                x.Name.ToLower().Contains(searchLower) || 
+                x.Students.Any(s => s.FullName.ToLower().Contains(searchLower))
+            );
+        }
+
         var pagedGroups = await query
             .OrderBy(x => x.Name)
             .Select(group => _mapper.Map<GroupsDto>(group))
