@@ -19,5 +19,7 @@ public interface IUserServices
     
     Task<UserImportResult> ImportUsersFromExcel(List<UserImportRow> rows, Guid organizationId);
     
+    byte[] GenerateImportTemplate();
+    
     Task<bool> DeleteUser(Guid id);
 }

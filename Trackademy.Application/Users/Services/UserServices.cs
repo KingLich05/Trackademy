@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using AutoMapper.QueryableExtensions;
+using ClosedXML.Excel;
 using Microsoft.EntityFrameworkCore;
 using Trackademy.Application.authenticator.Models;
 using Trackademy.Application.Persistance;
@@ -445,4 +446,70 @@ public class UserServices(TrackademyDbContext dbContext, IMapper mapper) :
     }
 
     #endregion
+
+    /// <summary>
+    /// Генерирует Excel шаблон для импорта пользователей
+    /// </summary>
+    public byte[] GenerateImportTemplate()
+    {
+        using var workbook = new XLWorkbook();
+        var worksheet = workbook.Worksheets.Add("Шаблон");
+
+        // Настройка заголовков
+        worksheet.Cell(1, 1).Value = "ФИО";
+        worksheet.Cell(1, 2).Value = "Email";
+        worksheet.Cell(1, 3).Value = "Телефон";
+        worksheet.Cell(1, 4).Value = "Телефон родителя";
+        worksheet.Cell(1, 5).Value = "Дата рождения";
+        worksheet.Cell(1, 6).Value = "Роль";
+        worksheet.Cell(1, 7).Value = "Логин";
+
+        // Форматирование заголовков
+        var headerRange = worksheet.Range(1, 1, 1, 7);
+        headerRange.Style.Font.Bold = true;
+        headerRange.Style.Fill.BackgroundColor = XLColor.LightGray;
+        headerRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+        headerRange.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+        headerRange.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
+
+        // Автоширина колонок
+        worksheet.Column(1).Width = 30; // ФИО
+        worksheet.Column(2).Width = 25; // Email
+        worksheet.Column(3).Width = 15; // Телефон
+        worksheet.Column(4).Width = 20; // Телефон родителя
+        worksheet.Column(5).Width = 18; // Дата рождения
+        worksheet.Column(6).Width = 12; // Роль
+        worksheet.Column(7).Width = 15; // Логин
+
+        // Добавление примера данных (опционально)
+        worksheet.Cell(2, 1).Value = "Иванов Иван Иванович";
+        worksheet.Cell(2, 2).Value = "ivanov@example.com";
+        worksheet.Cell(2, 3).Value = "87001234567";
+        worksheet.Cell(2, 4).Value = "87009876543";
+        worksheet.Cell(2, 5).Value = "01.01.2005";
+        worksheet.Cell(2, 6).Value = "Student";
+        worksheet.Cell(2, 7).Value = ""; // Автогенерация
+
+        // Форматирование примера (серый цвет для указания что это пример)
+        var exampleRange = worksheet.Range(2, 1, 2, 7);
+        exampleRange.Style.Font.Italic = true;
+        exampleRange.Style.Font.FontColor = XLColor.Gray;
+
+        // Добавление подсказок в соседних ячейках (строка 3)
+        worksheet.Cell(3, 2).Value = "(необязательно)";
+        worksheet.Cell(3, 4).Value = "(необязательно)";
+        worksheet.Cell(3, 5).Value = "(формат: ДД.ММ.ГГГГ)";
+        worksheet.Cell(3, 6).Value = "(Student или Teacher)";
+        worksheet.Cell(3, 7).Value = "(автогенерация)";
+        
+        var hintRange = worksheet.Range(3, 1, 3, 7);
+        hintRange.Style.Font.FontSize = 9;
+        hintRange.Style.Font.FontColor = XLColor.DarkGray;
+        hintRange.Style.Font.Italic = true;
+
+        // Сохранение в поток
+        using var stream = new MemoryStream();
+        workbook.SaveAs(stream);
+        return stream.ToArray();
+    }
 }

@@ -163,6 +163,23 @@ public class UserController(IUserServices service) : ControllerBase
         }
     }
 
+    [HttpGet("download-template")]
+    [RoleAuthorization(RoleEnum.Administrator)]
+    public IActionResult DownloadImportTemplate()
+    {
+        try
+        {
+            var fileBytes = service.GenerateImportTemplate();
+            var fileName = $"UserImportTemplate_{DateTime.Now:yyyy-MM-dd}.xlsx";
+            
+            return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest($"Ошибка при генерации шаблона: {ex.Message}");
+        }
+    }
+
     [HttpDelete("{id:guid}")]
     [RoleAuthorization(RoleEnum.Administrator)]
     public async Task<IActionResult> DeleteUser(
