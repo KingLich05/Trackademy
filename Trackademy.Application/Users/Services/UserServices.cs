@@ -232,7 +232,11 @@ public class UserServices(TrackademyDbContext dbContext, IMapper mapper) :
                     RowNumber = row.RowNumber,
                     FullName = row.FullName,
                     Email = row.Email,
-                    Phone = row.Phone,
+                    Phone = row.Phone ?? string.Empty,
+                    ParentPhone = row.ParentPhone,
+                    Birthday = row.Birthday?.ToString("dd.MM.yyyy"),
+                    Role = row.Role,
+                    Login = row.Login,
                     Errors = errors
                 });
                 result.ErrorCount++;
@@ -299,7 +303,11 @@ public class UserServices(TrackademyDbContext dbContext, IMapper mapper) :
                     RowNumber = row.RowNumber,
                     FullName = row.FullName,
                     Email = row.Email,
-                    Phone = row.Phone,
+                    Phone = row.Phone ?? string.Empty,
+                    ParentPhone = row.ParentPhone,
+                    Birthday = row.Birthday?.ToString("dd.MM.yyyy"),
+                    Role = row.Role,
+                    Login = row.Login,
                     Errors = new List<string> { $"Ошибка при создании: {ex.Message}" }
                 });
                 result.ErrorCount++;
