@@ -30,17 +30,6 @@ namespace Trackademy.Application.Submissions
             }
         }
 
-        public async Task<SubmissionResponseModel?> GetByAssignmentAndStudentAsync(Guid assignmentId, Guid studentId)
-        {
-            var submission = await _context.Submissions
-                .Include(s => s.Student)
-                .Include(s => s.Files)
-                .Include(s => s.Scores)
-                .FirstOrDefaultAsync(s => s.AssignmentId == assignmentId && s.StudentId == studentId);
-
-            return submission == null ? null : MapToResponseModel(submission);
-        }
-
         public async Task<SubmissionResponseModel> CreateOrUpdateAsync(Guid assignmentId, Guid studentId, SubmissionCreateUpdateModel model)
         {
             // Проверяем существование задания
@@ -257,18 +246,6 @@ namespace Trackademy.Application.Submissions
                 PageSize = request.PageSize,
                 TotalCount = totalCount
             };
-        }
-
-        public async Task<List<SubmissionResponseModel>> GetAllByAssignmentAsync(Guid assignmentId)
-        {
-            var submissions = await _context.Submissions
-                .Include(s => s.Student)
-                .Include(s => s.Files)
-                .Include(s => s.Scores)
-                .Where(s => s.AssignmentId == assignmentId)
-                .ToListAsync();
-
-            return submissions.Select(MapToResponseModel).ToList();
         }
 
         public async Task<FileDownloadResult> DownloadFileAsync(Guid fileId, Guid userId, string userRole)

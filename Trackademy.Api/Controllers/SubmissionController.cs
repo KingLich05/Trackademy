@@ -20,17 +20,6 @@ namespace Trackademy.Api.Controllers
         }
 
         /// <summary>
-        /// Получить submission студента для задания
-        /// </summary>
-        [HttpGet("assignment/{assignmentId}")]
-        public async Task<IActionResult> GetByAssignment(Guid assignmentId)
-        {
-            var userId = GetCurrentUserId();
-            var submission = await _submissionService.GetByAssignmentAndStudentAsync(assignmentId, userId);
-            return Ok(submission);
-        }
-
-        /// <summary>
         /// Создать или обновить submission (для студентов)
         /// </summary>
         [HttpPost("assignment/{assignmentId}")]
@@ -140,18 +129,6 @@ namespace Trackademy.Api.Controllers
             }
             
             var submissions = await _submissionService.GetSubmissionsAsync(request);
-            return Ok(submissions);
-        }
-
-        /// <summary>
-        /// Получить все submissions для задания (для учителей)
-        /// DEPRECATED: Используй POST /api/Submission/get-submissions с фильтром assignmentId
-        /// </summary>
-        [HttpGet("assignment/{assignmentId}/all")]
-        [Authorize(Roles = "Teacher")]
-        public async Task<IActionResult> GetAllSubmissionsForAssignment(Guid assignmentId)
-        {
-            var submissions = await _submissionService.GetAllByAssignmentAsync(assignmentId);
             return Ok(submissions);
         }
 
