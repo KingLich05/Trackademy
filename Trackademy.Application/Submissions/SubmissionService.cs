@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using System.Linq;
 using Trackademy.Application.Persistance;
 using Trackademy.Application.Shared.Models;
 using Trackademy.Domain.Users;
@@ -207,31 +206,26 @@ namespace Trackademy.Application.Submissions
                     .ThenInclude(a => a.Group)
                 .Where(s => s.Assignment.Group.OrganizationId == request.OrganizationId);
 
-            // Фильтр по заданию
-            if (request.AssignmentId.HasValue)
-            {
-                query = query.Where(s => s.AssignmentId == request.AssignmentId.Value);
-            }
-
-            // Фильтр по группе
-            if (request.GroupId.HasValue)
-            {
-                query = query.Where(s => s.Assignment.GroupId == request.GroupId.Value);
-            }
-
-            // Фильтр по студенту
             if (request.StudentId.HasValue)
             {
                 query = query.Where(s => s.StudentId == request.StudentId.Value);
             }
 
-            // Фильтр по статусу
+            if (request.AssignmentId.HasValue)
+            {
+                query = query.Where(s => s.AssignmentId == request.AssignmentId.Value);
+            }
+
+            if (request.GroupId.HasValue)
+            {
+                query = query.Where(s => s.Assignment.GroupId == request.GroupId.Value);
+            }
+
             if (request.Status.HasValue)
             {
                 query = query.Where(s => s.Status == request.Status.Value);
             }
 
-            // Фильтр по датам
             if (request.FromDate.HasValue)
             {
                 query = query.Where(s => s.SubmittedAt >= request.FromDate.Value);
@@ -242,7 +236,6 @@ namespace Trackademy.Application.Submissions
                 query = query.Where(s => s.SubmittedAt <= request.ToDate.Value);
             }
 
-            // Пагинация
             var totalCount = await query.CountAsync();
             var items = await query
                 .OrderByDescending(s => s.UpdatedAt)
