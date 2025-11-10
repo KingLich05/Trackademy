@@ -9,6 +9,7 @@ namespace Trackademy.Application.Shared.Models
         Task SubmitForGradingAsync(Guid submissionId, Guid studentId);
         Task GradeSubmissionAsync(Guid submissionId, Guid teacherId, GradeSubmissionModel model);
         Task ReturnSubmissionAsync(Guid submissionId, Guid teacherId, ReturnSubmissionModel model);
+        Task<PagedResult<SubmissionResponseModel>> GetSubmissionsAsync(GetSubmissionsRequest request);
         Task<List<SubmissionResponseModel>> GetAllByAssignmentAsync(Guid assignmentId);
         Task<FileDownloadResult> DownloadFileAsync(Guid fileId, Guid userId, string userRole);
         Task DeleteFileAsync(Guid fileId, Guid studentId);

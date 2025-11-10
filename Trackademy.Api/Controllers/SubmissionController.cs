@@ -124,7 +124,29 @@ namespace Trackademy.Api.Controllers
         }
 
         /// <summary>
+        /// Получить список submissions с фильтрацией (для преподавателей и студентов)
+        /// Студенты видят только свои submissions
+        /// Преподаватели видят все submissions с возможностью фильтрации
+        /// </summary>
+        [HttpPost("get-submissions")]
+        public async Task<IActionResult> GetSubmissions([FromBody] GetSubmissionsRequest request)
+        {
+            var userId = GetCurrentUserId();
+            var userRole = GetCurrentUserRole();
+            
+            // Если студент - показываем только его submissions
+            if (userRole == "Student")
+            {
+                request.StudentId = userId;
+            }
+            
+            var submissions = await _submissionService.GetSubmissionsAsync(request);
+            return Ok(submissions);
+        }
+
+        /// <summary>
         /// Получить все submissions для задания (для учителей)
+        /// DEPRECATED: Используй POST /api/Submission/get-submissions с фильтром assignmentId
         /// </summary>
         [HttpGet("assignment/{assignmentId}/all")]
         [Authorize(Roles = "Teacher")]
