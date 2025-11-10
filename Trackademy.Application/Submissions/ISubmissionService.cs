@@ -1,5 +1,3 @@
-using Trackademy.Application.Shared.Models;
-
 namespace Trackademy.Application.Shared.Models
 {
     public interface ISubmissionService
