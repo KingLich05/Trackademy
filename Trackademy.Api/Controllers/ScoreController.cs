@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using Trackademy.Application.Scores;
 using Trackademy.Application.Shared.Models;
-using Trackademy.Domain.Enums;
 
 namespace Trackademy.Api.Controllers
 {
