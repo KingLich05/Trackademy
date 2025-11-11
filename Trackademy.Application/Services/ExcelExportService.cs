@@ -36,11 +36,11 @@ public class ExcelExportService : IExcelExportService
             // Получаем уникальные GroupId из данных посещаемости
             var groupIds = attendances.Select(a => a.GroupId).Distinct().ToList();
 
-            // Загружаем группы по найденным ID
+            // Загружаем группы по найденным ID и сортируем по алфавиту
             var groupsWithData = await _context.Groups
                 .Where(g => g.OrganizationId == filter.OrganizationId && 
                            groupIds.Contains(g.Id))
-                .OrderBy(g => g.CreatedAt)
+                .OrderBy(g => g.Name)
                 .ToListAsync();
 
             foreach (var group in groupsWithData)
@@ -90,7 +90,7 @@ public class ExcelExportService : IExcelExportService
                 GroupName = g.Key.GroupName,
                 TotalLessons = g.Count(),
                 AttendedCount = g.Count(a => a.Status == AttendanceStatus.Attend),
-                MissedCount = g.Count(a => a.Status == AttendanceStatus.NotAttend),
+                MissedCount = g.Count(a => a.Status == AttendanceStatus.NotAttend || a.Status == AttendanceStatus.SpecialReason),
                 AttendancePercentage = g.Count() > 0 ? Math.Round((double)g.Count(a => a.Status == AttendanceStatus.Attend) / g.Count() * 100, 2) : 0
             })
             .OrderBy(g => g.GroupName)
@@ -202,21 +202,21 @@ public class ExcelExportService : IExcelExportService
             
             var totalLessons = sortedAttendances.Count;
             var attendedCount = sortedAttendances.Count(a => a.Status == AttendanceStatus.Attend);
-            var missedCount = sortedAttendances.Count(a => a.Status == AttendanceStatus.NotAttend);
+            var notAttendCount = sortedAttendances.Count(a => a.Status == AttendanceStatus.NotAttend);
+            var specialReasonCount = sortedAttendances.Count(a => a.Status == AttendanceStatus.SpecialReason);
+            var missedCount = notAttendCount + specialReasonCount; // Общее количество отсутствующих
             var lateCount = sortedAttendances.Count(a => a.Status == AttendanceStatus.Late);
-            var specialCount = sortedAttendances.Count(a => a.Status == AttendanceStatus.SpecialReason);
             
             worksheet.Cell(statsStartRow + 1, 1).Value = $"Всего уроков: {totalLessons}";
             worksheet.Cell(statsStartRow + 2, 1).Value = $"Присутствовал: {attendedCount}";
-            worksheet.Cell(statsStartRow + 3, 1).Value = $"Отсутствовал: {missedCount}";
+            worksheet.Cell(statsStartRow + 3, 1).Value = $"Отсутствовал: {missedCount} (без причины: {notAttendCount}, по уважительной: {specialReasonCount})";
             worksheet.Cell(statsStartRow + 4, 1).Value = $"Опоздал: {lateCount}";
-            worksheet.Cell(statsStartRow + 5, 1).Value = $"Уважительная причина: {specialCount}";
             
             if (totalLessons > 0)
             {
                 var attendancePercentage = Math.Round((double)attendedCount / totalLessons * 100, 2);
-                worksheet.Cell(statsStartRow + 6, 1).Value = $"Процент посещаемости: {attendancePercentage}%";
-                worksheet.Cell(statsStartRow + 6, 1).Style.Font.Bold = true;
+                worksheet.Cell(statsStartRow + 5, 1).Value = $"Процент посещаемости: {attendancePercentage}%";
+                worksheet.Cell(statsStartRow + 5, 1).Style.Font.Bold = true;
             }
         }
     }
