@@ -88,16 +88,14 @@ public class AssignmentService : BaseService<Assignment, AssignmentDto, Assignme
 
     public async Task<Guid> CreateAsync(AssignmentAddModel model, Guid userId)
     {
-        // Проверяем, что пользователь - преподаватель и может создавать assignments для этой группы
         var user = await _context.Set<User>()
             .FirstOrDefaultAsync(u => u.Id == userId);
 
         if (user == null)
-            throw new ConflictException("User not found");
+            throw new ConflictException("Пользователь не найден.");
 
         if (user.Role == RoleEnum.Teacher)
         {
-            // Получаем группы преподавателя через расписание (Schedule)
             var teacherGroupIds = await _context.Set<Domain.Users.Schedule>()
                 .Where(s => s.TeacherId == userId)
                 .Select(s => s.GroupId)
@@ -105,7 +103,7 @@ public class AssignmentService : BaseService<Assignment, AssignmentDto, Assignme
                 .ToListAsync();
 
             if (!teacherGroupIds.Contains(model.GroupId))
-                throw new ConflictException("Teacher can only create assignments for their own groups");
+                throw new ConflictException("Учитель может создавать домашнее задание только для своих групп.");
         }
 
         return await CreateAsync(model);
