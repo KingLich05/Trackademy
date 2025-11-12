@@ -21,7 +21,6 @@ public class AssignmentService : BaseService<Assignment, AssignmentDto, Assignme
     {
         // Получаем роль пользователя
         var user = await _context.Set<User>()
-            .Include(u => u.Groups)
             .FirstOrDefaultAsync(u => u.Id == userId);
 
         if (user == null)
@@ -34,9 +33,14 @@ public class AssignmentService : BaseService<Assignment, AssignmentDto, Assignme
         // Фильтрация по роли пользователя
         if (user.Role == RoleEnum.Teacher)
         {
-            // Преподаватели видят только assignments своих групп
-            var userGroupIds = user.Groups.Select(g => g.Id).ToList();
-            query = query.Where(a => userGroupIds.Contains(a.GroupId));
+            // Преподаватели видят только assignments своих групп (через Schedule)
+            var teacherGroupIds = await _context.Set<Domain.Users.Schedule>()
+                .Where(s => s.TeacherId == userId)
+                .Select(s => s.GroupId)
+                .Distinct()
+                .ToListAsync();
+                
+            query = query.Where(a => teacherGroupIds.Contains(a.GroupId));
         }
         // Студенты и администраторы видят все (по организации)
 
@@ -86,7 +90,6 @@ public class AssignmentService : BaseService<Assignment, AssignmentDto, Assignme
     {
         // Проверяем, что пользователь - преподаватель и может создавать assignments для этой группы
         var user = await _context.Set<User>()
-            .Include(u => u.Groups)
             .FirstOrDefaultAsync(u => u.Id == userId);
 
         if (user == null)
@@ -94,9 +97,14 @@ public class AssignmentService : BaseService<Assignment, AssignmentDto, Assignme
 
         if (user.Role == RoleEnum.Teacher)
         {
-            // Проверяем, что группа принадлежит этому преподавателю
-            var userGroupIds = user.Groups.Select(g => g.Id).ToList();
-            if (!userGroupIds.Contains(model.GroupId))
+            // Получаем группы преподавателя через расписание (Schedule)
+            var teacherGroupIds = await _context.Set<Domain.Users.Schedule>()
+                .Where(s => s.TeacherId == userId)
+                .Select(s => s.GroupId)
+                .Distinct()
+                .ToListAsync();
+
+            if (!teacherGroupIds.Contains(model.GroupId))
                 throw new ConflictException("Teacher can only create assignments for their own groups");
         }
 
@@ -114,7 +122,6 @@ public class AssignmentService : BaseService<Assignment, AssignmentDto, Assignme
             throw new ConflictException("Assignment not found");
 
         var user = await _context.Set<User>()
-            .Include(u => u.Groups)
             .FirstOrDefaultAsync(u => u.Id == userId);
 
         if (user == null)
@@ -122,9 +129,14 @@ public class AssignmentService : BaseService<Assignment, AssignmentDto, Assignme
 
         if (user.Role == RoleEnum.Teacher)
         {
-            // Проверяем, что assignment принадлежит группе преподавателя
-            var userGroupIds = user.Groups.Select(g => g.Id).ToList();
-            if (!userGroupIds.Contains(assignment.GroupId))
+            // Получаем группы преподавателя через расписание
+            var teacherGroupIds = await _context.Set<Domain.Users.Schedule>()
+                .Where(s => s.TeacherId == userId)
+                .Select(s => s.GroupId)
+                .Distinct()
+                .ToListAsync();
+
+            if (!teacherGroupIds.Contains(assignment.GroupId))
                 throw new ConflictException("Teacher can only update assignments for their own groups");
         }
 
@@ -142,7 +154,6 @@ public class AssignmentService : BaseService<Assignment, AssignmentDto, Assignme
             return false;
 
         var user = await _context.Set<User>()
-            .Include(u => u.Groups)
             .FirstOrDefaultAsync(u => u.Id == userId);
 
         if (user == null)
@@ -150,9 +161,14 @@ public class AssignmentService : BaseService<Assignment, AssignmentDto, Assignme
 
         if (user.Role == RoleEnum.Teacher)
         {
-            // Проверяем, что assignment принадлежит группе преподавателя
-            var userGroupIds = user.Groups.Select(g => g.Id).ToList();
-            if (!userGroupIds.Contains(assignment.GroupId))
+            // Получаем группы преподавателя через расписание
+            var teacherGroupIds = await _context.Set<Domain.Users.Schedule>()
+                .Where(s => s.TeacherId == userId)
+                .Select(s => s.GroupId)
+                .Distinct()
+                .ToListAsync();
+
+            if (!teacherGroupIds.Contains(assignment.GroupId))
                 throw new ConflictException("Teacher can only delete assignments for their own groups");
         }
 
