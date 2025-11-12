@@ -1,5 +1,6 @@
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
+using System;
 using Trackademy.Application.AssignmentServices.Models;
 using Trackademy.Application.Persistance;
 using Trackademy.Application.Shared.BaseCrud;
@@ -49,14 +50,17 @@ public class AssignmentService : BaseService<Assignment, AssignmentDto, Assignme
             query = query.Where(a => a.GroupId == request.GroupId.Value);
         }
 
-        if (request.FromDate.HasValue)
+        // Фильтрация по периоду: возвращаем задания, у которых
+        // либо AssignedDate, либо DueDate попадают в указанный интервал (inclusive).
+        if (request.FromDate.HasValue || request.ToDate.HasValue)
         {
-            query = query.Where(a => a.AssignedDate >= request.FromDate.Value);
-        }
+            var from = request.FromDate ?? DateTime.MinValue;
+            var to = request.ToDate ?? DateTime.MaxValue;
 
-        if (request.ToDate.HasValue)
-        {
-            query = query.Where(a => a.DueDate <= request.ToDate.Value);
+            query = query.Where(a =>
+                (a.AssignedDate >= from && a.AssignedDate <= to) ||
+                (a.DueDate >= from && a.DueDate <= to)
+            );
         }
 
         var assignments = await query
