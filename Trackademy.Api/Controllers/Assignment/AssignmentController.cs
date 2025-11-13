@@ -14,13 +14,17 @@ namespace Trackademy.Api.Controllers.Assignment;
 public class AssignmentController(IAssignmentService service) : ControllerBase
 {
     /// <summary>
-    /// Получение assignment по ID - доступно всем авторизованным пользователям
+    /// Получение assignment по ID с информацией о студентах и их submissions
+    /// Студенты видят только свой submission, учителя и администраторы - всех студентов
     /// </summary>
     [HttpGet("{id}")]
     [RoleAuthorization(RoleEnum.Student)]
     public async Task<IActionResult> GetById(Guid id)
     {
-        var assignment = await service.GetByIdAsync(id);
+        var userId = GetCurrentUserId();
+        var userRole = User.FindFirstValue(ClaimTypes.Role) ?? RoleEnum.Student.ToString();
+
+        var assignment = await service.GetByIdWithSubmissionsAsync(id, userId, userRole);
         if (assignment == null)
             return NotFound();
 

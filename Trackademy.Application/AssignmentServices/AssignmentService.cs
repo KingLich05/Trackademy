@@ -176,4 +176,63 @@ public class AssignmentService : BaseService<Assignment, AssignmentDto, Assignme
 
         return await DeleteAsync(id);
     }
+
+    public async Task<AssignmentDetailedDto?> GetByIdWithSubmissionsAsync(Guid assignmentId, Guid userId, string userRole)
+    {
+        // Загружаем assignment с группой и студентами
+        var assignment = await _context.Set<Assignment>()
+            .Include(a => a.Group)
+                .ThenInclude(g => g.Students)
+            .FirstOrDefaultAsync(a => a.Id == assignmentId);
+
+        if (assignment == null)
+            return null;
+
+        // Загружаем все submissions для этого assignment
+        var submissions = await _context.Set<Submission>()
+            .Where(s => s.AssignmentId == assignmentId)
+            .Include(s => s.Scores)
+            .ToListAsync();
+
+        // Маппим базовую информацию об assignment
+        var result = _mapper.Map<AssignmentDetailedDto>(assignment);
+
+        // Формируем список студентов с их submissions
+        var studentSubmissions = assignment.Group.Students
+            .Select(student =>
+            {
+                var submission = submissions.FirstOrDefault(s => s.StudentId == student.Id);
+                
+                return new StudentSubmissionDto
+                {
+                    StudentId = student.Id,
+                    StudentName = student.FullName,
+                    StudentLogin = student.Login,
+                    Submission = submission != null
+                        ? new StudentSubmissionInfo
+                        {
+                            Id = submission.Id,
+                            Status = (int)submission.Status,
+                            StatusName = submission.Status.ToString(),
+                            Score = submission.Scores.FirstOrDefault()?.NumericValue,
+                            SubmittedAt = submission.SubmittedAt,
+                            GradedAt = submission.GradedAt
+                        }
+                        : null
+                };
+            })
+            .ToList();
+
+        // Фильтрация по роли: студенты видят только свой submission
+        if (userRole == RoleEnum.Student.ToString())
+        {
+            studentSubmissions = studentSubmissions
+                .Where(s => s.StudentId == userId)
+                .ToList();
+        }
+
+        result.StudentSubmissions = studentSubmissions;
+
+        return result;
+    }
 }
