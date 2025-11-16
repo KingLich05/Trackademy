@@ -65,4 +65,19 @@ public interface IPaymentService
     /// Получение статистики платежей
     /// </summary>
     Task<PaymentStatsDto> GetPaymentStatsAsync(Guid organizationId, Guid? groupId = null, Guid? studentId = null);
+    
+    /// <summary>
+    /// Создание платежа для студента при добавлении в группу
+    /// </summary>
+    Task CreatePaymentForStudentAsync(Guid studentId, Guid groupId, decimal discountPercentage = 0, string? discountReason = null);
+    
+    /// <summary>
+    /// Отмена всех неоплаченных платежей студента в группе (при удалении из группы)
+    /// </summary>
+    Task CancelStudentPaymentsInGroupAsync(Guid studentId, Guid groupId, string cancelReason);
+    
+    /// <summary>
+    /// Создание ежемесячных платежей для всех активных студентов (вызывается фоновой службой)
+    /// </summary>
+    Task CreateMonthlyPaymentsAsync();
 }

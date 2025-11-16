@@ -328,4 +328,156 @@ public class PaymentService(
             OverdueAmount = payments.Where(p => p.Status == PaymentStatus.Overdue).Sum(p => p.Amount)
         };
     }
+
+    public async Task CreatePaymentForStudentAsync(Guid studentId, Guid groupId, decimal discountPercentage = 0, string? discountReason = null)
+    {
+        var group = await dbContext.Groups
+            .FirstOrDefaultAsync(g => g.Id == groupId);
+
+        if (group == null)
+            throw new ConflictException("Группа не найдена.");
+
+        var student = await dbContext.Users
+            .FirstOrDefaultAsync(u => u.Id == studentId && u.Role == RoleEnum.Student);
+
+        if (student == null)
+            throw new ConflictException("Студент не найден.");
+
+        if (discountPercentage < 0 || discountPercentage > 100)
+            throw new ConflictException("Скидка должна быть от 0 до 100%.");
+
+        var now = DateTime.UtcNow;
+        var periodStart = DateOnly.FromDateTime(now);
+        DateOnly periodEnd;
+        string paymentPeriod;
+
+        if (group.PaymentType == PaymentType.Monthly)
+        {
+            // Для месячных платежей: 30 дней с даты добавления
+            periodEnd = periodStart.AddDays(30);
+            paymentPeriod = now.ToString("MMMM yyyy", new System.Globalization.CultureInfo("ru-RU"));
+        }
+        else // OneTime
+        {
+            // Для разовых платежей: до конца курса
+            if (group.CourseEndDate == null)
+                throw new ConflictException("Для разового платежа необходимо указать дату окончания курса в группе.");
+            
+            periodEnd = DateOnly.FromDateTime(group.CourseEndDate.Value);
+            paymentPeriod = $"Весь курс до {periodEnd:dd.MM.yyyy}";
+        }
+
+        var discountAmount = group.MonthlyPrice * (discountPercentage / 100);
+        var finalAmount = group.MonthlyPrice - discountAmount;
+
+        var payment = new Payment
+        {
+            Id = Guid.NewGuid(),
+            StudentId = studentId,
+            GroupId = groupId,
+            PaymentPeriod = paymentPeriod,
+            Type = group.PaymentType,
+            OriginalAmount = group.MonthlyPrice,
+            DiscountPercentage = discountPercentage,
+            Amount = finalAmount,
+            DiscountReason = discountReason,
+            PeriodStart = periodStart,
+            PeriodEnd = periodEnd,
+            Status = PaymentStatus.Pending,
+            CreatedAt = now
+        };
+
+        await dbContext.Payments.AddAsync(payment);
+        await dbContext.SaveChangesAsync();
+    }
+
+    public async Task CancelStudentPaymentsInGroupAsync(Guid studentId, Guid groupId, string cancelReason)
+    {
+        var paymentsToCancel = await dbContext.Payments
+            .Where(p => p.StudentId == studentId 
+                && p.GroupId == groupId 
+                && (p.Status == PaymentStatus.Pending || p.Status == PaymentStatus.Overdue))
+            .ToListAsync();
+
+        foreach (var payment in paymentsToCancel)
+        {
+            payment.Status = PaymentStatus.Cancelled;
+            payment.CancelledAt = DateTime.UtcNow;
+            payment.CancelReason = cancelReason;
+        }
+
+        if (paymentsToCancel.Any())
+        {
+            await dbContext.SaveChangesAsync();
+        }
+    }
+
+    public async Task CreateMonthlyPaymentsAsync()
+    {
+        // Получаем все группы с типом оплаты Monthly
+        var monthlyGroups = await dbContext.Groups
+            .Include(g => g.GroupStudents)
+                .ThenInclude(gs => gs.Student)
+            .Where(g => g.PaymentType == PaymentType.Monthly)
+            .ToListAsync();
+
+        var now = DateTime.UtcNow;
+        var currentMonth = now.ToString("MMMM yyyy", new System.Globalization.CultureInfo("ru-RU"));
+
+        foreach (var group in monthlyGroups)
+        {
+            foreach (var groupStudent in group.GroupStudents)
+            {
+                // Проверяем, что студент активен в группе (не удален)
+                var isStudentInGroup = await dbContext.Groups
+                    .Where(g => g.Id == group.Id)
+                    .SelectMany(g => g.Students)
+                    .AnyAsync(s => s.Id == groupStudent.StudentId);
+
+                if (!isStudentInGroup)
+                    continue;
+
+                // Проверяем, есть ли уже платеж за текущий месяц
+                var existingPayment = await dbContext.Payments
+                    .AnyAsync(p => p.StudentId == groupStudent.StudentId
+                        && p.GroupId == group.Id
+                        && p.PaymentPeriod == currentMonth);
+
+                if (existingPayment)
+                    continue;
+
+                // Вычисляем период на основе даты присоединения студента к группе
+                var joinDate = DateOnly.FromDateTime(groupStudent.JoinedAt);
+                var dayOfMonth = joinDate.Day;
+                
+                // Период: с текущего дня месяца на 30 дней вперед
+                var periodStart = new DateOnly(now.Year, now.Month, Math.Min(dayOfMonth, DateTime.DaysInMonth(now.Year, now.Month)));
+                var periodEnd = periodStart.AddDays(30);
+
+                var discountAmount = group.MonthlyPrice * (groupStudent.DiscountPercentage / 100);
+                var finalAmount = group.MonthlyPrice - discountAmount;
+
+                var payment = new Payment
+                {
+                    Id = Guid.NewGuid(),
+                    StudentId = groupStudent.StudentId,
+                    GroupId = group.Id,
+                    PaymentPeriod = currentMonth,
+                    Type = PaymentType.Monthly,
+                    OriginalAmount = group.MonthlyPrice,
+                    DiscountPercentage = groupStudent.DiscountPercentage,
+                    Amount = finalAmount,
+                    DiscountReason = groupStudent.DiscountReason,
+                    PeriodStart = periodStart,
+                    PeriodEnd = periodEnd,
+                    Status = PaymentStatus.Pending,
+                    CreatedAt = now
+                };
+
+                await dbContext.Payments.AddAsync(payment);
+            }
+        }
+
+        await dbContext.SaveChangesAsync();
+    }
 }

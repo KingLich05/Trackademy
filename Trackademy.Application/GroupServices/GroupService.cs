@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using Trackademy.Application.GroupServices.Models;
+using Trackademy.Application.PaymentServices;
 using Trackademy.Application.Persistance;
 using Trackademy.Application.Shared.BaseCrud;
 using Trackademy.Application.Shared.Exception;
@@ -15,12 +16,14 @@ public class GroupService:
 {
     private TrackademyDbContext _context;
     private readonly IMapper _mapper;
+    private readonly IPaymentService _paymentService;
     
-    public GroupService(TrackademyDbContext context, IMapper mapper)
+    public GroupService(TrackademyDbContext context, IMapper mapper, IPaymentService paymentService)
         : base(context, mapper)
     {
         _context = context;
         _mapper = mapper;
+        _paymentService = paymentService;
     }
 
     public override async Task<Guid> UpdateAsync(Guid id, GroupsUpdateModel dto)
@@ -55,14 +58,25 @@ public class GroupService:
             var idsToAdd    = desired.Except(current).ToList();
             var idsToRemove = current.Except(desired).ToList();
 
+            // Удаление студентов - отменяем их неоплаченные платежи
             if (idsToRemove.Count > 0)
             {
                 var removeSet = idsToRemove.ToHashSet();
                 entity.Students = entity.Students
                     .Where(s => !removeSet.Contains(s.Id))
                     .ToList();
+
+                // Отменяем неоплаченные платежи удаленных студентов
+                foreach (var studentId in idsToRemove)
+                {
+                    await _paymentService.CancelStudentPaymentsInGroupAsync(
+                        studentId, 
+                        entity.Id, 
+                        "Студент удален из группы");
+                }
             }
 
+            // Добавление новых студентов - создаем им платежи
             if (idsToAdd.Count > 0)
             {
                 var usersToAdd = await _context.Users
@@ -72,6 +86,21 @@ public class GroupService:
                 foreach (var u in usersToAdd)
                 {
                     entity.Students.Add(u);
+                    
+                    // Создаем запись в GroupStudent для отслеживания даты добавления и скидки
+                    var groupStudent = new GroupStudent
+                    {
+                        Id = Guid.NewGuid(),
+                        GroupId = entity.Id,
+                        StudentId = u.Id,
+                        DiscountPercentage = 0,
+                        DiscountReason = null,
+                        JoinedAt = DateTime.UtcNow
+                    };
+                    await _context.GroupStudents.AddAsync(groupStudent);
+                    
+                    // Создаем платеж для нового студента
+                    await _paymentService.CreatePaymentForStudentAsync(u.Id, entity.Id);
                 }
             }
         }
@@ -128,6 +157,31 @@ public class GroupService:
 
         await _context.Groups.AddAsync(group);
         await _context.SaveChangesAsync();
+        
+        // Создаем платежи для всех студентов в группе
+        if (model.StudentIds.Count != 0)
+        {
+            foreach (var studentId in model.StudentIds)
+            {
+                // Создаем запись в GroupStudent для отслеживания даты добавления
+                var groupStudent = new GroupStudent
+                {
+                    Id = Guid.NewGuid(),
+                    GroupId = group.Id,
+                    StudentId = studentId,
+                    DiscountPercentage = 0,
+                    DiscountReason = null,
+                    JoinedAt = DateTime.UtcNow
+                };
+                await _context.GroupStudents.AddAsync(groupStudent);
+                
+                // Создаем платеж
+                await _paymentService.CreatePaymentForStudentAsync(studentId, group.Id);
+            }
+            
+            await _context.SaveChangesAsync();
+        }
+        
         return group.Id;
     }
 

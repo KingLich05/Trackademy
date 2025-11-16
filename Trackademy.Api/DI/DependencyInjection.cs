@@ -49,6 +49,7 @@ public static class DependencyInjection
         
         // Фоновые службы
         services.AddHostedService<PaymentBackgroundService>();
+        services.AddHostedService<MonthlyPaymentBackgroundService>();
         
         services.AddAutoMapper(typeof(UserProfile).Assembly);
         return services;

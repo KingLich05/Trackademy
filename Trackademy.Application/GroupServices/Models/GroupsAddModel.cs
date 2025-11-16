@@ -1,4 +1,6 @@
-﻿namespace Trackademy.Application.GroupServices.Models;
+﻿using Trackademy.Domain.Enums;
+
+namespace Trackademy.Application.GroupServices.Models;
 
 public class GroupsAddModel
 {
@@ -13,4 +15,10 @@ public class GroupsAddModel
     public List<Guid> StudentIds { get; set; }
     
     public Guid OrganizationId { get; set; }
+    
+    public PaymentType PaymentType { get; set; } = PaymentType.Monthly;
+    
+    public decimal MonthlyPrice { get; set; }
+    
+    public DateTime? CourseEndDate { get; set; }
 }
