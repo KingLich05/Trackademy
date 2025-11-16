@@ -98,9 +98,15 @@ public class GroupService:
                         JoinedAt = DateTime.UtcNow
                     };
                     await _context.GroupStudents.AddAsync(groupStudent);
-                    
-                    // Создаем платеж для нового студента
-                    await _paymentService.CreatePaymentForStudentAsync(u.Id, entity.Id);
+                }
+                
+                // Сохраняем GroupStudent записи в базу
+                await _context.SaveChangesAsync();
+                
+                // Теперь создаем платежи для новых студентов
+                foreach (var studentId in idsToAdd)
+                {
+                    await _paymentService.CreatePaymentForStudentAsync(studentId, entity.Id);
                 }
             }
         }
@@ -158,12 +164,12 @@ public class GroupService:
         await _context.Groups.AddAsync(group);
         await _context.SaveChangesAsync();
         
-        // Создаем платежи для всех студентов в группе
+        // Создаем записи GroupStudent и платежи для всех студентов в группе
         if (model.StudentIds.Count != 0)
         {
+            // Сначала создаем все записи GroupStudent
             foreach (var studentId in model.StudentIds)
             {
-                // Создаем запись в GroupStudent для отслеживания даты добавления
                 var groupStudent = new GroupStudent
                 {
                     Id = Guid.NewGuid(),
@@ -174,12 +180,16 @@ public class GroupService:
                     JoinedAt = DateTime.UtcNow
                 };
                 await _context.GroupStudents.AddAsync(groupStudent);
-                
-                // Создаем платеж
-                await _paymentService.CreatePaymentForStudentAsync(studentId, group.Id);
             }
             
+            // Сохраняем GroupStudent записи в базу
             await _context.SaveChangesAsync();
+            
+            // Теперь создаем платежи для всех студентов
+            foreach (var studentId in model.StudentIds)
+            {
+                await _paymentService.CreatePaymentForStudentAsync(studentId, group.Id);
+            }
         }
         
         return group.Id;
