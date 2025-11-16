@@ -79,20 +79,14 @@ public class GroupService:
             // Добавление новых студентов - создаем им платежи
             if (idsToAdd.Count > 0)
             {
-                var usersToAdd = await _context.Users
-                    .Where(u => idsToAdd.Contains(u.Id))
-                    .ToListAsync();
-
-                foreach (var u in usersToAdd)
+                // Создаем записи GroupStudent для новых студентов
+                foreach (var studentId in idsToAdd)
                 {
-                    entity.Students.Add(u);
-                    
-                    // Создаем запись в GroupStudent для отслеживания даты добавления и скидки
                     var groupStudent = new GroupStudent
                     {
                         Id = Guid.NewGuid(),
                         GroupId = entity.Id,
-                        StudentId = u.Id,
+                        StudentId = studentId,
                         DiscountPercentage = 0,
                         DiscountReason = null,
                         JoinedAt = DateTime.UtcNow
@@ -152,15 +146,6 @@ public class GroupService:
         }
 
         var group = _mapper.Map<Groups>(model);
-        if (model.StudentIds.Count != 0)
-        {
-            var students = await _context.Users
-                .Where(u => model.StudentIds.Contains(u.Id))
-                .ToListAsync();
-
-            group.Students = students;
-        }
-
         await _context.Groups.AddAsync(group);
         await _context.SaveChangesAsync();
         
