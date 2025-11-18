@@ -54,12 +54,12 @@ public class AssignmentService : BaseService<Assignment, AssignmentDto, Assignme
         // либо AssignedDate, либо DueDate попадают в указанный интервал (inclusive).
         if (request.FromDate.HasValue || request.ToDate.HasValue)
         {
-            var from = request.FromDate ?? DateTime.MinValue;
-            var to = request.ToDate ?? DateTime.MaxValue;
+            var from = request.FromDate ?? DateOnly.MinValue;
+            var to = request.ToDate ?? DateOnly.MaxValue;
 
             query = query.Where(a =>
-                (a.AssignedDate >= from && a.AssignedDate <= to) ||
-                (a.DueDate >= from && a.DueDate <= to)
+                (DateOnly.FromDateTime(a.AssignedDate) >= from && DateOnly.FromDateTime(a.AssignedDate) <= to) ||
+                (DateOnly.FromDateTime(a.DueDate) >= from && DateOnly.FromDateTime(a.DueDate) <= to)
             );
         }
 
