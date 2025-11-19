@@ -207,10 +207,11 @@ public class UserServices(TrackademyDbContext dbContext, IMapper mapper) :
             .ToListAsync();
         var existingLoginsSet = new HashSet<string>(existingLogins, StringComparer.OrdinalIgnoreCase);
         
-        // Список пользователей для батч-вставки
-        var usersToCreate = new List<(User user, string password, int rowNumber)>();
+        // Список данных для создания пользователей
+        var preparedData = new List<(string login, string fullName, string phone, string? parentPhone, 
+            DateOnly birthday, string password, RoleEnum role, int rowNumber)>();
 
-        // Первый проход: валидация и подготовка данных
+        // Первый проход: валидация и подготовка данных (без хеширования)
         foreach (var row in rows)
         {
             var errors = new List<string>();
@@ -272,29 +273,13 @@ public class UserServices(TrackademyDbContext dbContext, IMapper mapper) :
 
                 // Генерируем пароль из даты рождения (ДДММГГ)
                 var password = GeneratePasswordFromBirthday(row.Birthday!.Value);
-                var passwordHash = BCrypt.Net.BCrypt.HashPassword(password);
 
                 // Парсим роль
                 var role = Enum.Parse<RoleEnum>(row.Role, true);
 
-                // Создаем пользователя
-                var user = new User
-                {
-                    Id = Guid.NewGuid(),
-                    Login = login,
-                    FullName = row.FullName,
-                    Phone = formattedPhone,
-                    ParentPhone = row.ParentPhone,
-                    Birthday = row.Birthday,
-                    PasswordHash = passwordHash,
-                    Role = role,
-                    OrganizationId = organizationId,
-                    CreatedDate = DateTime.UtcNow,
-                    IsTrial = false
-                };
-
-                // Добавляем в список для батч-вставки
-                usersToCreate.Add((user, password, row.RowNumber));
+                // Добавляем подготовленные данные (без хеширования пароля)
+                preparedData.Add((login, row.FullName, formattedPhone, row.ParentPhone, 
+                    row.Birthday.Value, password, role, row.RowNumber));
             }
             catch (Exception ex)
             {
@@ -310,6 +295,42 @@ public class UserServices(TrackademyDbContext dbContext, IMapper mapper) :
                     Errors = new List<string> { $"Ошибка при подготовке: {ex.Message}" }
                 });
                 result.ErrorCount++;
+            }
+        }
+
+        // Второй проход: параллельное хеширование паролей
+        var usersToCreate = new List<(User user, string password, int rowNumber)>();
+        
+        if (preparedData.Any())
+        {
+            // Хешируем пароли параллельно (это CPU-bound операция)
+            var hashedPasswords = await Task.Run(() => 
+                preparedData.AsParallel()
+                    .AsOrdered()
+                    .Select(data => BCrypt.Net.BCrypt.HashPassword(data.password))
+                    .ToList()
+            );
+
+            // Создаем пользователей с уже захешированными паролями
+            for (int i = 0; i < preparedData.Count; i++)
+            {
+                var data = preparedData[i];
+                var user = new User
+                {
+                    Id = Guid.NewGuid(),
+                    Login = data.login,
+                    FullName = data.fullName,
+                    Phone = data.phone,
+                    ParentPhone = data.parentPhone,
+                    Birthday = data.birthday,
+                    PasswordHash = hashedPasswords[i],
+                    Role = data.role,
+                    OrganizationId = organizationId,
+                    CreatedDate = DateTime.UtcNow,
+                    IsTrial = false
+                };
+
+                usersToCreate.Add((user, data.password, data.rowNumber));
             }
         }
 
