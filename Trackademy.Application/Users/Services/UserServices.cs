@@ -197,6 +197,13 @@ public class UserServices(TrackademyDbContext dbContext, IMapper mapper) :
             TotalRows = rows.Count
         };
 
+        // Множество для отслеживания логинов, добавленных в текущей сессии импорта
+        var usedLoginsInCurrentImport = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        
+        // Список пользователей для батч-вставки
+        var usersToCreate = new List<(User user, string password, int rowNumber)>();
+
+        // Первый проход: валидация и подготовка данных
         foreach (var row in rows)
         {
             var errors = new List<string>();
@@ -246,8 +253,11 @@ public class UserServices(TrackademyDbContext dbContext, IMapper mapper) :
                     ? row.Login 
                     : GenerateLoginFromFullName(row.FullName);
 
-                // Проверяем уникальность логина и генерируем новый при дубликате
-                login = await EnsureUniqueLogin(login, organizationId);
+                // Проверяем уникальность логина (как в БД, так и в текущей сессии импорта)
+                login = await EnsureUniqueLoginWithSession(login, organizationId, usedLoginsInCurrentImport);
+                
+                // Добавляем логин в множество использованных в текущей сессии
+                usedLoginsInCurrentImport.Add(login);
 
                 // Форматируем телефон
                 var formattedPhone = FormatPhone(row.Phone);
@@ -275,20 +285,8 @@ public class UserServices(TrackademyDbContext dbContext, IMapper mapper) :
                     IsTrial = false
                 };
 
-                dbContext.Users.Add(user);
-                await dbContext.SaveChangesAsync();
-
-                result.CreatedUsers.Add(new UserImportSuccess
-                {
-                    RowNumber = row.RowNumber,
-                    UserId = user.Id,
-                    FullName = user.FullName,
-                    Login = user.Login,
-                    GeneratedPassword = password,
-                    Phone = user.Phone,
-                    Role = user.Role.ToString()
-                });
-                result.SuccessCount++;
+                // Добавляем в список для батч-вставки
+                usersToCreate.Add((user, password, row.RowNumber));
             }
             catch (Exception ex)
             {
@@ -301,9 +299,60 @@ public class UserServices(TrackademyDbContext dbContext, IMapper mapper) :
                     Birthday = row.Birthday?.ToString("dd.MM.yyyy"),
                     Role = row.Role,
                     Login = row.Login,
-                    Errors = new List<string> { $"Ошибка при создании: {ex.Message}" }
+                    Errors = new List<string> { $"Ошибка при подготовке: {ex.Message}" }
                 });
                 result.ErrorCount++;
+            }
+        }
+
+        // Второй проход: батч-вставка всех пользователей одним запросом
+        if (usersToCreate.Any())
+        {
+            try
+            {
+                // Добавляем всех пользователей в контекст
+                foreach (var (user, _, _) in usersToCreate)
+                {
+                    dbContext.Users.Add(user);
+                }
+
+                // Сохраняем все изменения одним запросом
+                await dbContext.SaveChangesAsync();
+
+                // Добавляем успешно созданных пользователей в результат
+                foreach (var (user, password, rowNumber) in usersToCreate)
+                {
+                    result.CreatedUsers.Add(new UserImportSuccess
+                    {
+                        RowNumber = rowNumber,
+                        UserId = user.Id,
+                        FullName = user.FullName,
+                        Login = user.Login,
+                        GeneratedPassword = password,
+                        Phone = user.Phone,
+                        Role = user.Role.ToString()
+                    });
+                    result.SuccessCount++;
+                }
+            }
+            catch (Exception ex)
+            {
+                // Если батч-вставка не удалась, добавляем все как ошибки
+                foreach (var (user, _, rowNumber) in usersToCreate)
+                {
+                    result.Errors.Add(new UserImportError
+                    {
+                        RowNumber = rowNumber,
+                        FullName = user.FullName,
+                        Phone = user.Phone,
+                        ParentPhone = user.ParentPhone,
+                        Birthday = user.Birthday?.ToString("dd.MM.yyyy"),
+                        Role = user.Role.ToString(),
+                        Login = user.Login,
+                        Errors = new List<string> { $"Ошибка при сохранении: {ex.Message}" }
+                    });
+                    result.ErrorCount++;
+                }
             }
         }
 
@@ -387,6 +436,29 @@ public class UserServices(TrackademyDbContext dbContext, IMapper mapper) :
 
         while (await dbContext.Users.AnyAsync(u => 
             u.Login == login && u.OrganizationId == organizationId))
+        {
+            counter++;
+            login = $"{baseLogin}_{counter}";
+        }
+
+        return login;
+    }
+
+    /// <summary>
+    /// Проверяет уникальность логина с учетом текущей сессии импорта и БД
+    /// </summary>
+    private async Task<string> EnsureUniqueLoginWithSession(
+        string baseLogin, 
+        Guid organizationId, 
+        HashSet<string> usedLoginsInSession)
+    {
+        var login = baseLogin;
+        var counter = 1;
+
+        // Проверяем уникальность как в БД, так и в текущей сессии импорта
+        while (await dbContext.Users.AnyAsync(u => 
+                   u.Login == login && u.OrganizationId == organizationId) ||
+               usedLoginsInSession.Contains(login))
         {
             counter++;
             login = $"{baseLogin}_{counter}";
