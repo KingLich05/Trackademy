@@ -14,7 +14,8 @@ public class UserConfig: IEntityTypeConfiguration<User>
         b.Property(x => x.PasswordHash).IsRequired();
         b.Property(x => x.CreatedDate).HasColumnType("timestamptz");
 
-        b.HasIndex(x => x.Login).IsUnique();
+        // Уникальность логина в рамках организации
+        b.HasIndex(x => new { x.Login, x.OrganizationId }).IsUnique();
 
         b.HasMany(u => u.Groups).WithMany(g => g.Students);
         

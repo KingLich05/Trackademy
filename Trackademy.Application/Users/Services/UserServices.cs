@@ -132,11 +132,11 @@ public class UserServices(TrackademyDbContext dbContext, IMapper mapper) :
             throw new ConflictException("Пользователя с таким идентификатором не существует");
         }
         var exists = await dbContext.Users
-            .AnyAsync(u => u.Login == request.Login && u.Id != id);
+            .AnyAsync(u => u.Login == request.Login && u.OrganizationId == user.OrganizationId && u.Id != id);
 
         if (exists)
         {
-            throw new ConflictException("Такой логин уже существует.");
+            throw new ConflictException("Такой логин уже существует в этой организации.");
         }
 
         user.Login = request.Login;
@@ -200,6 +200,13 @@ public class UserServices(TrackademyDbContext dbContext, IMapper mapper) :
         // Множество для отслеживания логинов, добавленных в текущей сессии импорта
         var usedLoginsInCurrentImport = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         
+        // Загружаем все существующие логины в организации одним запросом
+        var existingLogins = await dbContext.Users
+            .Where(u => u.OrganizationId == organizationId)
+            .Select(u => u.Login)
+            .ToListAsync();
+        var existingLoginsSet = new HashSet<string>(existingLogins, StringComparer.OrdinalIgnoreCase);
+        
         // Список пользователей для батч-вставки
         var usersToCreate = new List<(User user, string password, int rowNumber)>();
 
@@ -253,11 +260,12 @@ public class UserServices(TrackademyDbContext dbContext, IMapper mapper) :
                     ? row.Login 
                     : GenerateLoginFromFullName(row.FullName);
 
-                // Проверяем уникальность логина (как в БД, так и в текущей сессии импорта)
-                login = await EnsureUniqueLoginWithSession(login, organizationId, usedLoginsInCurrentImport);
+                // Проверяем уникальность логина (проверяем в памяти, без запроса к БД)
+                login = EnsureUniqueLoginInMemory(login, existingLoginsSet, usedLoginsInCurrentImport);
                 
                 // Добавляем логин в множество использованных в текущей сессии
                 usedLoginsInCurrentImport.Add(login);
+                existingLoginsSet.Add(login); // Добавляем и в существующие, чтобы избежать дублей
 
                 // Форматируем телефон
                 var formattedPhone = FormatPhone(row.Phone);
@@ -459,6 +467,27 @@ public class UserServices(TrackademyDbContext dbContext, IMapper mapper) :
         while (await dbContext.Users.AnyAsync(u => 
                    u.Login == login && u.OrganizationId == organizationId) ||
                usedLoginsInSession.Contains(login))
+        {
+            counter++;
+            login = $"{baseLogin}_{counter}";
+        }
+
+        return login;
+    }
+
+    /// <summary>
+    /// Проверяет уникальность логина в памяти (без запросов к БД)
+    /// </summary>
+    private string EnsureUniqueLoginInMemory(
+        string baseLogin, 
+        HashSet<string> existingLogins,
+        HashSet<string> usedLoginsInSession)
+    {
+        var login = baseLogin;
+        var counter = 1;
+
+        // Проверяем уникальность в обоих множествах (уже существующие и текущая сессия)
+        while (existingLogins.Contains(login) || usedLoginsInSession.Contains(login))
         {
             counter++;
             login = $"{baseLogin}_{counter}";
