@@ -10,7 +10,6 @@ public class UserImportSuccess
     public string FullName { get; set; } = string.Empty;
     public string Login { get; set; } = string.Empty;
     public string GeneratedPassword { get; set; } = string.Empty;
-    public string? Email { get; set; }
     public string Phone { get; set; } = string.Empty;
     public string Role { get; set; } = string.Empty;
 }

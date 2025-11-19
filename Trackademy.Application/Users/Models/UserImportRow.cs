@@ -7,7 +7,6 @@ public class UserImportRow
 {
     public int RowNumber { get; set; }
     public string FullName { get; set; } = string.Empty;
-    public string? Email { get; set; }
     public string Phone { get; set; } = string.Empty;
     public string? ParentPhone { get; set; }
     public DateOnly? Birthday { get; set; }

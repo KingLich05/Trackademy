@@ -7,7 +7,6 @@ public class TopTeacherDto
 {
     public Guid TeacherId { get; set; }
     public string TeacherName { get; set; } = string.Empty;
-    public string Email { get; set; } = string.Empty;
     
     /// <summary>
     /// Количество студентов у преподавателя

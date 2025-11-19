@@ -9,7 +9,6 @@ public class UnpaidStudentDto
 {
     public Guid StudentId { get; set; }
     public string StudentName { get; set; } = string.Empty;
-    public string Email { get; set; } = string.Empty;
     public string Phone { get; set; } = string.Empty;
     
     /// <summary>

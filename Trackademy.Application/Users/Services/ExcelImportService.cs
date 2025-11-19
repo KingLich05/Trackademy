@@ -34,12 +34,11 @@ public class ExcelImportService : IExcelImportService
             {
                 RowNumber = row,
                 FullName = GetCellValue(worksheet, row, 1), // Колонка A
-                Email = GetCellValueOrNull(worksheet, row, 2), // Колонка B
-                Phone = GetCellValue(worksheet, row, 3), // Колонка C
-                ParentPhone = GetCellValueOrNull(worksheet, row, 4), // Колонка D
-                Birthday = ParseDateOnly(GetCellValue(worksheet, row, 5)), // Колонка E
-                Role = GetCellValue(worksheet, row, 6), // Колонка F
-                Login = GetCellValueOrNull(worksheet, row, 7) // Колонка G (необязательно)
+                Phone = GetCellValue(worksheet, row, 2), // Колонка B
+                ParentPhone = GetCellValueOrNull(worksheet, row, 3), // Колонка C
+                Birthday = ParseDateOnly(GetCellValue(worksheet, row, 4)), // Колонка D
+                Role = GetCellValue(worksheet, row, 5), // Колонка E
+                Login = GetCellValueOrNull(worksheet, row, 6) // Колонка F (необязательно)
             };
 
             users.Add(userRow);

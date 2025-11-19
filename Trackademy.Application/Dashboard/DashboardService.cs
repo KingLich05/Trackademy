@@ -384,7 +384,6 @@ public class DashboardService : IDashboardService
             {
                 StudentId = g.Key.Id,
                 StudentName = g.Key.FullName,
-                Email = g.Key.Email,
                 Phone = g.Key.Phone,
                 GroupName = g.Key.Groups.FirstOrDefault() != null ? g.Key.Groups.First().Name : "Без группы",
                 DebtAmount = g.Sum(p => p.Amount),
@@ -410,7 +409,6 @@ public class DashboardService : IDashboardService
             {
                 StudentId = u.Id,
                 StudentName = u.FullName,
-                Email = u.Email,
                 Phone = u.Phone ?? "Не указан",
                 SubjectName = "Пробный урок",
                 TrialLessonDate = DateTime.UtcNow.Date.AddDays(1),
@@ -465,7 +463,6 @@ public class DashboardService : IDashboardService
             {
                 TeacherId = x.Teacher.Id,
                 TeacherName = x.Teacher.FullName,
-                Email = x.Teacher.Email,
                 StudentCount = x.StudentCount,
                 GroupCount = x.GroupCount,
                 LessonsThisMonth = x.LessonsThisMonth,

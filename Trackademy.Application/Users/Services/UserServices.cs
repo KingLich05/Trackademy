@@ -70,7 +70,6 @@ public class UserServices(TrackademyDbContext dbContext, IMapper mapper) :
             throw new ConflictException("Не все поля заполнены.");
         }
 
-        // Пароль обязателен для создания через API (email необязателен)
         if (string.IsNullOrWhiteSpace(request.Password))
         {
             throw new ConflictException("Пароль обязателен");
@@ -98,7 +97,6 @@ public class UserServices(TrackademyDbContext dbContext, IMapper mapper) :
         {
             Login = request.Login,
             FullName = request.FullName,
-            Email = request.Email,
             Phone = request.Phone,
             ParentPhone = request.ParentPhone,
             Role = request.Role,
@@ -121,7 +119,6 @@ public class UserServices(TrackademyDbContext dbContext, IMapper mapper) :
                 Id = user.Id,
                 FullName = user.FullName,
                 Login = user.Login,
-                Email = user.Email,
                 Role = user.Role.ToString()
             }
         };
@@ -144,7 +141,6 @@ public class UserServices(TrackademyDbContext dbContext, IMapper mapper) :
 
         user.Login = request.Login;
         user.FullName = request.FullName;
-        user.Email = request.Email;
         user.Phone = request.Phone;
         user.ParentPhone = request.ParentPhone;
         user.Role = request.Role;
@@ -232,7 +228,6 @@ public class UserServices(TrackademyDbContext dbContext, IMapper mapper) :
                 {
                     RowNumber = row.RowNumber,
                     FullName = row.FullName,
-                    Email = row.Email,
                     Phone = row.Phone ?? string.Empty,
                     ParentPhone = row.ParentPhone,
                     Birthday = row.Birthday?.ToString("dd.MM.yyyy"),
@@ -270,7 +265,6 @@ public class UserServices(TrackademyDbContext dbContext, IMapper mapper) :
                     Id = Guid.NewGuid(),
                     Login = login,
                     FullName = row.FullName,
-                    Email = row.Email,
                     Phone = formattedPhone,
                     ParentPhone = row.ParentPhone,
                     Birthday = row.Birthday,
@@ -291,7 +285,6 @@ public class UserServices(TrackademyDbContext dbContext, IMapper mapper) :
                     FullName = user.FullName,
                     Login = user.Login,
                     GeneratedPassword = password,
-                    Email = user.Email,
                     Phone = user.Phone,
                     Role = user.Role.ToString()
                 });
@@ -303,7 +296,6 @@ public class UserServices(TrackademyDbContext dbContext, IMapper mapper) :
                 {
                     RowNumber = row.RowNumber,
                     FullName = row.FullName,
-                    Email = row.Email,
                     Phone = row.Phone ?? string.Empty,
                     ParentPhone = row.ParentPhone,
                     Birthday = row.Birthday?.ToString("dd.MM.yyyy"),
@@ -457,15 +449,14 @@ public class UserServices(TrackademyDbContext dbContext, IMapper mapper) :
 
         // Настройка заголовков
         worksheet.Cell(1, 1).Value = "ФИО";
-        worksheet.Cell(1, 2).Value = "Email";
-        worksheet.Cell(1, 3).Value = "Телефон";
-        worksheet.Cell(1, 4).Value = "Телефон родителя";
-        worksheet.Cell(1, 5).Value = "Дата рождения";
-        worksheet.Cell(1, 6).Value = "Роль";
-        worksheet.Cell(1, 7).Value = "Логин";
+        worksheet.Cell(1, 2).Value = "Телефон";
+        worksheet.Cell(1, 3).Value = "Телефон родителя";
+        worksheet.Cell(1, 4).Value = "Дата рождения";
+        worksheet.Cell(1, 5).Value = "Роль";
+        worksheet.Cell(1, 6).Value = "Логин";
 
         // Форматирование заголовков
-        var headerRange = worksheet.Range(1, 1, 1, 7);
+        var headerRange = worksheet.Range(1, 1, 1, 6);
         headerRange.Style.Font.Bold = true;
         headerRange.Style.Fill.BackgroundColor = XLColor.LightGray;
         headerRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
@@ -474,10 +465,9 @@ public class UserServices(TrackademyDbContext dbContext, IMapper mapper) :
 
         // Автоширина колонок
         worksheet.Column(1).Width = 30; // ФИО
-        worksheet.Column(2).Width = 25; // Email
-        worksheet.Column(3).Width = 15; // Телефон
-        worksheet.Column(4).Width = 20; // Телефон родителя
-        worksheet.Column(5).Width = 18; // Дата рождения
+        worksheet.Column(2).Width = 15; // Телефон
+        worksheet.Column(3).Width = 20; // Телефон родителя
+        worksheet.Column(4).Width = 18; // Дата рождения
         worksheet.Column(6).Width = 12; // Роль
         worksheet.Column(7).Width = 15; // Логин
 
