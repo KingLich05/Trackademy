@@ -13,10 +13,4 @@ public class GroupsUpdateModel
     public Guid SubjectId { get; set; }
     
     public List<Guid> StudentIds { get; set; }
-    
-    public PaymentType? PaymentType { get; set; }
-    
-    public decimal? MonthlyPrice { get; set; }
-    
-    public DateTime? CourseEndDate { get; set; }
 }

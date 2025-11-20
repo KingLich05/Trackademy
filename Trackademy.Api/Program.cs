@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Trackademy.Api.BackgroundServices;
 using Trackademy.Api.DI;
 using Trackademy.Application.Persistance;
 
@@ -80,6 +81,10 @@ try
                 .AllowAnyHeader();
         });
     });
+
+    // Регистрация фоновых служб
+    builder.Services.AddHostedService<PaymentBackgroundService>();
+    builder.Services.AddHostedService<PendingPaymentBackgroundService>();
 
     var app = builder.Build();
 

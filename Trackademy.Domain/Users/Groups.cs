@@ -17,21 +17,6 @@ public class Groups : Entity
     public Guid OrganizationId { get; set; }
     
     public Guid SubjectId {get; set;}
-    
-    /// <summary>
-    /// Тип оплаты для группы: Monthly (ежемесячно) или OneTime (разово за весь курс)
-    /// </summary>
-    public PaymentType PaymentType { get; set; } = PaymentType.Monthly;
-    
-    /// <summary>
-    /// Стоимость обучения в месяц (для Monthly) или за весь курс (для OneTime)
-    /// </summary>
-    public decimal MonthlyPrice { get; set; }
-    
-    /// <summary>
-    /// Дата окончания курса (используется для OneTime платежей)
-    /// </summary>
-    public DateTime? CourseEndDate { get; set; }
 
     #region Navigation properties
 

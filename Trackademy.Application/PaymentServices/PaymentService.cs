@@ -332,6 +332,7 @@ public class PaymentService(
     public async Task CreatePaymentForStudentAsync(Guid studentId, Guid groupId, decimal discountPercentage = 0, string? discountReason = null)
     {
         var group = await dbContext.Groups
+            .Include(g => g.Subject)
             .FirstOrDefaultAsync(g => g.Id == groupId);
 
         if (group == null)
@@ -351,7 +352,10 @@ public class PaymentService(
         DateOnly periodEnd;
         string paymentPeriod;
 
-        if (group.PaymentType == PaymentType.Monthly)
+        var subjectPrice = group.Subject.Price;
+        var paymentType = group.Subject.PaymentType;
+
+        if (paymentType == PaymentType.Monthly)
         {
             // Для месячных платежей: 30 дней с даты добавления
             periodEnd = periodStart.AddDays(30);
@@ -359,16 +363,13 @@ public class PaymentService(
         }
         else // OneTime
         {
-            // Для разовых платежей: до конца курса
-            if (group.CourseEndDate == null)
-                throw new ConflictException("Для разового платежа необходимо указать дату окончания курса в группе.");
-            
-            periodEnd = DateOnly.FromDateTime(group.CourseEndDate.Value);
-            paymentPeriod = $"Весь курс до {periodEnd:dd.MM.yyyy}";
+            // Для разовых платежей: до конца текущего года или +1 год
+            periodEnd = periodStart.AddYears(1);
+            paymentPeriod = $"Разовая оплата до {periodEnd:dd.MM.yyyy}";
         }
 
-        var discountAmount = group.MonthlyPrice * (discountPercentage / 100);
-        var finalAmount = group.MonthlyPrice - discountAmount;
+        var discountAmount = subjectPrice * (discountPercentage / 100);
+        var finalAmount = subjectPrice - discountAmount;
 
         var payment = new Payment
         {
@@ -376,8 +377,8 @@ public class PaymentService(
             StudentId = studentId,
             GroupId = groupId,
             PaymentPeriod = paymentPeriod,
-            Type = group.PaymentType,
-            OriginalAmount = group.MonthlyPrice,
+            Type = paymentType,
+            OriginalAmount = subjectPrice,
             DiscountPercentage = discountPercentage,
             Amount = finalAmount,
             DiscountReason = discountReason,
@@ -414,11 +415,12 @@ public class PaymentService(
 
     public async Task CreateMonthlyPaymentsAsync()
     {
-        // Получаем все группы с типом оплаты Monthly
+        // Получаем все группы с типом оплаты Monthly через Subject
         var monthlyGroups = await dbContext.Groups
+            .Include(g => g.Subject)
             .Include(g => g.GroupStudents)
                 .ThenInclude(gs => gs.Student)
-            .Where(g => g.PaymentType == PaymentType.Monthly)
+            .Where(g => g.Subject.PaymentType == PaymentType.Monthly)
             .ToListAsync();
 
         var now = DateTime.UtcNow;
@@ -454,8 +456,9 @@ public class PaymentService(
                 var periodStart = new DateOnly(now.Year, now.Month, Math.Min(dayOfMonth, DateTime.DaysInMonth(now.Year, now.Month)));
                 var periodEnd = periodStart.AddDays(30);
 
-                var discountAmount = group.MonthlyPrice * (groupStudent.DiscountPercentage / 100);
-                var finalAmount = group.MonthlyPrice - discountAmount;
+                var subjectPrice = group.Subject.Price;
+                var discountAmount = subjectPrice * (groupStudent.DiscountPercentage / 100);
+                var finalAmount = subjectPrice - discountAmount;
 
                 var payment = new Payment
                 {
@@ -464,7 +467,7 @@ public class PaymentService(
                     GroupId = group.Id,
                     PaymentPeriod = currentMonth,
                     Type = PaymentType.Monthly,
-                    OriginalAmount = group.MonthlyPrice,
+                    OriginalAmount = subjectPrice,
                     DiscountPercentage = groupStudent.DiscountPercentage,
                     Amount = finalAmount,
                     DiscountReason = groupStudent.DiscountReason,
@@ -479,5 +482,91 @@ public class PaymentService(
         }
 
         await dbContext.SaveChangesAsync();
+    }
+
+    public async Task CreatePendingPaymentsForUnpaidStudentsAsync()
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        
+        // Получаем все группы с месячным типом оплаты через Subject
+        var groups = await dbContext.Groups
+            .Include(g => g.Subject)
+            .Include(g => g.GroupStudents)
+                .ThenInclude(gs => gs.Student)
+            .Where(g => g.Subject.PaymentType == PaymentType.Monthly)
+            .ToListAsync();
+
+        var paymentsToCreate = new List<Payment>();
+        var now = DateTime.UtcNow;
+
+        foreach (var group in groups)
+        {
+            // Проверяем, что у группы есть предстоящие уроки
+            var hasUpcomingLessons = await dbContext.Lessons
+                .AnyAsync(l => l.GroupId == group.Id && l.Date >= today);
+            
+            if (!hasUpcomingLessons)
+                continue;
+
+            foreach (var groupStudent in group.GroupStudents)
+            {
+                // Получаем последний платеж студента в этой группе
+                var lastPayment = await dbContext.Payments
+                    .Where(p => p.StudentId == groupStudent.StudentId && p.GroupId == group.Id)
+                    .OrderByDescending(p => p.PeriodEnd)
+                    .FirstOrDefaultAsync();
+
+                // Если платежа нет вообще, пропускаем (это должно обрабатываться при добавлении в группу)
+                if (lastPayment == null)
+                    continue;
+
+                // Проверяем, истек ли период оплаты
+                if (lastPayment.PeriodEnd >= today)
+                    continue; // Оплата еще действительна
+
+                // Проверяем, нет ли уже созданного платежа на следующий период
+                var existingNextPayment = await dbContext.Payments
+                    .AnyAsync(p => p.StudentId == groupStudent.StudentId 
+                        && p.GroupId == group.Id
+                        && p.PeriodStart > lastPayment.PeriodEnd);
+
+                if (existingNextPayment)
+                    continue; // Платеж уже создан
+
+                // Создаем новый платеж
+                var periodStart = lastPayment.PeriodEnd.AddDays(1);
+                var periodEnd = periodStart.AddDays(30);
+                var paymentPeriod = DateTime.Now.ToString("MMMM yyyy", new System.Globalization.CultureInfo("ru-RU"));
+
+                var subjectPrice = group.Subject.Price;
+                var discountAmount = subjectPrice * (groupStudent.DiscountPercentage / 100);
+                var finalAmount = subjectPrice - discountAmount;
+
+                var payment = new Payment
+                {
+                    Id = Guid.NewGuid(),
+                    StudentId = groupStudent.StudentId,
+                    GroupId = group.Id,
+                    PaymentPeriod = paymentPeriod,
+                    Type = PaymentType.Monthly,
+                    OriginalAmount = subjectPrice,
+                    DiscountPercentage = groupStudent.DiscountPercentage,
+                    Amount = finalAmount,
+                    DiscountReason = groupStudent.DiscountReason,
+                    PeriodStart = periodStart,
+                    PeriodEnd = periodEnd,
+                    Status = PaymentStatus.Pending,
+                    CreatedAt = now
+                };
+
+                paymentsToCreate.Add(payment);
+            }
+        }
+
+        if (paymentsToCreate.Any())
+        {
+            await dbContext.Payments.AddRangeAsync(paymentsToCreate);
+            await dbContext.SaveChangesAsync();
+        }
     }
 }

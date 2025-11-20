@@ -80,4 +80,9 @@ public interface IPaymentService
     /// Создание ежемесячных платежей для всех активных студентов (вызывается фоновой службой)
     /// </summary>
     Task CreateMonthlyPaymentsAsync();
+    
+    /// <summary>
+    /// Создание платежей для студентов с истекшей оплатой (вызывается фоновой службой каждые 6 часов)
+    /// </summary>
+    Task CreatePendingPaymentsForUnpaidStudentsAsync();
 }

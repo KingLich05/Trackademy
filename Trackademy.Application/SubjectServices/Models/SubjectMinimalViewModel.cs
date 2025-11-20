@@ -1,4 +1,6 @@
-﻿namespace Trackademy.Application.SubjectServices.Models;
+﻿using Trackademy.Domain.Enums;
+
+namespace Trackademy.Application.SubjectServices.Models;
 
 public class SubjectMinimalViewModel
 {
@@ -6,5 +8,7 @@ public class SubjectMinimalViewModel
     
     public string SubjectName { get; set; }
     
-    public int? Price { get; set; }
+    public int Price { get; set; }
+    
+    public PaymentType PaymentType { get; set; }
 }

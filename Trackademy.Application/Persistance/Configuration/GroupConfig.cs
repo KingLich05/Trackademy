@@ -21,16 +21,6 @@ public class GroupConfig : IEntityTypeConfiguration<Groups>
         b.Property(x => x.CreatedAt)
             .HasColumnType("timestamptz");
 
-        b.Property(x => x.PaymentType)
-            .IsRequired()
-            .HasConversion<int>();
-
-        b.Property(x => x.MonthlyPrice)
-            .HasPrecision(10, 2);
-
-        b.Property(x => x.CourseEndDate)
-            .HasColumnType("timestamptz");
-
         b.HasIndex(x => x.OrganizationId);
         b.HasIndex(x => x.Code).IsUnique();
 

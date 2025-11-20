@@ -15,8 +15,12 @@ public class SubjectAddModelValidator : AbstractValidator<SubjectAddModel>
             .MaximumLength(1000).WithMessage("Описание не может превышать 1000 символов");
 
         RuleFor(x => x.Price)
-            .GreaterThanOrEqualTo(0).When(x => x.Price.HasValue)
+            .GreaterThanOrEqualTo(0)
             .WithMessage("Цена не может быть отрицательной");
+
+        RuleFor(x => x.PaymentType)
+            .IsInEnum()
+            .WithMessage("Некорректный тип оплаты");
 
         RuleFor(x => x.OrganizationId)
             .NotEmpty().WithMessage("ID организации обязателен");
@@ -35,7 +39,11 @@ public class SubjectUpdateModelValidator : AbstractValidator<SubjectUpdateModel>
             .MaximumLength(1000).WithMessage("Описание не может превышать 1000 символов");
 
         RuleFor(x => x.Price)
-            .GreaterThanOrEqualTo(0).When(x => x.Price.HasValue)
+            .GreaterThanOrEqualTo(0)
             .WithMessage("Цена не может быть отрицательной");
+
+        RuleFor(x => x.PaymentType)
+            .IsInEnum()
+            .WithMessage("Некорректный тип оплаты");
     }
 }
