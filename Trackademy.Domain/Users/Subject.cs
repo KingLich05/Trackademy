@@ -6,6 +6,8 @@ public class Subject : BaseEntity
 {
     public string? Description { get; set; }
     
+    public int? Price { get; set; }
+    
     public Guid OrganizationId { get; set; }
     
     // нав. поля.
