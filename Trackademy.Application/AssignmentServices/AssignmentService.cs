@@ -50,16 +50,17 @@ public class AssignmentService : BaseService<Assignment, AssignmentDto, Assignme
             query = query.Where(a => a.GroupId == request.GroupId.Value);
         }
 
-        // Фильтрация по периоду: возвращаем задания, у которых
-        // либо AssignedDate, либо DueDate попадают в указанный интервал (inclusive).
+        // Фильтрация по периоду: возвращаем задания, диапазон которых [AssignedDate, DueDate]
+        // пересекается с указанным диапазоном [FromDate, ToDate].
+        // Диапазоны пересекаются, если: AssignedDate <= ToDate AND DueDate >= FromDate
         if (request.FromDate.HasValue || request.ToDate.HasValue)
         {
             var from = request.FromDate ?? DateOnly.MinValue;
             var to = request.ToDate ?? DateOnly.MaxValue;
 
             query = query.Where(a =>
-                (DateOnly.FromDateTime(a.AssignedDate) >= from && DateOnly.FromDateTime(a.AssignedDate) <= to) ||
-                (DateOnly.FromDateTime(a.DueDate) >= from && DateOnly.FromDateTime(a.DueDate) <= to)
+                DateOnly.FromDateTime(a.AssignedDate) <= to &&
+                DateOnly.FromDateTime(a.DueDate) >= from
             );
         }
 
