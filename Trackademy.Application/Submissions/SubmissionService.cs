@@ -13,7 +13,7 @@ namespace Trackademy.Application.Submissions
         private readonly TrackademyDbContext _context;
         private readonly IConfiguration _configuration;
         private readonly string _uploadPath;
-        private readonly long _maxFileSize = 10 * 1024 * 1024; // 10MB
+        private readonly long _maxFileSize = 10 * 1024 * 1024;
         private readonly string[] _allowedExtensions = { ".jpg", ".jpeg", ".png", ".gif", ".pdf", ".doc", ".docx", ".txt" };
 
         public SubmissionService(TrackademyDbContext context, IConfiguration configuration)
@@ -21,8 +21,7 @@ namespace Trackademy.Application.Submissions
             _context = context;
             _configuration = configuration;
             _uploadPath = _configuration["FileStorage:SubmissionFiles"] ?? "uploads/submissions";
-            
-            // Создаем директорию если не существует
+
             if (!Directory.Exists(_uploadPath))
             {
                 Directory.CreateDirectory(_uploadPath);
@@ -31,14 +30,9 @@ namespace Trackademy.Application.Submissions
 
         public async Task<SubmissionResponseModel> CreateOrUpdateAsync(Guid assignmentId, Guid studentId, SubmissionCreateUpdateModel model)
         {
-            // Проверяем существование задания
             var assignment = await _context.Assignments.FindAsync(assignmentId);
             if (assignment == null)
                 throw new InvalidOperationException("Задание не найдено");
-
-            // Проверяем дедлайн
-            if (DateTime.UtcNow > assignment.DueDate)
-                throw new InvalidOperationException("Срок сдачи задания истек");
 
             var submission = await _context.Submissions
                 .Include(s => s.Files)
@@ -48,7 +42,6 @@ namespace Trackademy.Application.Submissions
 
             if (submission == null)
             {
-                // Создаем новую submission
                 submission = new Submission
                 {
                     Id = Guid.NewGuid(),
@@ -63,22 +56,18 @@ namespace Trackademy.Application.Submissions
             }
             else
             {
-                // Проверяем, можно ли редактировать
                 if (submission.Status != SubmissionStatus.Draft && submission.Status != SubmissionStatus.Returned)
                     throw new InvalidOperationException("Нельзя редактировать отправленную или оцененную работу");
 
-                // Обновляем существующую
                 submission.TextContent = model.TextContent;
                 submission.UpdatedAt = now;
                 
-                // Если была возвращена на доработку, меняем статус на Draft
                 if (submission.Status == SubmissionStatus.Returned)
                 {
                     submission.Status = SubmissionStatus.Draft;
                 }
             }
 
-            // Обрабатываем файлы
             if (model.Files != null && model.Files.Any())
             {
                 await ProcessFilesAsync(submission, model.Files);
@@ -86,7 +75,6 @@ namespace Trackademy.Application.Submissions
 
             await _context.SaveChangesAsync();
 
-            // Перезагружаем с includes
             await _context.Entry(submission)
                 .Reference(s => s.Student)
                 .LoadAsync();
@@ -301,29 +289,24 @@ namespace Trackademy.Application.Submissions
         {
             foreach (var file in files)
             {
-                // Валидация файла
                 ValidateFile(file);
 
-                // Генерируем уникальное имя файла
                 var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
                 var storedFileName = $"{Guid.NewGuid()}{extension}";
                 var relativePath = Path.Combine(submission.Id.ToString(), storedFileName);
                 var fullPath = Path.Combine(_uploadPath, relativePath);
 
-                // Создаем директорию для submission
                 var submissionDir = Path.Combine(_uploadPath, submission.Id.ToString());
                 if (!Directory.Exists(submissionDir))
                 {
                     Directory.CreateDirectory(submissionDir);
                 }
 
-                // Сохраняем файл
                 using (var stream = new FileStream(fullPath, FileMode.Create))
                 {
                     await file.CopyToAsync(stream);
                 }
 
-                // Создаем запись в БД
                 var submissionFile = new SubmissionFile
                 {
                     Id = Guid.NewGuid(),
