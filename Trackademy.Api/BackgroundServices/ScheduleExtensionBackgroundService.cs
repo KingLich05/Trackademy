@@ -56,11 +56,25 @@ public class ScheduleExtensionBackgroundService : BackgroundService
                 // Ждем 2 минуты, чтобы не запуститься повторно
                 await Task.Delay(TimeSpan.FromMinutes(2), stoppingToken);
             }
+            catch (OperationCanceledException)
+            {
+                // Приложение останавливается - это нормально, не логируем как ошибку
+                _logger.LogInformation("Служба продления расписания остановлена");
+                break;
+            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Ошибка при продлении расписаний");
                 // Ждем час перед следующей попыткой в случае ошибки
-                await Task.Delay(TimeSpan.FromHours(1), stoppingToken);
+                try
+                {
+                    await Task.Delay(TimeSpan.FromHours(1), stoppingToken);
+                }
+                catch (OperationCanceledException)
+                {
+                    _logger.LogInformation("Служба продления расписания остановлена во время ожидания");
+                    break;
+                }
             }
         }
     }

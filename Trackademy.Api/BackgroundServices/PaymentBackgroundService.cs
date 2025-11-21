@@ -44,12 +44,26 @@ public class PaymentBackgroundService : BackgroundService
                 await UpdateOverduePayments();
                 _logger.LogInformation("Проверка просроченных платежей выполнена в {Time}", DateTime.Now);
             }
+            catch (OperationCanceledException)
+            {
+                // Приложение останавливается - это нормально, не логируем как ошибку
+                _logger.LogInformation("Служба проверки просроченных платежей остановлена");
+                break;
+            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Ошибка при обновлении просроченных платежей");
                 
                 // Подождать час при ошибке перед повторной попыткой
-                await Task.Delay(TimeSpan.FromHours(1), stoppingToken);
+                try
+                {
+                    await Task.Delay(TimeSpan.FromHours(1), stoppingToken);
+                }
+                catch (OperationCanceledException)
+                {
+                    _logger.LogInformation("Служба проверки просроченных платежей остановлена во время ожидания");
+                    break;
+                }
             }
         }
     }

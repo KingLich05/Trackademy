@@ -60,12 +60,26 @@ public class MonthlyPaymentBackgroundService : BackgroundService
                 // Ждем 2 минуты, чтобы не запуститься повторно в тот же час
                 await Task.Delay(TimeSpan.FromMinutes(2), stoppingToken);
             }
+            catch (OperationCanceledException)
+            {
+                // Приложение останавливается - это нормально, не логируем как ошибку
+                _logger.LogInformation("Служба ежемесячных платежей остановлена");
+                break;
+            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Ошибка при создании ежемесячных платежей");
                 
                 // Подождать час при ошибке перед повторной попыткой
-                await Task.Delay(TimeSpan.FromHours(1), stoppingToken);
+                try
+                {
+                    await Task.Delay(TimeSpan.FromHours(1), stoppingToken);
+                }
+                catch (OperationCanceledException)
+                {
+                    _logger.LogInformation("Служба ежемесячных платежей остановлена во время ожидания");
+                    break;
+                }
             }
         }
     }
