@@ -204,6 +204,16 @@ public class PaymentController(IPaymentService paymentService) : ControllerBase
 
     /// <summary>
     /// Обновить скидку платежа
+    /// 
+    /// Параметры запроса (UpdateDiscountRequest):
+    /// - discountType: тип скидки (Percentage = 1 - проценты, FixedAmount = 2 - фиксированная сумма)
+    /// - discountValue: значение скидки (для Percentage: 0-100, для FixedAmount: сумма в рублях)
+    /// - discountReason: причина скидки (опционально, максимум 200 символов)
+    /// 
+    /// Примеры:
+    /// 1. Скидка 15%: { "discountType": 1, "discountValue": 15, "discountReason": "Скидка за раннюю оплату" }
+    /// 2. Скидка 5000₽: { "discountType": 2, "discountValue": 5000, "discountReason": "Льготная категория" }
+    /// 3. Удалить скидку: { "discountType": 1, "discountValue": 0 }
     /// </summary>
     [HttpPatch("{id}/discount")]
     [RoleAuthorization(RoleEnum.Administrator)]
