@@ -158,9 +158,45 @@ public class PaymentService(
 
     public async Task<GroupedPaymentResult> GetGroupedPaymentsAsync(PaymentFilterRequest request)
     {
-        var pagedPayments = await GetPaymentsWithFiltersAsync(request);
-        
-        var groupedPayments = pagedPayments.Items
+        // Получаем все платежи с фильтрами (без пагинации)
+        var query = dbContext.Payments
+            .Include(p => p.Student)
+            .Include(p => p.Group)
+            .Where(x => x.Group.OrganizationId == request.OrganizationId)
+            .AsQueryable();
+
+        if (request.GroupId.HasValue)
+        {
+            query = query.Where(p => p.GroupId == request.GroupId.Value);
+        }
+
+        if (request.Status.HasValue)
+        {
+            query = query.Where(p => p.Status == request.Status.Value);
+        }
+
+        if (request.Type.HasValue)
+        {
+            query = query.Where(p => p.Type == request.Type.Value);
+        }
+
+        if (request.FromDate.HasValue)
+        {
+            query = query.Where(p => p.CreatedAt >= request.FromDate.Value);
+        }
+
+        if (request.ToDate.HasValue)
+        {
+            query = query.Where(p => p.CreatedAt <= request.ToDate.Value);
+        }
+
+        var allPayments = await query
+            .OrderByDescending(p => p.CreatedAt)
+            .Select(p => mapper.Map<PaymentDto>(p))
+            .ToListAsync();
+
+        // Группируем платежи по студентам
+        var allGroupedPayments = allPayments
             .GroupBy(p => new { p.StudentId, p.StudentName })
             .Select(g => {
                 var sortedPayments = g.OrderByDescending(p => p.CreatedAt).ToList();
@@ -190,12 +226,19 @@ public class PaymentService(
             .OrderBy(s => s.StudentName)
             .ToList();
 
+        // Применяем пагинацию к сгруппированным данным (к студентам)
+        var totalCount = allGroupedPayments.Count;
+        var pagedGroupedPayments = allGroupedPayments
+            .Skip((request.Page - 1) * request.PageSize)
+            .Take(request.PageSize)
+            .ToList();
+
         return new GroupedPaymentResult
         {
-            Items = groupedPayments,
-            TotalCount = pagedPayments.TotalCount,
-            PageNumber = pagedPayments.PageNumber,
-            PageSize = pagedPayments.PageSize
+            Items = pagedGroupedPayments,
+            TotalCount = totalCount,
+            PageNumber = request.Page,
+            PageSize = request.PageSize
         };
     }
 
