@@ -262,6 +262,36 @@ public class PaymentService(
         return true;
     }
 
+    public async Task<bool> UpdateDiscountAsync(Guid paymentId, UpdateDiscountRequest request)
+    {
+        var payment = await dbContext.Payments.FirstOrDefaultAsync(p => p.Id == paymentId);
+        if (payment == null)
+        {
+            return false;
+        }
+
+        if (payment.Status == PaymentStatus.Paid || payment.Status == PaymentStatus.Refunded)
+        {
+            throw new ConflictException("Нельзя изменить скидку для оплаченного или возвращенного платежа.");
+        }
+
+        if (payment.Status == PaymentStatus.Cancelled)
+        {
+            throw new ConflictException("Нельзя изменить скидку для отмененного платежа.");
+        }
+
+        // Обновляем скидку
+        payment.DiscountPercentage = request.DiscountPercentage;
+        payment.DiscountReason = request.DiscountReason;
+
+        // Пересчитываем итоговую сумму
+        var discountAmount = payment.OriginalAmount * (request.DiscountPercentage / 100);
+        payment.Amount = payment.OriginalAmount - discountAmount;
+
+        await dbContext.SaveChangesAsync();
+        return true;
+    }
+
     public async Task UpdateOverduePaymentsAsync()
     {
         var overduePayments = await dbContext.Payments

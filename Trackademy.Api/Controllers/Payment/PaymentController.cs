@@ -203,6 +203,27 @@ public class PaymentController(IPaymentService paymentService) : ControllerBase
     }
 
     /// <summary>
+    /// Обновить скидку платежа
+    /// </summary>
+    [HttpPatch("{id}/discount")]
+    [RoleAuthorization(RoleEnum.Administrator)]
+    public async Task<IActionResult> UpdateDiscount(Guid id, [FromBody] UpdateDiscountRequest request)
+    {
+        try
+        {
+            var result = await paymentService.UpdateDiscountAsync(id, request);
+            if (!result)
+                return NotFound("Платеж не найден");
+
+            return Ok();
+        }
+        catch (ConflictException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
+    /// <summary>
     /// Обновить просроченные платежи (для фоновой задачи)
     /// </summary>
     [HttpPost("update-overdue")]

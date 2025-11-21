@@ -52,6 +52,11 @@ public interface IPaymentService
     Task<bool> RefundPaymentAsync(Guid paymentId, PaymentRefundModel model);
     
     /// <summary>
+    /// Обновить скидку платежа
+    /// </summary>
+    Task<bool> UpdateDiscountAsync(Guid paymentId, UpdateDiscountRequest request);
+    
+    /// <summary>
     /// Автоматическое обновление просроченных платежей
     /// </summary>
     Task UpdateOverduePaymentsAsync();
