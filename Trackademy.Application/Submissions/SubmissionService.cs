@@ -52,7 +52,7 @@ namespace Trackademy.Application.Submissions
                     CreatedAt = now,
                     UpdatedAt = now
                 };
-                _context.Submissions.Add(submission);
+                await _context.Submissions.AddAsync(submission);
             }
             else
             {
