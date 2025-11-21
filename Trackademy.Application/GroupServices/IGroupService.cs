@@ -12,5 +12,8 @@ public interface IGroupService : IBaseService<Groups, GroupsDto, GroupsAddModel,
     Task<PagedResult<GroupsDto>> GetAllAsync(GetGroupsRequest request);
     
     Task<Guid> CreateGroup(GroupsAddModel model);
-
+    
+    Task FreezeStudentAsync(FreezeStudentRequest request);
+    
+    Task UnfreezeStudentAsync(UnfreezeStudentRequest request);
 }

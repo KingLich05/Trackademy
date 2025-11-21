@@ -7,6 +7,7 @@ using Trackademy.Application.Shared.BaseCrud;
 using Trackademy.Application.Shared.Exception;
 using Trackademy.Application.Shared.Extensions;
 using Trackademy.Application.Shared.Models;
+using Trackademy.Application.SubjectServices.Models;
 using Trackademy.Domain.Enums;
 using Trackademy.Domain.Users;
 
@@ -119,16 +120,38 @@ public class GroupService:
 
     public async Task<List<GroupsDto>> GetAllAsync(Guid organizationId)
     {
-        var group = await _context.Groups
+        var groups = await _context.Groups
             .Include(x => x.Students)
             .Include(x => x.Subject)
+            .Include(x => x.GroupStudents)
+                .ThenInclude(gs => gs.Student)
             .Where(x => x.OrganizationId == organizationId)
             .OrderByDescending(x => x.CreatedAt)
             .ToListAsync();
 
-        var groupsTdo = _mapper.Map<List<GroupsDto>>(group);
+        var groupsDto = groups.Select(group => new GroupsDto
+        {
+            Id = group.Id,
+            Name = group.Name,
+            Code = group.Code,
+            Level = group.Level,
+            Subject = new SubjectMinimalViewModel
+            {
+                SubjectId = group.Subject.Id,
+                SubjectName = group.Subject.Name
+            },
+            Students = group.GroupStudents.Select(gs => new UserMinimalViewModel
+            {
+                StudentId = gs.StudentId,
+                StudentName = gs.Student.FullName,
+                IsFrozen = gs.IsFrozen,
+                FrozenFrom = gs.FrozenFrom,
+                FrozenTo = gs.FrozenTo,
+                FreezeReason = gs.FreezeReason
+            }).ToList()
+        }).ToList();
 
-        return groupsTdo;
+        return groupsDto;
     }
 
     public async Task<Guid> CreateGroup(GroupsAddModel model)
@@ -200,6 +223,7 @@ public class GroupService:
         var query = _context.Groups
             .Include(x => x.Subject)
             .Include(x => x.Students)
+            .Include(x => x.GroupStudents)
             .Where(x => x.OrganizationId == request.OrganizationId);
 
         // Фильтрация по предмету (необязательно)
@@ -220,7 +244,27 @@ public class GroupService:
 
         var pagedGroups = await query
             .OrderBy(x => x.Name)
-            .Select(group => _mapper.Map<GroupsDto>(group))
+            .Select(group => new GroupsDto
+            {
+                Id = group.Id,
+                Name = group.Name,
+                Code = group.Code,
+                Level = group.Level,
+                Subject = new SubjectMinimalViewModel
+                {
+                    SubjectId = group.Subject.Id,
+                    SubjectName = group.Subject.Name
+                },
+                Students = group.GroupStudents.Select(gs => new UserMinimalViewModel
+                {
+                    StudentId = gs.StudentId,
+                    StudentName = gs.Student.FullName,
+                    IsFrozen = gs.IsFrozen,
+                    FrozenFrom = gs.FrozenFrom,
+                    FrozenTo = gs.FrozenTo,
+                    FreezeReason = gs.FreezeReason
+                }).ToList()
+            })
             .ToPagedResultAsync(request);
 
         return pagedGroups;
@@ -253,5 +297,76 @@ public class GroupService:
         var numbers = random.Next(0, 1000).ToString("D3");
 
         return $"{letters}-{numbers}";
+    }
+    
+    public async Task FreezeStudentAsync(FreezeStudentRequest request)
+    {
+        var groupStudent = await _context.Set<GroupStudent>()
+            .FirstOrDefaultAsync(gs => gs.GroupId == request.GroupId && gs.StudentId == request.StudentId);
+
+        if (groupStudent == null)
+        {
+            throw new ConflictException("Студент не найден в этой группе.");
+        }
+
+        if (groupStudent.IsFrozen)
+        {
+            throw new ConflictException("Студент уже заморожен.");
+        }
+
+        groupStudent.IsFrozen = true;
+        groupStudent.FrozenFrom = request.FrozenFrom;
+        groupStudent.FrozenTo = request.FrozenTo;
+        groupStudent.FreezeReason = request.FreezeReason;
+
+        await _context.SaveChangesAsync();
+    }
+    
+    public async Task UnfreezeStudentAsync(UnfreezeStudentRequest request)
+    {
+        var groupStudent = await _context.Set<GroupStudent>()
+            .FirstOrDefaultAsync(gs => gs.GroupId == request.GroupId && gs.StudentId == request.StudentId);
+
+        if (groupStudent == null)
+        {
+            throw new ConflictException("Студент не найден в этой группе.");
+        }
+
+        if (!groupStudent.IsFrozen)
+        {
+            throw new ConflictException("Студент не заморожен.");
+        }
+
+        // Подсчитываем количество пропущенных уроков за период заморозки
+        var frozenFrom = groupStudent.FrozenFrom!.Value;
+        var frozenTo = groupStudent.FrozenTo!.Value;
+        
+        var missedLessonsCount = await _context.Lessons
+            .Where(l => l.GroupId == request.GroupId 
+                       && l.Date >= frozenFrom 
+                       && l.Date <= frozenTo)
+            .CountAsync();
+
+        // Находим активный платеж студента для этой группы
+        var activePayment = await _context.Payments
+            .Where(p => p.StudentId == request.StudentId 
+                       && p.GroupId == request.GroupId 
+                       && p.Status != PaymentStatus.Paid)
+            .OrderByDescending(p => p.PeriodEnd)
+            .FirstOrDefaultAsync();
+
+        // Продлеваем платеж на количество пропущенных уроков (дней)
+        if (activePayment != null)
+        {
+            activePayment.PeriodEnd = activePayment.PeriodEnd.AddDays(missedLessonsCount);
+        }
+
+        // Снимаем заморозку
+        groupStudent.IsFrozen = false;
+        groupStudent.FrozenFrom = null;
+        groupStudent.FrozenTo = null;
+        groupStudent.FreezeReason = null;
+
+        await _context.SaveChangesAsync();
     }
 }

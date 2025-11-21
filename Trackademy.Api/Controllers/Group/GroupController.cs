@@ -62,4 +62,20 @@ public class GroupController(IGroupService service) :
     {
         return await base.GetAll();
     }
+    
+    [HttpPost("freeze-student")]
+    [RoleAuthorization(RoleEnum.Administrator)]
+    public async Task<IActionResult> FreezeStudent([FromBody] FreezeStudentRequest request)
+    {
+        await service.FreezeStudentAsync(request);
+        return Ok("Студент успешно заморожен.");
+    }
+    
+    [HttpPost("unfreeze-student")]
+    [RoleAuthorization(RoleEnum.Administrator)]
+    public async Task<IActionResult> UnfreezeStudent([FromBody] UnfreezeStudentRequest request)
+    {
+        await service.UnfreezeStudentAsync(request);
+        return Ok("Студент успешно разморожен, платеж продлен.");
+    }
 }

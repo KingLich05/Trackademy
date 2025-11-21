@@ -32,6 +32,26 @@ public class GroupStudent : Entity
     /// </summary>
     public DateTime JoinedAt { get; set; } = DateTime.UtcNow;
     
+    /// <summary>
+    /// Флаг заморозки студента в группе
+    /// </summary>
+    public bool IsFrozen { get; set; } = false;
+    
+    /// <summary>
+    /// Дата начала заморозки
+    /// </summary>
+    public DateOnly? FrozenFrom { get; set; }
+    
+    /// <summary>
+    /// Дата окончания заморозки
+    /// </summary>
+    public DateOnly? FrozenTo { get; set; }
+    
+    /// <summary>
+    /// Причина заморозки
+    /// </summary>
+    public string? FreezeReason { get; set; }
+    
     // Navigation properties
     public Groups Group { get; set; } = null!;
     public User Student { get; set; } = null!;
