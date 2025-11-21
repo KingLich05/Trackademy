@@ -250,6 +250,26 @@ public class LessonService(
             query = query.Where(x => x.Date <= request.ToDate.Value);
         }
 
+        if (request.GroupId.HasValue)
+        {
+            query = query.Where(x => x.GroupId == request.GroupId.Value);
+        }
+
+        if (request.TeacherId.HasValue)
+        {
+            query = query.Where(x => x.TeacherId == request.TeacherId.Value);
+        }
+
+        if (request.RoomId.HasValue)
+        {
+            query = query.Where(x => x.RoomId == request.RoomId.Value);
+        }
+
+        if (request.SubjectId.HasValue)
+        {
+            query = query.Where(x => x.Group.SubjectId == request.SubjectId.Value);
+        }
+
         var pagedLessons = await query
             .OrderBy(x => x.Date)
             .Select(lesson => mapper.Map<LessonViewModel>(lesson))
