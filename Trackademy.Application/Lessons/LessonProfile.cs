@@ -43,7 +43,12 @@ public class LessonProfile : Profile
     
     private static List<StudentMinimalViewModel> MapStudentsWithAttendance(Lesson lesson)
     {
-        return lesson.Group.Students.Select(student => new StudentMinimalViewModel
+        // Получаем только незамороженных студентов из GroupStudents
+        var activeStudents = lesson.Group.GroupStudents
+            .Where(gs => !gs.IsFrozen)
+            .Select(gs => gs.Student);
+            
+        return activeStudents.Select(student => new StudentMinimalViewModel
         {
             Id = student.Id,
             FullName = student.FullName,
