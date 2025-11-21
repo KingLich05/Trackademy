@@ -11,5 +11,11 @@ public class GetUserRequest : PagedRequest
     
     public List<RoleEnum>? RoleIds { get; set; }
     
+    /// <summary>
+    /// Фильтр по флагу пробного урока (необязательный)
+    /// null - все пользователи, true - только пробные, false - только не пробные
+    /// </summary>
+    public bool? IsTrial { get; set; }
+    
     public Guid OrganizationId { get; set; }
 }

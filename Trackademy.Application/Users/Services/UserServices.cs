@@ -45,6 +45,11 @@ public class UserServices(TrackademyDbContext dbContext, IMapper mapper) :
                 x.Groups.Any(g => getUserRequest.GroupIds.Contains(g.Id)));
         }
 
+        if (getUserRequest.IsTrial.HasValue)
+        {
+            usersQuery = usersQuery.Where(x => x.IsTrial == getUserRequest.IsTrial.Value);
+        }
+
         var pagedUsers = await usersQuery
             .ProjectTo<UserDto>(mapper.ConfigurationProvider)
             .OrderBy(x => x.Name)
