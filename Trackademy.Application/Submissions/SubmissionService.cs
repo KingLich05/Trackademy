@@ -115,13 +115,18 @@ namespace Trackademy.Application.Submissions
         {
             var submission = await _context.Submissions
                 .Include(s => s.Assignment)
+                    .ThenInclude(a => a.Group)
                 .FirstOrDefaultAsync(s => s.Id == submissionId);
 
             if (submission == null)
                 throw new InvalidOperationException("Submission не найден");
 
-            // Проверяем, что учитель ведет этот предмет
-            // TODO: Добавить проверку связи учителя с заданием через группу/предмет
+            // Проверяем, что учитель ведет занятия в группе этого задания
+            var teacherHasGroup = await _context.Set<Domain.Users.Schedule>()
+                .AnyAsync(s => s.TeacherId == teacherId && s.GroupId == submission.Assignment.GroupId);
+
+            if (!teacherHasGroup)
+                throw new InvalidOperationException("Учитель не ведет занятия в этой группе");
 
             if (submission.Status != SubmissionStatus.Submitted)
                 throw new InvalidOperationException("Можно оценить только отправленную работу");

@@ -43,7 +43,18 @@ public class AssignmentService : BaseService<Assignment, AssignmentDto, Assignme
                 
             query = query.Where(a => teacherGroupIds.Contains(a.GroupId));
         }
-        // Студенты и администраторы видят все (по организации)
+        else if (user.Role == RoleEnum.Student)
+        {
+            // Студенты видят только задания своих групп
+            var studentGroupIds = await _context.Set<GroupStudent>()
+                .Where(gs => gs.StudentId == userId)
+                .Select(gs => gs.GroupId)
+                .Distinct()
+                .ToListAsync();
+                
+            query = query.Where(a => studentGroupIds.Contains(a.GroupId));
+        }
+        // Администраторы видят все (по организации)
 
         if (request.GroupId.HasValue)
         {
