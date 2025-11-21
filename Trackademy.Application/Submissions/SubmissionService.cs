@@ -234,6 +234,31 @@ namespace Trackademy.Application.Submissions
             };
         }
 
+        public async Task<SubmissionResponseModel> GetByIdAsync(Guid submissionId, Guid userId)
+        {
+            var submission = await _context.Submissions
+                .Include(s => s.Student)
+                .Include(s => s.Files)
+                .Include(s => s.Scores)
+                .Include(s => s.Assignment)
+                .FirstOrDefaultAsync(s => s.Id == submissionId);
+
+            if (submission == null)
+                throw new InvalidOperationException("Submission не найден");
+
+            // Проверка доступа: только владелец или учитель группы
+            if (submission.StudentId != userId)
+            {
+                var isTeacher = await _context.Set<Domain.Users.Schedule>()
+                    .AnyAsync(s => s.TeacherId == userId && s.GroupId == submission.Assignment.GroupId);
+                
+                if (!isTeacher)
+                    throw new UnauthorizedAccessException("Нет доступа к этому submission");
+            }
+
+            return MapToResponseModel(submission);
+        }
+
         public async Task<FileDownloadResult> DownloadFileAsync(Guid fileId, Guid userId, string userRole)
         {
             var file = await _context.SubmissionFiles

@@ -12,4 +12,5 @@ public interface IAssignmentService : IBaseService<Assignment, AssignmentDto, As
     Task<Guid> CreateAsync(AssignmentAddModel model, Guid userId);
     Task<Guid> UpdateAsync(Guid id, AssignmentUpdateModel model, Guid userId);
     Task<bool> DeleteAsync(Guid id, Guid userId);
+    Task<MyAssignmentsResponseDto> GetMyAssignmentsAsync(Guid organizationId, Guid studentId);
 }

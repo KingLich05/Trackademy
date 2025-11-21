@@ -97,4 +97,21 @@ public class AssignmentController(IAssignmentService service) : ControllerBase
 
         return NoContent();
     }
+
+    /// <summary>
+    /// Получение всех заданий студента с группировкой по статусам
+    /// Возвращает:
+    /// - pending: задания в работе или не начатые
+    /// - submitted: отправленные на проверку
+    /// - graded: проверенные и оцененные
+    /// - overdue: просроченные
+    /// </summary>
+    [HttpPost("my-assignments")]
+    [RoleAuthorization(RoleEnum.Student)]
+    public async Task<IActionResult> GetMyAssignments([FromBody] MyAssignmentsRequest request)
+    {
+        var studentId = GetCurrentUserId();
+        var result = await service.GetMyAssignmentsAsync(request.OrganizationId, studentId);
+        return Ok(result);
+    }
 }

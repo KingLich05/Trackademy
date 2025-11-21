@@ -247,4 +247,90 @@ public class AssignmentService : BaseService<Assignment, AssignmentDto, Assignme
 
         return result;
     }
+
+    public async Task<MyAssignmentsResponseDto> GetMyAssignmentsAsync(Guid organizationId, Guid studentId)
+    {
+        // Получаем группы студента
+        var studentGroupIds = await _context.Set<GroupStudent>()
+            .Where(gs => gs.StudentId == studentId)
+            .Select(gs => gs.GroupId)
+            .ToListAsync();
+
+        // Получаем все assignments этих групп
+        var assignments = await _context.Set<Assignment>()
+            .Include(a => a.Group)
+            .Include(a => a.Submissions.Where(s => s.StudentId == studentId))
+                .ThenInclude(s => s.Scores)
+            .Include(a => a.Submissions.Where(s => s.StudentId == studentId))
+                .ThenInclude(s => s.Files)
+            .Where(a => a.Group.OrganizationId == organizationId && studentGroupIds.Contains(a.GroupId))
+            .OrderByDescending(a => a.DueDate)
+            .ToListAsync();
+
+        var now = DateTime.UtcNow;
+        var result = new MyAssignmentsResponseDto();
+
+        foreach (var assignment in assignments)
+        {
+            var submission = assignment.Submissions.FirstOrDefault();
+
+            var item = new StudentAssignmentItemDto
+            {
+                AssignmentId = assignment.Id,
+                Description = assignment.Description,
+                GroupId = assignment.GroupId,
+                AssignedDate = assignment.AssignedDate,
+                DueDate = assignment.DueDate,
+                Group = _mapper.Map<Users.Models.GroupMinimalViewModel>(assignment.Group),
+                SubmissionId = submission?.Id,
+                Status = submission?.Status,
+                Score = submission?.Scores.FirstOrDefault()?.NumericValue
+            };
+
+            // Группировка по статусам
+            if (submission == null)
+            {
+                // Не начато
+                if (assignment.DueDate < now)
+                {
+                    result.Overdue.Add(item);
+                }
+                else
+                {
+                    result.Pending.Add(item);
+                }
+            }
+            else
+            {
+                switch (submission.Status)
+                {
+                    case SubmissionStatus.Draft:
+                    case SubmissionStatus.Returned:
+                        if (assignment.DueDate < now)
+                        {
+                            result.Overdue.Add(item);
+                        }
+                        else
+                        {
+                            result.Pending.Add(item);
+                        }
+                        break;
+
+                    case SubmissionStatus.Submitted:
+                        result.Submitted.Add(item);
+                        break;
+
+                    case SubmissionStatus.Graded:
+                        result.Graded.Add(item);
+                        break;
+
+                    case SubmissionStatus.Overdue:
+                        result.Overdue.Add(item);
+                        break;
+                }
+            }
+        }
+
+        return result;
+    }
 }

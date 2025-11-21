@@ -112,6 +112,29 @@ namespace Trackademy.Api.Controllers
         }
 
         /// <summary>
+        /// Получить детальную информацию о submission по ID
+        /// </summary>
+        [HttpGet("{submissionId}")]
+        public async Task<IActionResult> GetById(Guid submissionId)
+        {
+            var userId = GetCurrentUserId();
+            
+            try
+            {
+                var submission = await _submissionService.GetByIdAsync(submissionId, userId);
+                return Ok(submission);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid();
+            }
+            catch (InvalidOperationException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+        }
+
+        /// <summary>
         /// Получить список submissions с фильтрацией (для преподавателей и студентов)
         /// Студенты видят только свои submissions
         /// Преподаватели видят все submissions с возможностью фильтрации
