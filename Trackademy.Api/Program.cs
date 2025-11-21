@@ -85,6 +85,7 @@ try
     // Регистрация фоновых служб
     builder.Services.AddHostedService<PaymentBackgroundService>();
     builder.Services.AddHostedService<PendingPaymentBackgroundService>();
+    builder.Services.AddHostedService<ScheduleExtensionBackgroundService>();
 
     var app = builder.Build();
 

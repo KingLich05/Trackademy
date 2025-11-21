@@ -20,4 +20,9 @@ public interface ILessonService
     Task<Guid> CreateCustomLessonAsync(LessonCustomAddModel model);
     
     Task<Guid> UpdateLessonNoteAsync(Guid lessonId, string note);
+    
+    /// <summary>
+    /// Автоматическое продление расписания для бессрочных Schedule
+    /// </summary>
+    Task ExtendSchedulesAsync();
 }

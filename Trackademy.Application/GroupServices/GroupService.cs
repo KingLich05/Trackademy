@@ -99,10 +99,16 @@ public class GroupService:
                 // Сохраняем GroupStudent записи в базу
                 await _context.SaveChangesAsync();
                 
-                // Теперь создаем платежи для новых студентов
-                foreach (var studentId in idsToAdd)
+                // Проверяем активность группы через Schedule
+                var isGroupActive = await IsGroupActiveAsync(entity.Id);
+                
+                // Создаем платежи только если группа активна
+                if (isGroupActive)
                 {
-                    await _paymentService.CreatePaymentForStudentAsync(studentId, entity.Id);
+                    foreach (var studentId in idsToAdd)
+                    {
+                        await _paymentService.CreatePaymentForStudentAsync(studentId, entity.Id);
+                    }
                 }
             }
         }
@@ -173,10 +179,16 @@ public class GroupService:
             // Сохраняем GroupStudent записи в базу
             await _context.SaveChangesAsync();
             
-            // Теперь создаем платежи для всех студентов
-            foreach (var studentId in model.StudentIds)
+            // Проверяем активность группы через Schedule
+            var isGroupActive = await IsGroupActiveAsync(group.Id);
+            
+            // Создаем платежи только если группа активна
+            if (isGroupActive)
             {
-                await _paymentService.CreatePaymentForStudentAsync(studentId, group.Id);
+                foreach (var studentId in model.StudentIds)
+                {
+                    await _paymentService.CreatePaymentForStudentAsync(studentId, group.Id);
+                }
             }
         }
         
@@ -212,6 +224,22 @@ public class GroupService:
             .ToPagedResultAsync(request);
 
         return pagedGroups;
+    }
+
+    /// <summary>
+    /// Проверяет активность группы через Schedule:
+    /// Группа активна если существует расписание где EffectiveFrom <= текущая дата и (EffectiveTo == null или EffectiveTo >= текущая дата)
+    /// </summary>
+    private async Task<bool> IsGroupActiveAsync(Guid groupId)
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        
+        var hasActiveSchedule = await _context.Schedules
+            .AnyAsync(s => s.GroupId == groupId 
+                          && s.EffectiveFrom <= today 
+                          && (s.EffectiveTo == null || s.EffectiveTo >= today));
+        
+        return hasActiveSchedule;
     }
 
     private static string GenerateCode()

@@ -270,4 +270,104 @@ public class LessonService(
         await dbContext.SaveChangesAsync();
         return lessonId;
     }
+
+    public async Task ExtendSchedulesAsync()
+    {
+        var timeZone = TimeZoneInfo.FindSystemTimeZoneById("Asia/Almaty");
+        var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, timeZone));
+        var thresholdDate = today.AddDays(30); // Текущий день + месяц
+
+        // Получаем все бессрочные расписания (где EffectiveTo == null)
+        var schedulesWithoutEndDate = await dbContext.Schedules
+            .Include(s => s.Group)
+            .Where(s => s.EffectiveTo == null)
+            .ToListAsync();
+
+        var newLessons = new List<Lesson>();
+
+        foreach (var schedule in schedulesWithoutEndDate)
+        {
+            // Находим максимальную дату урока для этого расписания
+            var maxLessonDate = await dbContext.Lessons
+                .Where(l => l.ScheduleId == schedule.Id)
+                .OrderByDescending(l => l.Date)
+                .Select(l => l.Date)
+                .FirstOrDefaultAsync();
+
+            // Если максимальная дата не найдена или она <= порогового значения
+            if (maxLessonDate == default || maxLessonDate <= thresholdDate)
+            {
+                // Определяем начальную дату для создания новых уроков
+                var startDate = maxLessonDate == default 
+                    ? schedule.EffectiveFrom 
+                    : maxLessonDate.AddDays(1);
+                
+                var endDate = maxLessonDate == default 
+                    ? schedule.EffectiveFrom.AddDays(30) 
+                    : maxLessonDate.AddDays(30);
+
+                // Создаем уроки на следующие 30 дней
+                var lessonsForSchedule = CreateLessonsForPeriod(
+                    schedule, 
+                    startDate, 
+                    endDate);
+                
+                newLessons.AddRange(lessonsForSchedule);
+            }
+        }
+
+        if (newLessons.Any())
+        {
+            await dbContext.Lessons.AddRangeAsync(newLessons);
+            await dbContext.SaveChangesAsync();
+        }
+    }
+
+    private List<Lesson> CreateLessonsForPeriod(
+        Domain.Users.Schedule schedule, 
+        DateOnly startDate, 
+        DateOnly endDate)
+    {
+        var lessons = new List<Lesson>();
+
+        if (schedule.DaysOfWeek == null || !schedule.DaysOfWeek.Any())
+        {
+            return lessons;
+        }
+
+        var currentDate = startDate;
+
+        while (currentDate <= endDate)
+        {
+            // DayOfWeek: 1=Понедельник ... 7=Воскресенье (в Schedule)
+            // C# DayOfWeek: 0=Sunday, 1=Monday ... 6=Saturday
+            var dayOfWeekNumber = currentDate.DayOfWeek == 0 
+                ? 7 // Воскресенье
+                : (int)currentDate.DayOfWeek;
+
+            // Проверяем, есть ли этот день недели в расписании
+            if (schedule.DaysOfWeek.Contains(dayOfWeekNumber))
+            {
+                var lesson = new Lesson
+                {
+                    Id = Guid.NewGuid(),
+                    ScheduleId = schedule.Id,
+                    Date = currentDate,
+                    StartTime = schedule.StartTime,
+                    EndTime = schedule.EndTime,
+                    GroupId = schedule.GroupId,
+                    TeacherId = schedule.TeacherId,
+                    RoomId = schedule.RoomId,
+                    LessonStatus = LessonStatus.Planned,
+                    Note = null
+                };
+
+                lessons.Add(lesson);
+            }
+
+            currentDate = currentDate.AddDays(1);
+        }
+
+        return lessons;
+    }
 }
