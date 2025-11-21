@@ -10,7 +10,8 @@ public class Payment : Entity
     public string PaymentPeriod { get; set; } = string.Empty;
     public PaymentType Type { get; set; }
     public decimal OriginalAmount { get; set; }
-    public decimal DiscountPercentage { get; set; } = 0;
+    public DiscountType DiscountType { get; set; } = DiscountType.Percentage;
+    public decimal DiscountValue { get; set; } = 0;
     public decimal Amount { get; set; }
     public string? DiscountReason { get; set; }
     public DateOnly PeriodStart { get; set; }

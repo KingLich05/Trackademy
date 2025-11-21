@@ -1,4 +1,5 @@
 using Trackademy.Domain.Common;
+using Trackademy.Domain.Enums;
 
 namespace Trackademy.Domain.Users;
 
@@ -12,9 +13,14 @@ public class GroupStudent : Entity
     public Guid StudentId { get; set; }
     
     /// <summary>
-    /// Процент скидки для студента в этой группе (0-100)
+    /// Тип скидки для студента в этой группе
     /// </summary>
-    public decimal DiscountPercentage { get; set; } = 0;
+    public DiscountType DiscountType { get; set; } = DiscountType.Percentage;
+    
+    /// <summary>
+    /// Значение скидки (процент 0-100 или фиксированная сумма)
+    /// </summary>
+    public decimal DiscountValue { get; set; } = 0;
     
     /// <summary>
     /// Причина предоставления скидки

@@ -25,9 +25,19 @@ public class PaymentCreateModelValidator : AbstractValidator<PaymentCreateModel>
             .GreaterThan(0)
             .WithMessage("Сумма должна быть больше 0");
 
-        RuleFor(x => x.DiscountPercentage)
-            .InclusiveBetween(0, 100)
-            .WithMessage("Скидка должна быть от 0 до 100%");
+        RuleFor(x => x.DiscountValue)
+            .GreaterThanOrEqualTo(0)
+            .WithMessage("Значение скидки должно быть больше или равно 0");
+
+        RuleFor(x => x.DiscountValue)
+            .LessThanOrEqualTo(100)
+            .WithMessage("Процент скидки должен быть от 0 до 100")
+            .When(x => x.DiscountType == Domain.Enums.DiscountType.Percentage);
+
+        RuleFor(x => x.DiscountValue)
+            .LessThanOrEqualTo(x => x.OriginalAmount)
+            .WithMessage("Фиксированная скидка не может превышать исходную сумму")
+            .When(x => x.DiscountType == Domain.Enums.DiscountType.FixedAmount);
 
         RuleFor(x => x.PeriodStart)
             .LessThan(x => x.PeriodEnd)
@@ -50,6 +60,6 @@ public class PaymentCreateModelValidator : AbstractValidator<PaymentCreateModel>
         RuleFor(x => x.DiscountReason)
             .NotEmpty()
             .WithMessage("При наличии скидки необходимо указать причину")
-            .When(x => x.DiscountPercentage > 0);
+            .When(x => x.DiscountValue > 0);
     }
 }

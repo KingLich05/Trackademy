@@ -27,8 +27,8 @@ public class PaymentConfig : IEntityTypeConfiguration<Payment>
         b.Property(x => x.OriginalAmount)
             .HasPrecision(18, 2);
 
-        b.Property(x => x.DiscountPercentage)
-            .HasPrecision(5, 2);
+        b.Property(x => x.DiscountValue)
+            .HasPrecision(18, 2);
 
         b.Property(x => x.Amount)
             .HasPrecision(18, 2);

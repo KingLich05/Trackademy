@@ -13,7 +13,9 @@ public class PaymentDto
     public PaymentType Type { get; set; }
     public string TypeName => Type == PaymentType.Monthly ? "Ежемесячный" : "Единоразовый";
     public decimal OriginalAmount { get; set; }
-    public decimal DiscountPercentage { get; set; }
+    public DiscountType DiscountType { get; set; }
+    public string DiscountTypeName => DiscountType == DiscountType.Percentage ? "Процент" : "Фиксированная сумма";
+    public decimal DiscountValue { get; set; }
     public decimal Amount { get; set; }
     public string? DiscountReason { get; set; }
     public DateOnly PeriodStart { get; set; }

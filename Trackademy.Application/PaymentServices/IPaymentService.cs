@@ -74,7 +74,7 @@ public interface IPaymentService
     /// <summary>
     /// Создание платежа для студента при добавлении в группу
     /// </summary>
-    Task CreatePaymentForStudentAsync(Guid studentId, Guid groupId, decimal discountPercentage = 0, string? discountReason = null);
+    Task CreatePaymentForStudentAsync(Guid studentId, Guid groupId, DiscountType discountType = DiscountType.Percentage, decimal discountValue = 0, string? discountReason = null);
     
     /// <summary>
     /// Отмена всех неоплаченных платежей студента в группе (при удалении из группы)

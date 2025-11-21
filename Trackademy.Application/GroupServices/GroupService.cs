@@ -7,6 +7,7 @@ using Trackademy.Application.Shared.BaseCrud;
 using Trackademy.Application.Shared.Exception;
 using Trackademy.Application.Shared.Extensions;
 using Trackademy.Application.Shared.Models;
+using Trackademy.Domain.Enums;
 using Trackademy.Domain.Users;
 
 namespace Trackademy.Application.GroupServices;
@@ -87,7 +88,8 @@ public class GroupService:
                         Id = Guid.NewGuid(),
                         GroupId = entity.Id,
                         StudentId = studentId,
-                        DiscountPercentage = 0,
+                        DiscountType = DiscountType.Percentage,
+                        DiscountValue = 0,
                         DiscountReason = null,
                         JoinedAt = DateTime.UtcNow
                     };
@@ -160,7 +162,8 @@ public class GroupService:
                     Id = Guid.NewGuid(),
                     GroupId = group.Id,
                     StudentId = studentId,
-                    DiscountPercentage = 0,
+                    DiscountType = DiscountType.Percentage,
+                    DiscountValue = 0,
                     DiscountReason = null,
                     JoinedAt = DateTime.UtcNow
                 };

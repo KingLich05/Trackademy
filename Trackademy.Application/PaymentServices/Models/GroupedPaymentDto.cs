@@ -21,7 +21,8 @@ public class GroupedPaymentDto
     public DateOnly LastPaymentPeriodEnd { get; set; }
     public string? LastPaymentDiscountReason { get; set; }
     public decimal LastPaymentOriginalAmount { get; set; }
-    public decimal LastPaymentDiscountPercentage { get; set; }
+    public DiscountType LastPaymentDiscountType { get; set; }
+    public decimal LastPaymentDiscountValue { get; set; }
     
     // Все платежи студента
     public List<PaymentDto> Payments { get; set; } = new();

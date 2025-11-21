@@ -50,13 +50,19 @@ public class PaymentService(
             throw new ConflictException("Студент не состоит в указанной группе.");
         }
 
-        if (model.DiscountPercentage > 100)
+        // Валидация скидки
+        if (model.DiscountType == DiscountType.Percentage && model.DiscountValue > 100)
         {
-            throw new ConflictException("Скидка должна быть от 0 до 100%.");
+            throw new ConflictException("Процент скидки должен быть от 0 до 100.");
         }
 
-        var discountAmount = model.OriginalAmount * (model.DiscountPercentage / 100);
-        var finalAmount = model.OriginalAmount - discountAmount;
+        if (model.DiscountType == DiscountType.FixedAmount && model.DiscountValue > model.OriginalAmount)
+        {
+            throw new ConflictException("Фиксированная скидка не может превышать исходную сумму.");
+        }
+
+        // Расчет итоговой суммы
+        var finalAmount = CalculateFinalAmount(model.OriginalAmount, model.DiscountType, model.DiscountValue);
 
         var payment = new Payment
         {
@@ -66,7 +72,8 @@ public class PaymentService(
             PaymentPeriod = model.PaymentPeriod,
             Type = model.Type,
             OriginalAmount = model.OriginalAmount,
-            DiscountPercentage = model.DiscountPercentage,
+            DiscountType = model.DiscountType,
+            DiscountValue = model.DiscountValue,
             Amount = finalAmount,
             DiscountReason = model.DiscountReason,
             PeriodStart = model.PeriodStart,
@@ -219,7 +226,8 @@ public class PaymentService(
                     LastPaymentPeriodEnd = lastPayment.PeriodEnd,
                     LastPaymentDiscountReason = lastPayment.DiscountReason,
                     LastPaymentOriginalAmount = lastPayment.OriginalAmount,
-                    LastPaymentDiscountPercentage = lastPayment.DiscountPercentage,
+                    LastPaymentDiscountType = lastPayment.DiscountType,
+                    LastPaymentDiscountValue = lastPayment.DiscountValue,
                     Payments = sortedPayments
                 };
             })
@@ -323,13 +331,24 @@ public class PaymentService(
             throw new ConflictException("Нельзя изменить скидку для отмененного платежа.");
         }
 
+        // Валидация скидки
+        if (request.DiscountType == DiscountType.Percentage && request.DiscountValue > 100)
+        {
+            throw new ConflictException("Процент скидки должен быть от 0 до 100.");
+        }
+
+        if (request.DiscountType == DiscountType.FixedAmount && request.DiscountValue > payment.OriginalAmount)
+        {
+            throw new ConflictException("Фиксированная скидка не может превышать исходную сумму.");
+        }
+
         // Обновляем скидку
-        payment.DiscountPercentage = request.DiscountPercentage;
+        payment.DiscountType = request.DiscountType;
+        payment.DiscountValue = request.DiscountValue;
         payment.DiscountReason = request.DiscountReason;
 
         // Пересчитываем итоговую сумму
-        var discountAmount = payment.OriginalAmount * (request.DiscountPercentage / 100);
-        payment.Amount = payment.OriginalAmount - discountAmount;
+        payment.Amount = CalculateFinalAmount(payment.OriginalAmount, request.DiscountType, request.DiscountValue);
 
         await dbContext.SaveChangesAsync();
         return true;
@@ -402,7 +421,7 @@ public class PaymentService(
         };
     }
 
-    public async Task CreatePaymentForStudentAsync(Guid studentId, Guid groupId, decimal discountPercentage = 0, string? discountReason = null)
+    public async Task CreatePaymentForStudentAsync(Guid studentId, Guid groupId, DiscountType discountType = DiscountType.Percentage, decimal discountValue = 0, string? discountReason = null)
     {
         var group = await dbContext.Groups
             .Include(g => g.Subject)
@@ -417,8 +436,12 @@ public class PaymentService(
         if (student == null)
             throw new ConflictException("Студент не найден.");
 
-        if (discountPercentage < 0 || discountPercentage > 100)
-            throw new ConflictException("Скидка должна быть от 0 до 100%.");
+        // Валидация скидки
+        if (discountType == DiscountType.Percentage && discountValue > 100)
+            throw new ConflictException("Процент скидки должен быть от 0 до 100.");
+
+        if (discountType == DiscountType.FixedAmount && discountValue > group.Subject.Price)
+            throw new ConflictException("Фиксированная скидка не может превышать стоимость обучения.");
 
         var now = DateTime.UtcNow;
         var periodStart = DateOnly.FromDateTime(now);
@@ -441,8 +464,7 @@ public class PaymentService(
             paymentPeriod = $"Разовая оплата до {periodEnd:dd.MM.yyyy}";
         }
 
-        var discountAmount = subjectPrice * (discountPercentage / 100);
-        var finalAmount = subjectPrice - discountAmount;
+        var finalAmount = CalculateFinalAmount(subjectPrice, discountType, discountValue);
 
         var payment = new Payment
         {
@@ -452,7 +474,8 @@ public class PaymentService(
             PaymentPeriod = paymentPeriod,
             Type = paymentType,
             OriginalAmount = subjectPrice,
-            DiscountPercentage = discountPercentage,
+            DiscountType = discountType,
+            DiscountValue = discountValue,
             Amount = finalAmount,
             DiscountReason = discountReason,
             PeriodStart = periodStart,
@@ -530,8 +553,7 @@ public class PaymentService(
                 var periodEnd = periodStart.AddDays(30);
 
                 var subjectPrice = group.Subject.Price;
-                var discountAmount = subjectPrice * (groupStudent.DiscountPercentage / 100);
-                var finalAmount = subjectPrice - discountAmount;
+                var finalAmount = CalculateFinalAmount(subjectPrice, groupStudent.DiscountType, groupStudent.DiscountValue);
 
                 var payment = new Payment
                 {
@@ -541,7 +563,8 @@ public class PaymentService(
                     PaymentPeriod = currentMonth,
                     Type = PaymentType.Monthly,
                     OriginalAmount = subjectPrice,
-                    DiscountPercentage = groupStudent.DiscountPercentage,
+                    DiscountType = groupStudent.DiscountType,
+                    DiscountValue = groupStudent.DiscountValue,
                     Amount = finalAmount,
                     DiscountReason = groupStudent.DiscountReason,
                     PeriodStart = periodStart,
@@ -612,8 +635,7 @@ public class PaymentService(
                 var paymentPeriod = DateTime.Now.ToString("MMMM yyyy", new System.Globalization.CultureInfo("ru-RU"));
 
                 var subjectPrice = group.Subject.Price;
-                var discountAmount = subjectPrice * (groupStudent.DiscountPercentage / 100);
-                var finalAmount = subjectPrice - discountAmount;
+                var finalAmount = CalculateFinalAmount(subjectPrice, groupStudent.DiscountType, groupStudent.DiscountValue);
 
                 var payment = new Payment
                 {
@@ -623,7 +645,8 @@ public class PaymentService(
                     PaymentPeriod = paymentPeriod,
                     Type = PaymentType.Monthly,
                     OriginalAmount = subjectPrice,
-                    DiscountPercentage = groupStudent.DiscountPercentage,
+                    DiscountType = groupStudent.DiscountType,
+                    DiscountValue = groupStudent.DiscountValue,
                     Amount = finalAmount,
                     DiscountReason = groupStudent.DiscountReason,
                     PeriodStart = periodStart,
@@ -642,4 +665,24 @@ public class PaymentService(
             await dbContext.SaveChangesAsync();
         }
     }
+
+    #region Private Helper Methods
+
+    /// <summary>
+    /// Расчет итоговой суммы с учетом скидки
+    /// </summary>
+    private decimal CalculateFinalAmount(decimal originalAmount, DiscountType discountType, decimal discountValue)
+    {
+        if (discountValue == 0)
+            return originalAmount;
+
+        return discountType switch
+        {
+            DiscountType.Percentage => originalAmount - (originalAmount * (discountValue / 100)),
+            DiscountType.FixedAmount => originalAmount - discountValue,
+            _ => originalAmount
+        };
+    }
+
+    #endregion
 }

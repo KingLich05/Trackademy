@@ -16,8 +16,8 @@ public class GroupStudentConfig : IEntityTypeConfiguration<GroupStudent>
         builder.HasIndex(gs => new { gs.GroupId, gs.StudentId })
             .IsUnique();
 
-        builder.Property(gs => gs.DiscountPercentage)
-            .HasPrecision(5, 2);
+        builder.Property(gs => gs.DiscountValue)
+            .HasPrecision(18, 2);
 
         builder.Property(gs => gs.DiscountReason)
             .HasMaxLength(500);
