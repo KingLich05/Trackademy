@@ -12,7 +12,8 @@ public class RoomConfig : IEntityTypeConfiguration<Room>
         b.Property(x => x.Name).IsRequired();
         b.Property(x => x.Capacity).IsRequired();
         
-        b.HasIndex(x => x.Name)
+        // Уникальность имени только в рамках организации
+        b.HasIndex(x => new { x.Name, x.OrganizationId })
             .IsUnique();
         
         b.HasOne(r => r.Organization)
