@@ -275,15 +275,32 @@ namespace Trackademy.Application.Submissions
         {
             var file = await _context.SubmissionFiles
                 .Include(f => f.Submission)
+                    .ThenInclude(s => s.Assignment)
                 .FirstOrDefaultAsync(f => f.Id == fileId);
 
             if (file == null)
                 throw new FileNotFoundException("Файл не найден");
 
-            // Проверяем доступ
-            bool hasAccess = userRole == "Teacher" || file.Submission.StudentId == userId;
-            if (!hasAccess)
-                throw new UnauthorizedAccessException("Нет доступа к файлу");
+            // Проверяем доступ: студент видит свои файлы, учитель - файлы своей группы, админ/владелец - все
+            var isStudent = file.Submission.StudentId == userId;
+            
+            if (!isStudent)
+            {
+                // Проверяем, является ли пользователь учителем этой группы
+                var isTeacher = await _context.Set<Domain.Users.Schedule>()
+                    .AnyAsync(s => s.TeacherId == userId && 
+                                   s.GroupId == file.Submission.Assignment.GroupId);
+                
+                if (!isTeacher)
+                {
+                    // Дополнительная проверка: администратор или владелец
+                    var user = await _context.Set<Domain.Users.User>()
+                        .FirstOrDefaultAsync(u => u.Id == userId);
+                    
+                    if (user == null || (user.Role != Domain.Enums.RoleEnum.Administrator && user.Role != Domain.Enums.RoleEnum.Owner))
+                        throw new UnauthorizedAccessException("Нет доступа к файлу");
+                }
+            }
 
             var fullPath = Path.Combine(_uploadPath, file.FilePath);
             if (!File.Exists(fullPath))
