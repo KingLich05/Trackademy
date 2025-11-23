@@ -241,19 +241,31 @@ namespace Trackademy.Application.Submissions
                 .Include(s => s.Files)
                 .Include(s => s.Scores)
                 .Include(s => s.Assignment)
+                    .ThenInclude(a => a.Group)
                 .FirstOrDefaultAsync(s => s.Id == submissionId);
 
             if (submission == null)
                 throw new InvalidOperationException("Submission не найден");
 
-            // Проверка доступа: только владелец или учитель группы
-            if (submission.StudentId != userId)
+            // Проверка доступа: студент видит свою работу, учитель видит работы своей группы
+            var isStudent = submission.StudentId == userId;
+            
+            if (!isStudent)
             {
+                // Проверяем, является ли пользователь учителем этой группы
                 var isTeacher = await _context.Set<Domain.Users.Schedule>()
-                    .AnyAsync(s => s.TeacherId == userId && s.GroupId == submission.Assignment.GroupId);
+                    .AnyAsync(s => s.TeacherId == userId && 
+                                   s.GroupId == submission.Assignment.GroupId);
                 
                 if (!isTeacher)
-                    throw new UnauthorizedAccessException("Нет доступа к этому submission");
+                {
+                    // Дополнительная проверка: может быть администратор или владелец организации
+                    var user = await _context.Set<Domain.Users.User>()
+                        .FirstOrDefaultAsync(u => u.Id == userId);
+                    
+                    if (user == null || (user.Role != Domain.Enums.RoleEnum.Administrator && user.Role != Domain.Enums.RoleEnum.Owner))
+                        throw new UnauthorizedAccessException("Нет доступа к этому submission");
+                }
             }
 
             return MapToResponseModel(submission);
