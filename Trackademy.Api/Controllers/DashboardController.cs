@@ -4,6 +4,7 @@ using Trackademy.Application.Dashboard;
 using Trackademy.Application.Dashboard.Models;
 using Trackademy.Api.Authorization;
 using Trackademy.Domain.Enums;
+using System.Security.Claims;
 
 namespace Trackademy.Api.Controllers;
 
@@ -53,5 +54,30 @@ public class DashboardController : ControllerBase
         {
             return BadRequest($"Ошибка получения детального отчета: {ex.Message}");
         }
+    }
+
+    /// <summary>
+    /// 👨‍🏫 Получить дашборд для преподавателя
+    /// </summary>
+    [HttpGet("teacher")]
+    [RoleAuthorization(RoleEnum.Teacher)]
+    public async Task<ActionResult<TeacherDashboardDto>> GetTeacherDashboard()
+    {
+        try
+        {
+            var teacherId = GetCurrentUserId();
+            var dashboard = await _dashboardService.GetTeacherDashboardAsync(teacherId);
+            return Ok(dashboard);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest($"Ошибка получения дашборда преподавателя: {ex.Message}");
+        }
+    }
+
+    private Guid GetCurrentUserId()
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        return Guid.Parse(userIdClaim ?? throw new UnauthorizedAccessException());
     }
 }

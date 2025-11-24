@@ -622,4 +622,92 @@ public class DashboardService : IDashboardService
     }
 
     #endregion
+
+    #region Teacher Dashboard
+
+    /// <summary>
+    /// 👨‍🏫 Получить дашборд для преподавателя
+    /// </summary>
+    public async Task<TeacherDashboardDto> GetTeacherDashboardAsync(Guid teacherId)
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow.Date);
+        var now = DateTime.UtcNow;
+        var currentTime = TimeOnly.FromDateTime(now);
+
+        // 1. Количество групп преподавателя
+        var totalGroups = await dbContext.Schedules
+            .Where(s => s.TeacherId == teacherId)
+            .Select(s => s.GroupId)
+            .Distinct()
+            .CountAsync();
+
+        // 2. Количество непроверенных работ
+        var ungradedSubmissions = await dbContext.Submissions
+            .Where(s => s.Assignment.Group.Schedules.Any(sc => sc.TeacherId == teacherId) &&
+                       s.Status == Domain.Enums.SubmissionStatus.Submitted)
+            .CountAsync();
+
+        // 3. Уроки на сегодня
+        var todayLessons = await dbContext.Lessons
+            .Include(l => l.Group)
+                .ThenInclude(g => g.Subject)
+            .Include(l => l.Room)
+            .Include(l => l.Attendances)
+            .Where(l => l.TeacherId == teacherId && l.Date == today)
+            .OrderBy(l => l.StartTime)
+            .ToListAsync();
+
+        var lessonsToday = todayLessons.Count;
+
+        // 4. Формируем расписание на сегодня
+        var todaySchedule = todayLessons.Select(l =>
+        {
+            var startTime = TimeOnly.FromTimeSpan(l.StartTime);
+            var endTime = TimeOnly.FromTimeSpan(l.EndTime);
+            var isPast = startTime < currentTime;
+
+            // Подсчет посещаемости если урок прошел
+            decimal? attendanceRate = null;
+            int? presentCount = null;
+            int? totalStudents = null;
+
+            if (isPast && l.Attendances.Any())
+            {
+                totalStudents = l.Attendances.Count;
+                presentCount = l.Attendances.Count(a => a.Status == Domain.Enums.AttendanceStatus.Present);
+                attendanceRate = totalStudents > 0 
+                    ? Math.Round((decimal)presentCount.Value / totalStudents.Value * 100, 1) 
+                    : 0;
+            }
+            else if (isPast)
+            {
+                // Урок прошел, но посещаемость не отмечена
+                totalStudents = l.Group.Students.Count;
+            }
+
+            return new TeacherTodayScheduleDto
+            {
+                LessonId = l.Id,
+                StartTime = startTime,
+                EndTime = endTime,
+                GroupName = l.Group.Name,
+                SubjectName = l.Group.Subject?.Name ?? "Без предмета",
+                RoomName = l.Room?.Name,
+                IsPast = isPast,
+                AttendanceRate = attendanceRate,
+                PresentCount = presentCount,
+                TotalStudents = totalStudents
+            };
+        }).ToList();
+
+        return new TeacherDashboardDto
+        {
+            TotalGroups = totalGroups,
+            UngradedSubmissions = ungradedSubmissions,
+            LessonsToday = lessonsToday,
+            TodaySchedule = todaySchedule
+        };
+    }
+
+    #endregion
 }

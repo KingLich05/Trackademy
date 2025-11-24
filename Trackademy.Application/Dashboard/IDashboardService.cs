@@ -16,4 +16,9 @@ public interface IDashboardService
     /// 📈 Получить детальный отчет дашборда - расширенная информация
     /// </summary>
     Task<DashboardDetailedDto> GetDashboardDetailedAsync(DashboardFilterDto? filter = null);
+    
+    /// <summary>
+    /// 👨‍🏫 Получить дашборд для преподавателя
+    /// </summary>
+    Task<TeacherDashboardDto> GetTeacherDashboardAsync(Guid teacherId);
 }
