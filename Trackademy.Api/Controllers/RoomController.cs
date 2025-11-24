@@ -15,6 +15,8 @@ public class RoomController(IRoomService service) :
     BaseCrudController<Room, RoomDto, RoomAddModel, RoomUpdateModel>(service)
 {
     [HttpPost("GetAllRooms")]
+    [AllowAnonymous]
+    [Authorize(Roles = "Teacher,Administrator,Owner")]
     public async Task<IActionResult> GetAllRooms([FromBody] GetRoomsRequest request)
     {
         var result = await service.GetAllAsync(request);
