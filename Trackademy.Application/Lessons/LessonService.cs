@@ -256,6 +256,11 @@ public class LessonService(
             query = query.Where(x => x.GroupId == request.GroupId.Value);
         }
 
+        if (request.GroupIds != null && request.GroupIds.Any())
+        {
+            query = query.Where(x => request.GroupIds.Contains(x.GroupId));
+        }
+
         if (request.TeacherId.HasValue)
         {
             query = query.Where(x => x.TeacherId == request.TeacherId.Value);
@@ -390,5 +395,14 @@ public class LessonService(
         }
 
         return lessons;
+    }
+
+    public async Task<List<Guid>> GetStudentGroupIdsAsync(Guid studentId)
+    {
+        return await dbContext.Users
+            .Where(u => u.Id == studentId)
+            .SelectMany(u => u.Groups)
+            .Select(g => g.Id)
+            .ToListAsync();
     }
 }

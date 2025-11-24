@@ -5,6 +5,7 @@ using Trackademy.Application.Lessons;
 using Trackademy.Application.Lessons.Models;
 using Trackademy.Application.Shared.Exception;
 using Trackademy.Domain.Enums;
+using System.Security.Claims;
 
 namespace Trackademy.Api.Controllers.Schedule;
 
@@ -56,11 +57,53 @@ public class LessonController(ILessonService service) : ControllerBase
     }
 
     [HttpPost("by-schedule")]
-    [RoleAuthorization(RoleEnum.Student)]
     public async Task<IActionResult> GetLessonsBySchedule([FromBody] GetLessonsByScheduleRequest request)
     {
+        var userId = GetCurrentUserId();
+        var userRole = GetCurrentUserRole();
+
+        // Студент видит только уроки своих групп
+        if (userRole == "Student")
+        {
+            var studentGroups = await service.GetStudentGroupIdsAsync(userId);
+            
+            // Если указана конкретная группа, проверяем доступ
+            if (request.GroupId.HasValue)
+            {
+                if (!studentGroups.Contains(request.GroupId.Value))
+                {
+                    return Forbid();
+                }
+            }
+            else
+            {
+                // Фильтруем только по группам студента
+                request.GroupIds = studentGroups;
+            }
+            
+            // Студент не может фильтровать по учителю
+            request.TeacherId = null;
+        }
+        // Преподаватель видит только свои уроки
+        else if (userRole == "Teacher")
+        {
+            request.TeacherId = userId;
+        }
+        // Администратор/Владелец видит все уроки (не фильтруем)
+
         var result = await service.GetLessonsByScheduleAsync(request);
         return Ok(result);
+    }
+    
+    private Guid GetCurrentUserId()
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        return Guid.Parse(userIdClaim ?? throw new UnauthorizedAccessException());
+    }
+
+    private string GetCurrentUserRole()
+    {
+        return User.FindFirst(ClaimTypes.Role)?.Value ?? throw new UnauthorizedAccessException();
     }
     
     /// <summary>

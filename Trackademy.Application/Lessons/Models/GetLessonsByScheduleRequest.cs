@@ -12,4 +12,9 @@ public class GetLessonsByScheduleRequest : PagedRequest
     public Guid? TeacherId { get; set; }
     public Guid? RoomId { get; set; }
     public Guid? SubjectId { get; set; }
+    
+    /// <summary>
+    /// Список ID групп для фильтрации (используется для студентов)
+    /// </summary>
+    public List<Guid>? GroupIds { get; set; }
 }

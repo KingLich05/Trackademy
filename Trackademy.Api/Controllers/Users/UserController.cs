@@ -38,7 +38,7 @@ public class UserController(IUserServices service) : ControllerBase
     }
 
     [HttpPost("get-users")]
-    [RoleAuthorization(RoleEnum.Teacher)]
+    [RoleAuthorization(RoleEnum.Student)]
     public async Task<IActionResult> GetUsers(
         [FromBody] GetUserRequest getUserRequest)
     {

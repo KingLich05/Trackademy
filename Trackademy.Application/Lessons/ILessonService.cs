@@ -21,6 +21,8 @@ public interface ILessonService
     
     Task<Guid> UpdateLessonNoteAsync(Guid lessonId, string note);
     
+    Task<List<Guid>> GetStudentGroupIdsAsync(Guid studentId);
+    
     /// <summary>
     /// Автоматическое продление расписания для бессрочных Schedule
     /// </summary>
