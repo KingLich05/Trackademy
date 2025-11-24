@@ -630,8 +630,8 @@ public class DashboardService : IDashboardService
     /// </summary>
     public async Task<TeacherDashboardDto> GetTeacherDashboardAsync(Guid teacherId)
     {
-        var today = DateOnly.FromDateTime(DateTime.UtcNow.Date);
-        var now = DateTime.UtcNow;
+        var today = DateOnly.FromDateTime(DateTime.Now.Date);
+        var now = DateTime.Now;
         var currentTime = TimeOnly.FromDateTime(now);
 
         // 1. Количество групп преподавателя
@@ -644,15 +644,17 @@ public class DashboardService : IDashboardService
         // 2. Количество непроверенных работ
         var ungradedSubmissions = await dbContext.Submissions
             .Where(s => s.Assignment.Group.Schedules.Any(sc => sc.TeacherId == teacherId) &&
-                       s.Status == Domain.Enums.SubmissionStatus.Submitted)
+                       s.Status == SubmissionStatus.Submitted)
             .CountAsync();
 
         // 3. Уроки на сегодня
         var todayLessons = await dbContext.Lessons
             .Include(l => l.Group)
-                .ThenInclude(g => g.Subject)
+            .ThenInclude(g => g.Subject)
             .Include(l => l.Room)
             .Include(l => l.Attendances)
+            .Include(lesson => lesson.Group)
+            .ThenInclude(groups => groups.Students)
             .Where(l => l.TeacherId == teacherId && l.Date == today)
             .OrderBy(l => l.StartTime)
             .ToListAsync();
@@ -674,7 +676,7 @@ public class DashboardService : IDashboardService
             if (isPast && l.Attendances.Any())
             {
                 totalStudents = l.Attendances.Count;
-                presentCount = l.Attendances.Count(a => a.Status == Domain.Enums.AttendanceStatus.Present);
+                presentCount = l.Attendances.Count(a => a.Status == AttendanceStatus.Attend);
                 attendanceRate = totalStudents > 0 
                     ? Math.Round((decimal)presentCount.Value / totalStudents.Value * 100, 1) 
                     : 0;
@@ -691,7 +693,7 @@ public class DashboardService : IDashboardService
                 StartTime = startTime,
                 EndTime = endTime,
                 GroupName = l.Group.Name,
-                SubjectName = l.Group.Subject?.Name ?? "Без предмета",
+                SubjectName = l.Group.Subject.Name,
                 RoomName = l.Room?.Name,
                 IsPast = isPast,
                 AttendanceRate = attendanceRate,
