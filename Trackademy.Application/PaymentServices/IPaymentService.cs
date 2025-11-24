@@ -72,9 +72,9 @@ public interface IPaymentService
     Task<PaymentStatsDto> GetPaymentStatsAsync(Guid organizationId, Guid? groupId = null, Guid? studentId = null);
     
     /// <summary>
-    /// Создание платежа для студента при добавлении в группу
+    /// Создание платежей для списка студентов при добавлении в группу (batch операция)
     /// </summary>
-    Task CreatePaymentForStudentAsync(Guid studentId, Guid groupId, DiscountType discountType = DiscountType.Percentage, decimal discountValue = 0, string? discountReason = null);
+    Task CreatePaymentsForStudentsAsync(List<Guid> studentIds, Guid groupId, DiscountType discountType = DiscountType.Percentage, decimal discountValue = 0, string? discountReason = null);
     
     /// <summary>
     /// Отмена всех неоплаченных платежей студента в группе (при удалении из группы)

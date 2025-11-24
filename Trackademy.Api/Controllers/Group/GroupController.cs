@@ -78,4 +78,12 @@ public class GroupController(IGroupService service) :
         await service.UnfreezeStudentAsync(request);
         return Ok("Студент успешно разморожен, платеж продлен.");
     }
+    
+    [HttpPost("bulk-add-students")]
+    [RoleAuthorization(RoleEnum.Administrator)]
+    public async Task<IActionResult> BulkAddStudents([FromBody] BulkAddStudentsRequest request)
+    {
+        await service.BulkAddStudentsAsync(request);
+        return Ok("Студенты успешно добавлены в группу.");
+    }
 }

@@ -16,4 +16,6 @@ public interface IGroupService : IBaseService<Groups, GroupsDto, GroupsAddModel,
     Task FreezeStudentAsync(FreezeStudentRequest request);
     
     Task UnfreezeStudentAsync(UnfreezeStudentRequest request);
+    
+    Task BulkAddStudentsAsync(BulkAddStudentsRequest request);
 }

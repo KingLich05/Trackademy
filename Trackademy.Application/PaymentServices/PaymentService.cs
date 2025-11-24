@@ -421,71 +421,86 @@ public class PaymentService(
         };
     }
 
-    public async Task CreatePaymentForStudentAsync(Guid studentId, Guid groupId, DiscountType discountType = DiscountType.Percentage, decimal discountValue = 0, string? discountReason = null)
+    public async Task CreatePaymentsForStudentsAsync(List<Guid> studentIds, Guid groupId, DiscountType discountType = DiscountType.Percentage, decimal discountValue = 0, string? discountReason = null)
     {
-        var group = await dbContext.Groups
-            .Include(g => g.Subject)
-            .FirstOrDefaultAsync(g => g.Id == groupId);
+        if (studentIds == null || studentIds.Count == 0)
+            return;
 
-        if (group == null)
-            throw new ConflictException("Группа не найдена.");
-
-        var student = await dbContext.Users
-            .FirstOrDefaultAsync(u => u.Id == studentId && u.Role == RoleEnum.Student);
-
-        if (student == null)
-            throw new ConflictException("Студент не найден.");
-
-        // Валидация скидки
-        if (discountType == DiscountType.Percentage && discountValue > 100)
-            throw new ConflictException("Процент скидки должен быть от 0 до 100.");
-
-        if (discountType == DiscountType.FixedAmount && discountValue > group.Subject.Price)
-            throw new ConflictException("Фиксированная скидка не может превышать стоимость обучения.");
-
-        var now = DateTime.UtcNow;
-        var periodStart = DateOnly.FromDateTime(now);
-        DateOnly periodEnd;
-        string paymentPeriod;
-
-        var subjectPrice = group.Subject.Price;
-        var paymentType = group.Subject.PaymentType;
-
-        if (paymentType == PaymentType.Monthly)
+        using var transaction = await dbContext.Database.BeginTransactionAsync();
+        try
         {
-            // Для месячных платежей: 30 дней с даты добавления
-            periodEnd = periodStart.AddDays(30);
-            paymentPeriod = now.ToString("MMMM yyyy", new System.Globalization.CultureInfo("ru-RU"));
+            var group = await dbContext.Groups
+                .Include(g => g.Subject)
+                .FirstOrDefaultAsync(g => g.Id == groupId);
+
+            if (group == null)
+                throw new ConflictException("Группа не найдена.");
+
+            if (discountType == DiscountType.Percentage && discountValue > 100)
+                throw new ConflictException("Процент скидки должен быть от 0 до 100.");
+
+            if (discountType == DiscountType.FixedAmount && discountValue > group.Subject.Price)
+                throw new ConflictException("Фиксированная скидка не может превышать стоимость обучения.");
+
+            var existingStudentIds = await dbContext.Users
+                .Where(u => studentIds.Contains(u.Id) && u.Role == RoleEnum.Student)
+                .Select(u => u.Id)
+                .ToListAsync();
+
+            if (existingStudentIds.Count != studentIds.Count)
+            {
+                var missingIds = studentIds.Except(existingStudentIds).ToList();
+                throw new ConflictException($"Следующие ID не являются студентами или не существуют: {string.Join(", ", missingIds)}");
+            }
+
+            var now = DateTime.UtcNow;
+            var periodStart = DateOnly.FromDateTime(now);
+            DateOnly periodEnd;
+            string paymentPeriod;
+
+            var subjectPrice = group.Subject.Price;
+            var paymentType = group.Subject.PaymentType;
+
+            if (paymentType == PaymentType.Monthly)
+            {
+                periodEnd = periodStart.AddDays(30);
+                paymentPeriod = now.ToString("MMMM yyyy", new System.Globalization.CultureInfo("ru-RU"));
+            }
+            else
+            {
+                periodEnd = periodStart.AddYears(1);
+                paymentPeriod = $"Разовая оплата до {periodEnd:dd.MM.yyyy}";
+            }
+
+            var finalAmount = CalculateFinalAmount(subjectPrice, discountType, discountValue);
+
+            var payments = studentIds.Select(studentId => new Payment
+            {
+                Id = Guid.NewGuid(),
+                StudentId = studentId,
+                GroupId = groupId,
+                PaymentPeriod = paymentPeriod,
+                Type = paymentType,
+                OriginalAmount = subjectPrice,
+                DiscountType = discountType,
+                DiscountValue = discountValue,
+                Amount = finalAmount,
+                DiscountReason = discountReason,
+                PeriodStart = periodStart,
+                PeriodEnd = periodEnd,
+                Status = PaymentStatus.Pending,
+                CreatedAt = now
+            }).ToList();
+
+            await dbContext.Payments.AddRangeAsync(payments);
+            await dbContext.SaveChangesAsync();
+            await transaction.CommitAsync();
         }
-        else // OneTime
+        catch
         {
-            // Для разовых платежей: до конца текущего года или +1 год
-            periodEnd = periodStart.AddYears(1);
-            paymentPeriod = $"Разовая оплата до {periodEnd:dd.MM.yyyy}";
+            await transaction.RollbackAsync();
+            throw;
         }
-
-        var finalAmount = CalculateFinalAmount(subjectPrice, discountType, discountValue);
-
-        var payment = new Payment
-        {
-            Id = Guid.NewGuid(),
-            StudentId = studentId,
-            GroupId = groupId,
-            PaymentPeriod = paymentPeriod,
-            Type = paymentType,
-            OriginalAmount = subjectPrice,
-            DiscountType = discountType,
-            DiscountValue = discountValue,
-            Amount = finalAmount,
-            DiscountReason = discountReason,
-            PeriodStart = periodStart,
-            PeriodEnd = periodEnd,
-            Status = PaymentStatus.Pending,
-            CreatedAt = now
-        };
-
-        await dbContext.Payments.AddAsync(payment);
-        await dbContext.SaveChangesAsync();
     }
 
     public async Task CancelStudentPaymentsInGroupAsync(Guid studentId, Guid groupId, string cancelReason)

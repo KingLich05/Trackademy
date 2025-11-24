@@ -106,10 +106,7 @@ public class GroupService:
                 // Создаем платежи только если группа активна
                 if (isGroupActive)
                 {
-                    foreach (var studentId in idsToAdd)
-                    {
-                        await _paymentService.CreatePaymentForStudentAsync(studentId, entity.Id);
-                    }
+                    await _paymentService.CreatePaymentsForStudentsAsync(idsToAdd, entity.Id);
                 }
             }
         }
@@ -208,10 +205,7 @@ public class GroupService:
             // Создаем платежи только если группа активна
             if (isGroupActive)
             {
-                foreach (var studentId in model.StudentIds)
-                {
-                    await _paymentService.CreatePaymentForStudentAsync(studentId, group.Id);
-                }
+                await _paymentService.CreatePaymentsForStudentsAsync(model.StudentIds, group.Id);
             }
         }
         
@@ -368,5 +362,76 @@ public class GroupService:
         groupStudent.FreezeReason = null;
 
         await _context.SaveChangesAsync();
+    }
+    
+    public async Task BulkAddStudentsAsync(BulkAddStudentsRequest request)
+    {
+        // Проверяем существование группы
+        var group = await _context.Groups
+            .Include(g => g.Students)
+            .FirstOrDefaultAsync(g => g.Id == request.GroupId);
+
+        if (group == null)
+        {
+            throw new ConflictException("Группа не найдена.");
+        }
+
+        if (request.StudentIds == null || request.StudentIds.Count == 0)
+        {
+            throw new ConflictException("Список студентов пуст.");
+        }
+
+        // Получаем ID студентов, которые уже есть в группе
+        var existingStudentIds = group.Students.Select(s => s.Id).ToHashSet();
+        
+        // Фильтруем только новых студентов
+        var newStudentIds = request.StudentIds
+            .Distinct()
+            .Where(id => !existingStudentIds.Contains(id))
+            .ToList();
+
+        if (newStudentIds.Count == 0)
+        {
+            throw new ConflictException("Все указанные студенты уже находятся в группе.");
+        }
+
+        // Проверяем, что все новые студенты существуют в базе
+        var existingUsers = await _context.Users
+            .Where(u => newStudentIds.Contains(u.Id) && u.Role == RoleEnum.Student)
+            .Select(u => u.Id)
+            .ToListAsync();
+
+        if (existingUsers.Count != newStudentIds.Count)
+        {
+            throw new ConflictException("Некоторые из указанных ID не являются студентами или не существуют.");
+        }
+
+        // Создаем записи GroupStudent для новых студентов
+        foreach (var studentId in newStudentIds)
+        {
+            var groupStudent = new GroupStudent
+            {
+                Id = Guid.NewGuid(),
+                GroupId = request.GroupId,
+                StudentId = studentId,
+                DiscountType = DiscountType.Percentage,
+                DiscountValue = 0,
+                DiscountReason = null,
+                JoinedAt = DateTime.UtcNow
+            };
+            await _context.GroupStudents.AddAsync(groupStudent);
+        }
+        
+        // Сохраняем GroupStudent записи в базу
+        await _context.SaveChangesAsync();
+        
+        // Проверяем активность группы через Schedule
+        var isGroupActive = await IsGroupActiveAsync(request.GroupId);
+        
+        // Создаем платежи только если группа активна
+        if (isGroupActive)
+        {
+            await _paymentService.CreatePaymentsForStudentsAsync(newStudentIds, request.GroupId);
+        }
     }
 }
