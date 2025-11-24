@@ -712,4 +712,148 @@ public class DashboardService : IDashboardService
     }
 
     #endregion
+
+    #region Student Dashboard
+
+    /// <summary>
+    /// 👨‍🎓 Получить дашборд для студента
+    /// </summary>
+    public async Task<StudentDashboardDto> GetStudentDashboardAsync(Guid studentId)
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow.Date);
+        var now = DateTime.UtcNow;
+
+        // 1. Средний балл по домашним заданиям
+        var grades = await dbContext.Submissions
+            .Where(s => s.StudentId == studentId && 
+                       s.Status == Domain.Enums.SubmissionStatus.Graded &&
+                       s.Scores.Any())
+            .SelectMany(s => s.Scores)
+            .Select(sc => sc.NumericValue)
+            .ToListAsync();
+
+        decimal? averageGrade = grades.Any() ? Math.Round((decimal?)grades.Average() ?? 0, 2) : null;
+
+        // 2. Процент посещаемости
+        var attendances = await dbContext.Attendances
+            .Where(a => a.StudentId == studentId)
+            .ToListAsync();
+
+        var totalAttendances = attendances.Count;
+        var presentCount = attendances.Count(a => a.Status == Domain.Enums.AttendanceStatus.Attend);
+        var attendanceRate = totalAttendances > 0 
+            ? Math.Round((decimal)presentCount / totalAttendances * 100, 1) 
+            : 0;
+
+        // 3. Активные задания (не сданные + просроченные + возвращенные)
+        var studentGroups = await dbContext.Users
+            .Where(u => u.Id == studentId)
+            .SelectMany(u => u.Groups)
+            .Select(g => g.Id)
+            .ToListAsync();
+
+        var allAssignments = await dbContext.Assignments
+            .Include(a => a.Group)
+                .ThenInclude(g => g.Subject)
+            .Where(a => studentGroups.Contains(a.GroupId))
+            .ToListAsync();
+
+        var submissions = await dbContext.Submissions
+            .Where(s => s.StudentId == studentId)
+            .ToDictionaryAsync(s => s.AssignmentId, s => s);
+
+        var activeAssignments = new List<StudentActiveAssignmentDto>();
+
+        foreach (var assignment in allAssignments)
+        {
+            var hasSubmission = submissions.TryGetValue(assignment.Id, out var submission);
+            var isOverdue = assignment.DueDate < now;
+
+            // Добавляем если:
+            // - нет submission (не начато)
+            // - submission в статусе Draft (не сдано)
+            // - submission возвращено на доработку (Returned)
+            // - просрочено и не сдано/не оценено
+            if (!hasSubmission || 
+                submission.Status == Domain.Enums.SubmissionStatus.Draft ||
+                submission.Status == Domain.Enums.SubmissionStatus.Returned ||
+                (isOverdue && submission.Status != Domain.Enums.SubmissionStatus.Graded))
+            {
+                var status = !hasSubmission ? "Не начато" :
+                            submission.Status == Domain.Enums.SubmissionStatus.Draft ? "Черновик" :
+                            submission.Status == Domain.Enums.SubmissionStatus.Returned ? "Возвращено на доработку" :
+                            "В процессе";
+
+                activeAssignments.Add(new StudentActiveAssignmentDto
+                {
+                    AssignmentId = assignment.Id,
+                    Description = assignment.Description ?? "Без описания",
+                    SubjectName = assignment.Group.Subject?.Name ?? "Без предмета",
+                    GroupName = assignment.Group.Name,
+                    DueDate = assignment.DueDate,
+                    Status = status,
+                    IsOverdue = isOverdue
+                });
+            }
+        }
+
+        // Сортируем: сначала просроченные, потом по дедлайну
+        activeAssignments = activeAssignments
+            .OrderByDescending(a => a.IsOverdue)
+            .ThenBy(a => a.DueDate)
+            .ToList();
+
+        // 4. Расписание на сегодня
+        var todayLessons = await dbContext.Lessons
+            .Include(l => l.Group)
+                .ThenInclude(g => g.Subject)
+            .Include(l => l.Room)
+            .Include(l => l.Teacher)
+            .Where(l => l.Date == today && studentGroups.Contains(l.GroupId))
+            .OrderBy(l => l.StartTime)
+            .ToListAsync();
+
+        var todaySchedule = todayLessons.Select(l => new StudentTodayScheduleDto
+        {
+            LessonId = l.Id,
+            StartTime = TimeOnly.FromTimeSpan(l.StartTime),
+            EndTime = TimeOnly.FromTimeSpan(l.EndTime),
+            SubjectName = l.Group.Subject?.Name ?? "Без предмета",
+            GroupName = l.Group.Name,
+            RoomName = l.Room?.Name,
+            TeacherName = l.Teacher?.FullName ?? "Не указан"
+        }).ToList();
+
+        // 5. Последние 5 оценок
+        var recentGrades = await dbContext.Submissions
+            .Include(s => s.Assignment)
+                .ThenInclude(a => a.Group)
+                    .ThenInclude(g => g.Subject)
+            .Include(s => s.Scores)
+            .Where(s => s.StudentId == studentId && 
+                       s.Status == Domain.Enums.SubmissionStatus.Graded &&
+                       s.GradedAt != null &&
+                       s.Scores.Any())
+            .OrderByDescending(s => s.GradedAt)
+            .Take(5)
+            .Select(s => new StudentRecentGradeDto
+            {
+                SubjectName = s.Assignment.Group.Subject.Name ?? "Без предмета",
+                Grade = s.Scores.First().NumericValue ?? 0,
+                GradedAt = s.GradedAt.Value
+            })
+            .ToListAsync();
+
+        return new StudentDashboardDto
+        {
+            AverageGrade = averageGrade,
+            AttendanceRate = attendanceRate,
+            ActiveAssignments = activeAssignments.Count,
+            ActiveAssignmentsList = activeAssignments,
+            TodaySchedule = todaySchedule,
+            RecentGrades = recentGrades
+        };
+    }
+
+    #endregion
 }

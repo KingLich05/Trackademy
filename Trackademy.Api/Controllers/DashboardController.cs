@@ -76,6 +76,26 @@ public class DashboardController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// 👨‍🎓 Получить дашборд для студента
+    /// </summary>
+    [HttpGet("student")]
+    [AllowAnonymous]
+    [Authorize(Roles = "Student")]
+    public async Task<ActionResult<StudentDashboardDto>> GetStudentDashboard()
+    {
+        try
+        {
+            var studentId = GetCurrentUserId();
+            var dashboard = await _dashboardService.GetStudentDashboardAsync(studentId);
+            return Ok(dashboard);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest($"Ошибка получения дашборда студента: {ex.Message}");
+        }
+    }
+
     private Guid GetCurrentUserId()
     {
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;

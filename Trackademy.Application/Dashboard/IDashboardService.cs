@@ -21,4 +21,9 @@ public interface IDashboardService
     /// 👨‍🏫 Получить дашборд для преподавателя
     /// </summary>
     Task<TeacherDashboardDto> GetTeacherDashboardAsync(Guid teacherId);
+    
+    /// <summary>
+    /// 👨‍🎓 Получить дашборд для студента
+    /// </summary>
+    Task<StudentDashboardDto> GetStudentDashboardAsync(Guid studentId);
 }
