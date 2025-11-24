@@ -60,7 +60,8 @@ public class DashboardController : ControllerBase
     /// 👨‍🏫 Получить дашборд для преподавателя
     /// </summary>
     [HttpGet("teacher")]
-    [RoleAuthorization(RoleEnum.Teacher)]
+    [AllowAnonymous]
+    [Authorize(Roles = "Teacher")]
     public async Task<ActionResult<TeacherDashboardDto>> GetTeacherDashboard()
     {
         try
