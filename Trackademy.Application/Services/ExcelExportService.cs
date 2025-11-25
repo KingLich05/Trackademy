@@ -2,6 +2,7 @@ using ClosedXML.Excel;
 using Microsoft.EntityFrameworkCore;
 using Trackademy.Application.Attendances.Models;
 using Trackademy.Application.Persistance;
+using Trackademy.Application.Shared.Exception;
 using Trackademy.Domain.Enums;
 
 namespace Trackademy.Application.Services;
@@ -235,5 +236,185 @@ public class ExcelExportService : IExcelExportService
         }
         
         return name;
+    }
+
+    public async Task<byte[]> ExportUsersAsync(Guid organizationId)
+    {
+        // Проверка существования организации
+        var organization = await _context.Organizations
+            .FirstOrDefaultAsync(o => o.Id == organizationId);
+        
+        if (organization == null)
+        {
+            throw new ConflictException("Организация не найдена");
+        }
+
+        using var workbook = new XLWorkbook();
+
+        // Экспорт студентов
+        await CreateStudentsWorksheet(workbook, organizationId);
+
+        // Экспорт преподавателей
+        await CreateTeachersWorksheet(workbook, organizationId);
+
+        using var stream = new MemoryStream();
+        workbook.SaveAs(stream);
+        return stream.ToArray();
+    }
+
+    private async Task CreateStudentsWorksheet(XLWorkbook workbook, Guid organizationId)
+    {
+        var worksheet = workbook.Worksheets.Add("Студенты");
+
+        // Заголовки
+        worksheet.Cell(1, 1).Value = "ФИО";
+        worksheet.Cell(1, 2).Value = "Логин";
+        worksheet.Cell(1, 3).Value = "Телефон";
+        worksheet.Cell(1, 4).Value = "Группы";
+        worksheet.Cell(1, 5).Value = "% Посещаемости";
+        worksheet.Cell(1, 6).Value = "Средний балл";
+
+        // Стиль заголовков
+        var headerRange = worksheet.Range(1, 1, 1, 6);
+        headerRange.Style.Font.Bold = true;
+        headerRange.Style.Fill.BackgroundColor = XLColor.LightGray;
+        headerRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+
+        // Получение студентов
+        var students = await _context.Users
+            .Where(u => u.OrganizationId == organizationId && u.Role == RoleEnum.Student)
+            .Include(u => u.Groups)
+            .OrderBy(u => u.FullName)
+            .ToListAsync();
+
+        // Предзагрузка всех данных одним запросом
+        var studentIds = students.Select(s => s.Id).ToList();
+
+        // Посещаемость: группируем по студентам
+        var attendanceStats = await _context.Attendances
+            .Where(a => studentIds.Contains(a.StudentId))
+            .GroupBy(a => a.StudentId)
+            .Select(g => new
+            {
+                StudentId = g.Key,
+                TotalCount = g.Count(),
+                PresentCount = g.Count(a => a.Status == AttendanceStatus.Attend)
+            })
+            .ToListAsync();
+
+        var attendanceDict = attendanceStats.ToDictionary(a => a.StudentId);
+
+        // Средние баллы: группируем по студентам через Submission
+        var scoreStats = await _context.Scores
+            .Where(s => studentIds.Contains(s.Submission.StudentId) && s.NumericValue.HasValue)
+            .GroupBy(s => s.Submission.StudentId)
+            .Select(g => new
+            {
+                StudentId = g.Key,
+                AverageScore = g.Average(s => (double)s.NumericValue)
+            })
+            .ToListAsync();
+
+        var scoreDict = scoreStats.ToDictionary(s => s.StudentId);
+
+        int row = 2;
+        foreach (var student in students)
+        {
+            // Список групп
+            var groupNames = student.Groups.Select(g => g.Name).ToList();
+            var groupsText = groupNames.Any() ? string.Join(", ", groupNames) : "Нет групп";
+
+            // Посещаемость из предзагруженных данных
+            var attendancePercent = 0.0;
+            if (attendanceDict.TryGetValue(student.Id, out var attStats))
+            {
+                attendancePercent = attStats.TotalCount > 0
+                    ? Math.Round((double)attStats.PresentCount / attStats.TotalCount * 100, 2)
+                    : 0;
+            }
+
+            // Средний балл из предзагруженных данных
+            var averageScore = 0.0;
+            if (scoreDict.TryGetValue(student.Id, out var scoreAvg))
+            {
+                averageScore = Math.Round(scoreAvg.AverageScore, 2);
+            }
+
+            worksheet.Cell(row, 1).Value = student.FullName;
+            worksheet.Cell(row, 2).Value = student.Login;
+            worksheet.Cell(row, 3).Value = student.Phone;
+            worksheet.Cell(row, 4).Value = groupsText;
+            worksheet.Cell(row, 5).Value = $"{attendancePercent}%";
+            worksheet.Cell(row, 6).Value = averageScore;
+
+            row++;
+        }
+
+        // Автоширина колонок
+        worksheet.Columns().AdjustToContents();
+    }
+
+    private async Task CreateTeachersWorksheet(XLWorkbook workbook, Guid organizationId)
+    {
+        var worksheet = workbook.Worksheets.Add("Преподаватели");
+
+        // Заголовки
+        worksheet.Cell(1, 1).Value = "ФИО";
+        worksheet.Cell(1, 2).Value = "Логин";
+        worksheet.Cell(1, 3).Value = "Телефон";
+        worksheet.Cell(1, 4).Value = "Предметы";
+        worksheet.Cell(1, 5).Value = "Количество групп";
+        worksheet.Cell(1, 6).Value = "Количество уроков";
+
+        // Стиль заголовков
+        var headerRange = worksheet.Range(1, 1, 1, 6);
+        headerRange.Style.Font.Bold = true;
+        headerRange.Style.Fill.BackgroundColor = XLColor.LightGray;
+        headerRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+
+        // Получение преподавателей
+        var teachers = await _context.Users
+            .Where(u => u.OrganizationId == organizationId && u.Role == RoleEnum.Teacher)
+            .OrderBy(u => u.FullName)
+            .ToListAsync();
+
+        int row = 2;
+        foreach (var teacher in teachers)
+        {
+            // Получение уникальных предметов через расписание
+            var subjects = await _context.Schedules
+                .Where(s => s.TeacherId == teacher.Id && s.OrganizationId == organizationId)
+                .Include(s => s.Group)
+                .ThenInclude(g => g.Subject)
+                .Select(s => s.Group.Subject.Name)
+                .Distinct()
+                .ToListAsync();
+            
+            var subjectsText = subjects.Any() ? string.Join(", ", subjects) : "Нет предметов";
+
+            // Количество групп
+            var groupCount = await _context.Schedules
+                .Where(s => s.TeacherId == teacher.Id && s.OrganizationId == organizationId)
+                .Select(s => s.GroupId)
+                .Distinct()
+                .CountAsync();
+
+            // Количество уроков
+            var lessonsCount = await _context.Lessons
+                .Where(l => l.TeacherId == teacher.Id)
+                .CountAsync();
+
+            worksheet.Cell(row, 1).Value = teacher.FullName;
+            worksheet.Cell(row, 2).Value = teacher.Login;
+            worksheet.Cell(row, 3).Value = teacher.Phone;
+            worksheet.Cell(row, 4).Value = subjectsText;
+            worksheet.Cell(row, 5).Value = groupCount;
+            worksheet.Cell(row, 6).Value = lessonsCount;
+
+            row++;
+        }
+
+        // Автоширина колонок
+        worksheet.Columns().AdjustToContents();
     }
 }

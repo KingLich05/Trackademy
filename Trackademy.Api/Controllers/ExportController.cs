@@ -1,0 +1,42 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Trackademy.Api.Authorization;
+using Trackademy.Application.Services;
+using Trackademy.Application.Services.Models;
+using Trackademy.Application.Shared.Exception;
+using Trackademy.Domain.Enums;
+
+namespace Trackademy.Api.Controllers;
+
+[ApiController]
+[Route("api/[controller]")]
+[Authorize]
+public class ExportController : ControllerBase
+{
+    private readonly IExcelExportService _excelExportService;
+
+    public ExportController(IExcelExportService excelExportService)
+    {
+        _excelExportService = excelExportService;
+    }
+
+    /// <summary>
+    /// Экспорт всех пользователей организации (студенты и преподаватели)
+    /// </summary>
+    [HttpPost("users")]
+    [Authorize(Roles = "Administrator,Owner")]
+    public async Task<IActionResult> ExportUsers([FromBody] ExportUsersRequest request)
+    {
+        try
+        {
+            var excelBytes = await _excelExportService.ExportUsersAsync(request.OrganizationId);
+            var fileName = $"users_export_{DateTime.Now:yyyy-MM-dd_HH-mm}.xlsx";
+            
+            return File(excelBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+        }
+        catch (ConflictException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+}

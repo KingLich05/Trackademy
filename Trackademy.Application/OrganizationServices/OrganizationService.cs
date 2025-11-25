@@ -43,4 +43,22 @@ public class OrganizationService :
 
         return await base.UpdateAsync(id, dto);
     }
+
+    public async Task<List<OrganizationDto>> GetAllWithSearchAsync(string? search = null)
+    {
+        var trackademyContext = (TrackademyDbContext)_context;
+        var query = trackademyContext.Organizations.AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var searchLower = search.ToLower();
+            query = query.Where(o => o.Name.ToLower().Contains(searchLower));
+        }
+
+        var organizations = await query
+            .OrderBy(o => o.Name)
+            .ToListAsync();
+
+        return _mapper.Map<List<OrganizationDto>>(organizations);
+    }
 }

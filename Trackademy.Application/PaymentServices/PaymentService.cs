@@ -421,7 +421,12 @@ public class PaymentService(
         };
     }
 
-    public async Task CreatePaymentsForStudentsAsync(List<Guid> studentIds, Guid groupId, DiscountType discountType = DiscountType.Percentage, decimal discountValue = 0, string? discountReason = null)
+    public async Task CreatePaymentsForStudentsAsync(
+        List<Guid> studentIds,
+        Guid groupId,
+        DiscountType discountType = DiscountType.Percentage,
+        decimal discountValue = 0,
+        string? discountReason = null)
     {
         if (studentIds == null || studentIds.Count == 0)
             return;

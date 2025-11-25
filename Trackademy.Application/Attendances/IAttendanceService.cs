@@ -23,7 +23,7 @@ public interface IAttendanceService
     /// <summary>
     /// Получение списка посещаемости с фильтрацией
     /// </summary>
-    Task<PagedResult<AttendanceDto>> GetAttendancesAsync(AttendanceFilterModel filter);
+    Task<PagedResult<AttendanceDto>> GetAttendancesAsync(AttendanceFilterModel filter, Guid userId, string userRole);
     
     /// <summary>
     /// Получение статистики посещаемости студента

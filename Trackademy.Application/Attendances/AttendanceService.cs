@@ -34,11 +34,26 @@ public class AttendanceService : IAttendanceService
             throw new ConflictException("Урок не найден");
 
         var timeZone = TimeZoneInfo.FindSystemTimeZoneById("Asia/Almaty");
-        var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, timeZone));
+        var nowInAlmaty = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, timeZone);
+        var today = DateOnly.FromDateTime(nowInAlmaty);
+        var currentTime = TimeOnly.FromDateTime(nowInAlmaty);
         
+        // Проверка даты
         if (lesson.Date > today)
         {
             throw new ConflictException("Нельзя отмечать посещаемость для будущих уроков.");
+        }
+        
+        // Проверка времени: можно отметить за 5 минут до начала урока
+        if (lesson.Date == today)
+        {
+            var lessonStartTime = TimeOnly.FromTimeSpan(lesson.StartTime);
+            var allowedTime = lessonStartTime.AddMinutes(-5);
+            
+            if (currentTime < allowedTime)
+            {
+                throw new ConflictException($"Нельзя отмечать посещаемость раньше, чем за 5 минут до начала урока. Урок начнется в {lessonStartTime:HH:mm}");
+            }
         }
 
         var userIds = model.Attendances.Select(a => a.StudentId).ToList();
@@ -137,7 +152,7 @@ public class AttendanceService : IAttendanceService
         return attendance == null ? null : _mapper.Map<AttendanceDto>(attendance);
     }
 
-    public async Task<PagedResult<AttendanceDto>> GetAttendancesAsync(AttendanceFilterModel filter)
+    public async Task<PagedResult<AttendanceDto>> GetAttendancesAsync(AttendanceFilterModel filter, Guid userId, string userRole)
     {
         var organizationExists = await _context.Organizations
             .AnyAsync(o => o.Id == filter.OrganizationId);
@@ -155,6 +170,19 @@ public class AttendanceService : IAttendanceService
             .ThenInclude(g => g.Subject)
             .Include(a => a.Lesson.Teacher)
             .AsQueryable();
+
+        // Фильтрация по ролям
+        if (userRole == RoleEnum.Student.ToString())
+        {
+            // Студент видит только свою посещаемость
+            query = query.Where(a => a.StudentId == userId);
+        }
+        else if (userRole == RoleEnum.Teacher.ToString())
+        {
+            // Преподаватель видит посещаемость только своих уроков
+            query = query.Where(a => a.Lesson.TeacherId == userId);
+        }
+        // Администратор и владелец видят всю посещаемость организации
 
         if (!string.IsNullOrWhiteSpace(filter.StudentSearch))
         {
@@ -360,7 +388,8 @@ public class AttendanceService : IAttendanceService
             PageSize = int.MaxValue
         };
 
-        var attendanceData = await GetAttendancesAsync(attendanceFilter);
+        // Для экспорта используем роль администратора, чтобы получить все данные
+        var attendanceData = await GetAttendancesAsync(attendanceFilter, Guid.Empty, RoleEnum.Administrator.ToString());
         
         // Фильтруем по выбранным студентам, если указаны
         if (filter.StudentIds != null && filter.StudentIds.Any())

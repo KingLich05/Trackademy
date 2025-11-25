@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 using Trackademy.Api.Authorization;
 using Trackademy.Application.Attendances;
 using Trackademy.Application.Attendances.Models;
@@ -70,18 +71,30 @@ public class AttendanceController : ControllerBase
     /// Получение списка посещаемости с фильтрацией и пагинацией
     /// </summary>
     [HttpPost("get-all-attendances")]
-    [RoleAuthorization(RoleEnum.Student)]
     public async Task<IActionResult> GetAttendances([FromBody] AttendanceFilterModel filter)
     {
         try
         {
-            var result = await _attendanceService.GetAttendancesAsync(filter);
+            var userId = GetCurrentUserId();
+            var userRole = User.FindFirstValue(ClaimTypes.Role) ?? string.Empty;
+            
+            var result = await _attendanceService.GetAttendancesAsync(filter, userId, userRole);
             return Ok(result);
         }
         catch (ConflictException ex)
         {
             return BadRequest(new { error = ex.Message });
         }
+    }
+
+    private Guid GetCurrentUserId()
+    {
+        var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
+        {
+            throw new UnauthorizedAccessException("User ID not found in claims");
+        }
+        return userId;
     }
 
     /// <summary>

@@ -9,7 +9,7 @@ public interface IGroupService : IBaseService<Groups, GroupsDto, GroupsAddModel,
 {
     Task<List<GroupsDto>> GetAllAsync(Guid model);
     
-    Task<PagedResult<GroupsDto>> GetAllAsync(GetGroupsRequest request);
+    Task<PagedResult<GroupsDto>> GetAllAsync(GetGroupsRequest request, Guid userId, string userRole);
     
     Task<Guid> CreateGroup(GroupsAddModel model);
     

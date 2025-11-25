@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Trackademy.Api.Authorization;
 using Trackademy.Api.BaseController;
@@ -17,8 +18,21 @@ public class GroupController(IGroupService service) :
     [RoleAuthorization(RoleEnum.Student)]
     public async Task<IActionResult> GetGroups([FromBody] GetGroupsRequest request)
     {
-        var groups = await service.GetAllAsync(request);
+        var userId = GetCurrentUserId();
+        var userRole = User.FindFirstValue(ClaimTypes.Role) ?? RoleEnum.Student.ToString();
+        
+        var groups = await service.GetAllAsync(request, userId, userRole);
         return Ok(groups);
+    }
+    
+    private Guid GetCurrentUserId()
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(userId, out var id))
+        {
+            throw new UnauthorizedAccessException("Invalid user ID in token");
+        }
+        return id;
     }
 
     [HttpPost("create-group")]

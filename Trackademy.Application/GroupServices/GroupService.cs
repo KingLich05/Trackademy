@@ -212,13 +212,32 @@ public class GroupService:
         return group.Id;
     }
 
-    public async Task<PagedResult<GroupsDto>> GetAllAsync(GetGroupsRequest request)
+    public async Task<PagedResult<GroupsDto>> GetAllAsync(GetGroupsRequest request, Guid userId, string userRole)
     {
         var query = _context.Groups
             .Include(x => x.Subject)
             .Include(x => x.Students)
             .Include(x => x.GroupStudents)
             .Where(x => x.OrganizationId == request.OrganizationId);
+
+        // Role-based фильтрация
+        if (userRole == RoleEnum.Student.ToString())
+        {
+            // Студент видит только свои группы
+            query = query.Where(x => x.Students.Any(s => s.Id == userId));
+        }
+        else if (userRole == RoleEnum.Teacher.ToString())
+        {
+            // Преподаватель видит группы где он ведет по Schedule
+            var teacherGroupIds = await _context.Schedules
+                .Where(s => s.TeacherId == userId && s.OrganizationId == request.OrganizationId)
+                .Select(s => s.GroupId)
+                .Distinct()
+                .ToListAsync();
+            
+            query = query.Where(x => teacherGroupIds.Contains(x.Id));
+        }
+        // Administrator и Owner видят все группы организации (без дополнительной фильтрации)
 
         // Фильтрация по предмету (необязательно)
         if (request.SubjectId.HasValue)
