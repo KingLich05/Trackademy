@@ -13,11 +13,9 @@ namespace Trackademy.Api.Controllers.Organization;
 public class OrganizationController(IOrganizationService service) :
     BaseCrudController<Domain.Users.Organization, OrganizationDto, OrganizationAddModel, OrganizationAddModel>(service)
 {
-    [HttpGet]
     [AllowAnonymous]
-    public async Task<IActionResult> GetAll([FromQuery] string? search = null)
+    public override async Task<IActionResult> GetAll()
     {
-        var organizations = await service.GetAllWithSearchAsync(search);
-        return Ok(organizations);
+        return await base.GetAll();
     }
 }
