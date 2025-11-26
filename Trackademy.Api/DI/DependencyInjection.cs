@@ -6,6 +6,7 @@ using Trackademy.Application.Dashboard;
 using Trackademy.Application.GroupServices;
 using Trackademy.Application.Helper;
 using Trackademy.Application.Lessons;
+using Trackademy.Application.MaterialServices;
 using Trackademy.Application.OrganizationServices;
 using Trackademy.Application.PaymentServices;
 using Trackademy.Application.Persistance;
@@ -44,6 +45,7 @@ public static class DependencyInjection
         services.AddScoped<IPaymentService, PaymentService>();
         services.AddScoped<IDashboardService, DashboardService>();
         services.AddScoped<IExcelExportService, ExcelExportService>();
+        services.AddScoped<IMaterialService, MaterialService>();
 
         services.AddSingleton<ExtensionString>();
         

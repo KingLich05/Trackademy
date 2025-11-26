@@ -27,6 +27,7 @@ public class TrackademyDbContext : DbContext
     public DbSet<Notification> Notifications { get; set; }
     public DbSet<Lesson> Lessons { get; set; }
     public DbSet<GroupStudent> GroupStudents { get; set; }
+    public DbSet<Material> Materials { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -45,5 +46,6 @@ public class TrackademyDbContext : DbContext
         modelBuilder.ApplyConfiguration(new OrganizationConfig());
         modelBuilder.ApplyConfiguration(new LessonConfig());
         modelBuilder.ApplyConfiguration(new GroupStudentConfig());
+        modelBuilder.ApplyConfiguration(new MaterialConfig());
     }
 }
