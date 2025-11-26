@@ -439,6 +439,19 @@ public class ExcelExportService : IExcelExportService
             .Include(g => g.Students)
             .AsQueryable();
 
+        // Получение расписаний для групп (для преподавателей)
+        var groupSchedules = await _context.Schedules
+            .Where(s => s.OrganizationId == request.OrganizationId)
+            .Include(s => s.Teacher)
+            .ToListAsync();
+
+        var groupTeacherDict = groupSchedules
+            .GroupBy(s => s.GroupId)
+            .ToDictionary(
+                g => g.Key,
+                g => g.Select(s => s.Teacher.FullName).Distinct().ToList()
+            );
+
         if (request.GroupId.HasValue)
         {
             groupsQuery = groupsQuery.Where(g => g.Id == request.GroupId.Value);
@@ -455,21 +468,25 @@ public class ExcelExportService : IExcelExportService
 
         // Получение всех студентов из групп
         var allStudentIds = groups.SelectMany(g => g.Students.Select(s => s.Id)).Distinct().ToList();
+        var allGroupIds = groups.Select(g => g.Id).ToList();
 
-        // Предзагрузка данных посещаемости
+        // Предзагрузка данных посещаемости по группам и студентам (через Lesson)
         var attendanceStats = await _context.Attendances
             .Where(a => allStudentIds.Contains(a.StudentId))
-            .GroupBy(a => a.StudentId)
+            .Include(a => a.Lesson)
+            .Where(a => allGroupIds.Contains(a.Lesson.GroupId))
+            .GroupBy(a => new { a.StudentId, a.Lesson.GroupId })
             .Select(g => new
             {
-                StudentId = g.Key,
+                g.Key.StudentId,
+                g.Key.GroupId,
                 TotalCount = g.Count(),
                 PresentCount = g.Count(a => a.Status == AttendanceStatus.Attend)
             })
             .ToListAsync();
 
         var attendanceDict = attendanceStats.ToDictionary(
-            a => a.StudentId,
+            a => (StudentId: a.StudentId, GroupId: a.GroupId),
             a => (TotalCount: a.TotalCount, PresentCount: a.PresentCount)
         );
 
@@ -502,7 +519,8 @@ public class ExcelExportService : IExcelExportService
         // Создание листа для каждой группы
         foreach (var group in groups)
         {
-            CreateGroupStudentsWorksheet(workbook, group, attendanceDict, paymentDict, request.IncludePayments);
+            var teachers = groupTeacherDict.TryGetValue(group.Id, out var teacherList) ? teacherList : new List<string>();
+            CreateGroupStudentsWorksheet(workbook, group, teachers, attendanceDict, paymentDict, request.IncludePayments);
         }
 
         using var stream = new MemoryStream();
@@ -513,7 +531,8 @@ public class ExcelExportService : IExcelExportService
     private void CreateGroupStudentsWorksheet(
         XLWorkbook workbook,
         Domain.Users.Groups group,
-        Dictionary<Guid, (int TotalCount, int PresentCount)> attendanceDict,
+        List<string> teachers,
+        Dictionary<(Guid StudentId, Guid GroupId), (int TotalCount, int PresentCount)> attendanceDict,
         Dictionary<Guid, PaymentInfo>? paymentDict,
         bool includePayments)
     {
@@ -534,15 +553,23 @@ public class ExcelExportService : IExcelExportService
         worksheet.Cell(3, 1).Value = $"Код группы: {group.Code}";
         worksheet.Range(3, 1, 3, headerMergeColumns).Merge();
 
+        // Преподаватель(и)
+        if (teachers.Any())
+        {
+            var teacherNames = string.Join(", ", teachers);
+            worksheet.Cell(4, 1).Value = $"Преподаватель: {teacherNames}";
+            worksheet.Range(4, 1, 4, headerMergeColumns).Merge();
+        }
+
         // Заголовки таблицы
-        var headerRow = 5;
+        var headerRow = teachers.Any() ? 6 : 5;
         var col = 1;
         
         worksheet.Cell(headerRow, col++).Value = "№";
         worksheet.Cell(headerRow, col++).Value = "ФИО";
         worksheet.Cell(headerRow, col++).Value = "Логин";
         worksheet.Cell(headerRow, col++).Value = "Телефон";
-        worksheet.Cell(headerRow, col++).Value = "% Посещаемости";
+        worksheet.Cell(headerRow, col++).Value = "Посещаемость";
 
         if (includePayments)
         {
@@ -573,14 +600,15 @@ public class ExcelExportService : IExcelExportService
             worksheet.Cell(dataRow, col++).Value = student.Phone ?? "-";
 
             // Посещаемость
-            var attendancePercent = 0.0;
-            if (attendanceDict.TryGetValue(student.Id, out var attStats))
+            var attendanceText = "0/0 (0%)";
+            if (attendanceDict.TryGetValue((student.Id, group.Id), out var attStats))
             {
-                attendancePercent = attStats.TotalCount > 0
+                var attendancePercent = attStats.TotalCount > 0
                     ? Math.Round((double)attStats.PresentCount / attStats.TotalCount * 100, 2)
                     : 0;
+                attendanceText = $"{attStats.PresentCount}/{attStats.TotalCount} ({attendancePercent}%)";
             }
-            worksheet.Cell(dataRow, col++).Value = $"{attendancePercent}%";
+            worksheet.Cell(dataRow, col++).Value = attendanceText;
 
             // Платежи (если требуется)
             if (includePayments)
