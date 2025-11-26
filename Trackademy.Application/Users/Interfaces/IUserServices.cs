@@ -22,4 +22,6 @@ public interface IUserServices
     byte[] GenerateImportTemplate();
     
     Task<bool> DeleteUser(Guid id);
+    
+    Task<List<TeacherWorkHoursDto>> GetTeacherWorkHoursAsync(TeacherWorkHoursRequest request, Guid? currentUserId, string? userRole);
 }

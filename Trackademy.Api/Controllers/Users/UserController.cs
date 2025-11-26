@@ -191,4 +191,19 @@ public class UserController(IUserServices service) : ControllerBase
 
         return Ok(result);
     }
+
+    [HttpPost("teacher-work-hours")]
+    [RoleAuthorization(RoleEnum.Teacher)]
+    public async Task<IActionResult> GetTeacherWorkHours(
+        [FromBody] TeacherWorkHoursRequest request)
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+
+        var currentUserId = string.IsNullOrEmpty(userId) ? (Guid?)null : Guid.Parse(userId);
+
+        var result = await service.GetTeacherWorkHoursAsync(request, currentUserId, userRole);
+
+        return Ok(result);
+    }
 }

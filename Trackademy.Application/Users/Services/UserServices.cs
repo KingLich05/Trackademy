@@ -629,4 +629,55 @@ public class UserServices(TrackademyDbContext dbContext, IMapper mapper) :
         workbook.SaveAs(stream);
         return stream.ToArray();
     }
+
+    public async Task<List<TeacherWorkHoursDto>> GetTeacherWorkHoursAsync(
+        TeacherWorkHoursRequest request, 
+        Guid? currentUserId, 
+        string? userRole)
+    {
+        var query = dbContext.Users
+            .Where(u => 
+                u.OrganizationId == request.OrganizationId &&
+                u.Role == RoleEnum.Teacher)
+            .AsQueryable();
+
+        if (userRole == RoleEnum.Teacher.ToString() && currentUserId.HasValue)
+        {
+            query = query.Where(u => u.Id == currentUserId.Value);
+        }
+
+        var teachers = await query
+            .Select(t => new
+            {
+                t.Id,
+                t.FullName
+            })
+            .ToListAsync();
+
+        var teacherIds = teachers.Select(t => t.Id).ToList();
+
+        var lessonCounts = await dbContext.Lessons
+            .Where(l => teacherIds.Contains(l.TeacherId) 
+                        && l.LessonStatus == LessonStatus.Completed
+                        && l.Date >= request.FromDate 
+                        && l.Date <= request.ToDate)
+            .GroupBy(l => l.TeacherId)
+            .Select(g => new
+            {
+                TeacherId = g.Key,
+                Count = g.Count()
+            })
+            .ToListAsync();
+
+        var lessonCountDict = lessonCounts.ToDictionary(lc => lc.TeacherId, lc => lc.Count);
+
+        var result = teachers.Select(t => new TeacherWorkHoursDto
+        {
+            TeacherId = t.Id,
+            FullName = t.FullName,
+            CompletedLessonsCount = lessonCountDict.TryGetValue(t.Id, out var count) ? count : 0
+        }).ToList();
+
+        return result;
+    }
 }

@@ -2,6 +2,7 @@ using ClosedXML.Excel;
 using Microsoft.EntityFrameworkCore;
 using Trackademy.Application.Attendances.Models;
 using Trackademy.Application.Persistance;
+using Trackademy.Application.Services.Models;
 using Trackademy.Application.Shared.Exception;
 using Trackademy.Domain.Enums;
 
@@ -416,5 +417,199 @@ public class ExcelExportService : IExcelExportService
 
         // Автоширина колонок
         worksheet.Columns().AdjustToContents();
+    }
+
+    public async Task<byte[]> ExportGroupsAsync(ExportGroupsRequest request)
+    {
+        // Проверка существования организации
+        var organization = await _context.Organizations
+            .FirstOrDefaultAsync(o => o.Id == request.OrganizationId);
+
+        if (organization == null)
+        {
+            throw new ConflictException("Организация не найдена");
+        }
+
+        using var workbook = new XLWorkbook();
+
+        // Получение групп
+        var groupsQuery = _context.Groups
+            .Where(g => g.OrganizationId == request.OrganizationId)
+            .Include(g => g.Subject)
+            .Include(g => g.Students)
+            .AsQueryable();
+
+        if (request.GroupId.HasValue)
+        {
+            groupsQuery = groupsQuery.Where(g => g.Id == request.GroupId.Value);
+        }
+
+        var groups = await groupsQuery
+            .OrderBy(g => g.Name)
+            .ToListAsync();
+
+        if (!groups.Any())
+        {
+            throw new ConflictException("Группы не найдены");
+        }
+
+        // Получение всех студентов из групп
+        var allStudentIds = groups.SelectMany(g => g.Students.Select(s => s.Id)).Distinct().ToList();
+
+        // Предзагрузка данных посещаемости
+        var attendanceStats = await _context.Attendances
+            .Where(a => allStudentIds.Contains(a.StudentId))
+            .GroupBy(a => a.StudentId)
+            .Select(g => new
+            {
+                StudentId = g.Key,
+                TotalCount = g.Count(),
+                PresentCount = g.Count(a => a.Status == AttendanceStatus.Attend)
+            })
+            .ToListAsync();
+
+        var attendanceDict = attendanceStats.ToDictionary(
+            a => a.StudentId,
+            a => (TotalCount: a.TotalCount, PresentCount: a.PresentCount)
+        );
+
+        // Предзагрузка платежей (если требуется)
+        Dictionary<Guid, PaymentInfo>? paymentDict = null;
+        if (request.IncludePayments)
+        {
+            var payments = await _context.Payments
+                .Where(p => allStudentIds.Contains(p.StudentId))
+                .GroupBy(p => p.StudentId)
+                .Select(g => new
+                {
+                    StudentId = g.Key,
+                    LastPayment = g.OrderByDescending(p => p.PaidAt ?? p.CreatedAt).FirstOrDefault()
+                })
+                .ToListAsync();
+
+            paymentDict = payments
+                .Where(p => p.LastPayment != null)
+                .ToDictionary(
+                    p => p.StudentId,
+                    p => new PaymentInfo
+                    {
+                        Date = p.LastPayment!.PaidAt?.ToString("dd.MM.yyyy") ?? "-",
+                        Amount = p.LastPayment.Amount,
+                        Status = p.LastPayment.Status.ToString()
+                    });
+        }
+
+        // Создание листа для каждой группы
+        foreach (var group in groups)
+        {
+            CreateGroupStudentsWorksheet(workbook, group, attendanceDict, paymentDict, request.IncludePayments);
+        }
+
+        using var stream = new MemoryStream();
+        workbook.SaveAs(stream);
+        return stream.ToArray();
+    }
+
+    private void CreateGroupStudentsWorksheet(
+        XLWorkbook workbook,
+        Domain.Users.Groups group,
+        Dictionary<Guid, (int TotalCount, int PresentCount)> attendanceDict,
+        Dictionary<Guid, PaymentInfo>? paymentDict,
+        bool includePayments)
+    {
+        var sheetName = SanitizeSheetName(group.Name);
+        var worksheet = workbook.Worksheets.Add(sheetName);
+
+        // Шапка с информацией о группе
+        worksheet.Cell(1, 1).Value = $"ГРУППА: {group.Name.ToUpper()}";
+        worksheet.Cell(1, 1).Style.Font.Bold = true;
+        worksheet.Cell(1, 1).Style.Font.FontSize = 14;
+        var headerMergeColumns = includePayments ? 9 : 6;
+        worksheet.Range(1, 1, 1, headerMergeColumns).Merge();
+
+        worksheet.Cell(2, 1).Value = $"Предмет: {group.Subject.Name}";
+        worksheet.Cell(2, 1).Style.Font.Bold = true;
+        worksheet.Range(2, 1, 2, headerMergeColumns).Merge();
+
+        worksheet.Cell(3, 1).Value = $"Код группы: {group.Code}";
+        worksheet.Range(3, 1, 3, headerMergeColumns).Merge();
+
+        // Заголовки таблицы
+        var headerRow = 5;
+        var col = 1;
+        
+        worksheet.Cell(headerRow, col++).Value = "№";
+        worksheet.Cell(headerRow, col++).Value = "ФИО";
+        worksheet.Cell(headerRow, col++).Value = "Логин";
+        worksheet.Cell(headerRow, col++).Value = "Телефон";
+        worksheet.Cell(headerRow, col++).Value = "% Посещаемости";
+
+        if (includePayments)
+        {
+            worksheet.Cell(headerRow, col++).Value = "Дата последнего платежа";
+            worksheet.Cell(headerRow, col++).Value = "Сумма";
+            worksheet.Cell(headerRow, col++).Value = "Статус платежа";
+        }
+
+        // Стиль заголовков
+        var totalColumns = includePayments ? 8 : 5;
+        var headerRange = worksheet.Range(headerRow, 1, headerRow, totalColumns);
+        headerRange.Style.Font.Bold = true;
+        headerRange.Style.Fill.BackgroundColor = XLColor.LightGray;
+        headerRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+
+        // Данные студентов
+        var dataRow = headerRow + 1;
+        var students = group.Students.OrderBy(s => s.FullName).ToList();
+        var index = 1;
+
+        foreach (var student in students)
+        {
+            col = 1;
+
+            worksheet.Cell(dataRow, col++).Value = index++;
+            worksheet.Cell(dataRow, col++).Value = student.FullName;
+            worksheet.Cell(dataRow, col++).Value = student.Login;
+            worksheet.Cell(dataRow, col++).Value = student.Phone ?? "-";
+
+            // Посещаемость
+            var attendancePercent = 0.0;
+            if (attendanceDict.TryGetValue(student.Id, out var attStats))
+            {
+                attendancePercent = attStats.TotalCount > 0
+                    ? Math.Round((double)attStats.PresentCount / attStats.TotalCount * 100, 2)
+                    : 0;
+            }
+            worksheet.Cell(dataRow, col++).Value = $"{attendancePercent}%";
+
+            // Платежи (если требуется)
+            if (includePayments)
+            {
+                if (paymentDict != null && paymentDict.TryGetValue(student.Id, out var payment))
+                {
+                    worksheet.Cell(dataRow, col++).Value = payment.Date;
+                    worksheet.Cell(dataRow, col++).Value = payment.Amount;
+                    worksheet.Cell(dataRow, col++).Value = payment.Status;
+                }
+                else
+                {
+                    worksheet.Cell(dataRow, col++).Value = "-";
+                    worksheet.Cell(dataRow, col++).Value = "-";
+                    worksheet.Cell(dataRow, col++).Value = "-";
+                }
+            }
+
+            dataRow++;
+        }
+
+        // Автоширина колонок
+        worksheet.Columns().AdjustToContents();
+    }
+
+    private class PaymentInfo
+    {
+        public string Date { get; set; } = string.Empty;
+        public decimal Amount { get; set; }
+        public string Status { get; set; } = string.Empty;
     }
 }

@@ -39,4 +39,24 @@ public class ExportController : ControllerBase
             return BadRequest(new { error = ex.Message });
         }
     }
+
+    /// <summary>
+    /// Экспорт групп с информацией о студентах
+    /// </summary>
+    [HttpPost("groups")]
+    [Authorize(Roles = "Administrator,Owner")]
+    public async Task<IActionResult> ExportGroups([FromBody] ExportGroupsRequest request)
+    {
+        try
+        {
+            var excelBytes = await _excelExportService.ExportGroupsAsync(request);
+            var fileName = $"groups_export_{DateTime.Now:yyyy-MM-dd_HH-mm}.xlsx";
+            
+            return File(excelBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+        }
+        catch (ConflictException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
 }

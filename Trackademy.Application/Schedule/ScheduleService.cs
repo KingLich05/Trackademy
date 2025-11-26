@@ -301,6 +301,8 @@ public class ScheduleService(
             ? DateOnly.FromDateTime(overrideStartDate.Value)
             : schedule.EffectiveFrom;
 
+        // Если EffectiveFrom в прошлом, начинаем с сегодня
+        // Если в будущем - используем EffectiveFrom
         if (startDate < todayDateOnly)
             startDate = todayDateOnly;
 
@@ -318,7 +320,9 @@ public class ScheduleService(
             _ => throw new ArgumentOutOfRangeException()
         };
 
-        if (schedule.DaysOfWeek != null &&
+        // Сдвигаем на следующий день только если начинаем с сегодня и урок уже прошел
+        if (startDate == todayDateOnly &&
+            schedule.DaysOfWeek != null &&
             schedule.DaysOfWeek.Contains(currentDayNumber) &&
             localNow.TimeOfDay > schedule.EndTime)
         {

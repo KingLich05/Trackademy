@@ -14,4 +14,9 @@ public interface IExcelExportService
     /// Экспорт всех пользователей организации (студенты и преподаватели)
     /// </summary>
     Task<byte[]> ExportUsersAsync(Guid organizationId);
+    
+    /// <summary>
+    /// Экспорт групп с информацией о студентах
+    /// </summary>
+    Task<byte[]> ExportGroupsAsync(ExportGroupsRequest request);
 }
