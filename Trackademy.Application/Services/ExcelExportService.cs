@@ -512,7 +512,7 @@ public class ExcelExportService : IExcelExportService
                     {
                         Date = p.LastPayment!.PaidAt?.ToString("dd.MM.yyyy") ?? "-",
                         Amount = p.LastPayment.Amount,
-                        Status = p.LastPayment.Status.ToString()
+                        Status = GetPaymentStatusText(p.LastPayment.Status)
                     });
         }
 
@@ -540,7 +540,7 @@ public class ExcelExportService : IExcelExportService
         var worksheet = workbook.Worksheets.Add(sheetName);
 
         // Шапка с информацией о группе
-        worksheet.Cell(1, 1).Value = $"ГРУППА: {group.Name.ToUpper()}";
+        worksheet.Cell(1, 1).Value = group.Name.ToUpper();
         worksheet.Cell(1, 1).Style.Font.Bold = true;
         worksheet.Cell(1, 1).Style.Font.FontSize = 14;
         var headerMergeColumns = includePayments ? 9 : 6;
@@ -639,5 +639,18 @@ public class ExcelExportService : IExcelExportService
         public string Date { get; set; } = string.Empty;
         public decimal Amount { get; set; }
         public string Status { get; set; } = string.Empty;
+    }
+
+    private static string GetPaymentStatusText(PaymentStatus status)
+    {
+        return status switch
+        {
+            PaymentStatus.Pending => "Ожидает оплаты",
+            PaymentStatus.Paid => "Оплачено",
+            PaymentStatus.Overdue => "Просрочено",
+            PaymentStatus.Cancelled => "Отменено",
+            PaymentStatus.Refunded => "Возврат",
+            _ => status.ToString()
+        };
     }
 }
