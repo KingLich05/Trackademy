@@ -191,10 +191,12 @@ public class AssignmentService : BaseService<Assignment, AssignmentDto, Assignme
 
     public async Task<AssignmentDetailedDto?> GetByIdWithSubmissionsAsync(Guid assignmentId, Guid userId, string userRole)
     {
-        // Загружаем assignment с группой и студентами
+        // Загружаем assignment с группой, предметом и студентами
         var assignment = await _context.Set<Assignment>()
             .Include(a => a.Group)
                 .ThenInclude(g => g.Students)
+            .Include(a => a.Group)
+                .ThenInclude(g => g.Subject)
             .FirstOrDefaultAsync(a => a.Id == assignmentId);
 
         if (assignment == null)

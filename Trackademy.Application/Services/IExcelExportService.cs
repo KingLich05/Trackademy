@@ -19,4 +19,9 @@ public interface IExcelExportService
     /// Экспорт групп с информацией о студентах
     /// </summary>
     Task<byte[]> ExportGroupsAsync(ExportGroupsRequest request);
+    
+    /// <summary>
+    /// Экспорт платежей с группировкой по группам и статусам
+    /// </summary>
+    Task<byte[]> ExportPaymentsAsync(ExportPaymentsRequest request);
 }

@@ -767,18 +767,18 @@ public class DashboardService : IDashboardService
         foreach (var assignment in allAssignments)
         {
             var hasSubmission = submissions.TryGetValue(assignment.Id, out var submission);
-            var isOverdue = assignment.DueDate < now;
 
             // Добавляем если:
             // - нет submission (не начато)
             // - submission в статусе Draft (не сдано)
             // - submission возвращено на доработку (Returned)
-            // - просрочено и не сдано/не оценено
+            // Если submission отправлено (Submitted) или оценено (Graded), то НЕ показываем в активных
             if (!hasSubmission || 
                 submission.Status == Domain.Enums.SubmissionStatus.Draft ||
-                submission.Status == Domain.Enums.SubmissionStatus.Returned ||
-                (isOverdue && submission.Status != Domain.Enums.SubmissionStatus.Graded))
+                submission.Status == Domain.Enums.SubmissionStatus.Returned)
             {
+                var isOverdue = assignment.DueDate < now;
+                
                 var status = !hasSubmission ? "Не начато" :
                             submission.Status == Domain.Enums.SubmissionStatus.Draft ? "Черновик" :
                             submission.Status == Domain.Enums.SubmissionStatus.Returned ? "Возвращено на доработку" :

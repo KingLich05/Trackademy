@@ -14,6 +14,7 @@ public class AssignmentProfile : Profile
 
         CreateMap<Assignment, AssignmentDetailedDto>()
             .ForMember(d => d.Group, opt => opt.MapFrom(s => s.Group))
+            .ForMember(d => d.SubjectName, opt => opt.MapFrom(s => s.Group != null && s.Group.Subject != null ? s.Group.Subject.Name : null))
             .ForMember(d => d.StudentSubmissions, opt => opt.Ignore()); // Will be populated manually in service
 
         CreateMap<AssignmentAddModel, Assignment>();

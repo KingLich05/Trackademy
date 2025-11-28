@@ -653,4 +653,312 @@ public class ExcelExportService : IExcelExportService
             _ => status.ToString()
         };
     }
+
+    public async Task<byte[]> ExportPaymentsAsync(ExportPaymentsRequest request)
+    {
+        // Загружаем все платежи с фильтрацией
+        var query = _context.Payments
+            .Include(p => p.Student)
+            .Include(p => p.Group)
+                .ThenInclude(g => g.Subject)
+            .Where(p => p.Group.OrganizationId == request.OrganizationId);
+
+        // Применяем фильтры
+        if (request.GroupId.HasValue)
+            query = query.Where(p => p.GroupId == request.GroupId.Value);
+
+        if (request.Status.HasValue)
+            query = query.Where(p => (int)p.Status == request.Status.Value);
+
+        if (request.StudentId.HasValue)
+            query = query.Where(p => p.StudentId == request.StudentId.Value);
+
+        if (request.PeriodFrom.HasValue)
+            query = query.Where(p => p.CreatedAt >= request.PeriodFrom.Value);
+
+        if (request.PeriodTo.HasValue)
+            query = query.Where(p => p.CreatedAt <= request.PeriodTo.Value);
+
+        var payments = await query
+            .OrderBy(p => p.Student.FullName)
+            .ThenBy(p => p.CreatedAt)
+            .ToListAsync();
+
+        if (!payments.Any())
+            throw new ConflictException("Нет данных для экспорта");
+
+        using var workbook = new XLWorkbook();
+
+        // 1. Лист "Все платежи"
+        CreateAllPaymentsWorksheet(workbook, payments);
+
+        // 2. Лист "По статусам"
+        CreatePaymentsByStatusWorksheet(workbook, payments);
+
+        // 3. Листы по группам
+        var groups = payments
+            .GroupBy(p => new { p.GroupId, p.Group.Name, SubjectName = p.Group.Subject?.Name ?? "Без предмета" })
+            .OrderBy(g => g.Key.Name)
+            .ToList();
+
+        foreach (var group in groups)
+        {
+            CreateGroupPaymentsWorksheet(workbook, group.Key.Name, group.Key.SubjectName, group.ToList());
+        }
+
+        using var stream = new MemoryStream();
+        workbook.SaveAs(stream);
+        return stream.ToArray();
+    }
+
+    private void CreateAllPaymentsWorksheet(XLWorkbook workbook, List<Domain.Users.Payment> payments)
+    {
+        var worksheet = workbook.Worksheets.Add("Все платежи");
+
+        // Заголовок
+        worksheet.Cell(1, 1).Value = "ВСЕ ПЛАТЕЖИ";
+        worksheet.Cell(1, 1).Style.Font.Bold = true;
+        worksheet.Cell(1, 1).Style.Font.FontSize = 14;
+        worksheet.Range(1, 1, 1, 11).Merge();
+
+        // Шапка таблицы
+        var headers = new[] { "№", "Студент", "Логин", "Телефон", "Группа", "Предмет", "Период оплаты", "Базовая цена", "Скидка", "Сумма", "Статус", "Дата платежа" };
+        for (int i = 0; i < headers.Length; i++)
+        {
+            worksheet.Cell(3, i + 1).Value = headers[i];
+            worksheet.Cell(3, i + 1).Style.Font.Bold = true;
+            worksheet.Cell(3, i + 1).Style.Fill.BackgroundColor = XLColor.LightGray;
+        }
+
+        // Данные
+        int row = 4;
+        foreach (var payment in payments)
+        {
+            worksheet.Cell(row, 1).Value = row - 3;
+            worksheet.Cell(row, 2).Value = payment.Student.FullName;
+            worksheet.Cell(row, 3).Value = payment.Student.Login;
+            worksheet.Cell(row, 4).Value = payment.Student.Phone;
+            worksheet.Cell(row, 5).Value = payment.Group.Name;
+            worksheet.Cell(row, 6).Value = payment.Group.Subject?.Name ?? "Без предмета";
+            worksheet.Cell(row, 7).Value = FormatPaymentPeriod(payment.PaymentPeriod);
+            worksheet.Cell(row, 8).Value = payment.OriginalAmount;
+            worksheet.Cell(row, 9).Value = FormatDiscount(payment);
+            worksheet.Cell(row, 10).Value = payment.Amount;
+            worksheet.Cell(row, 11).Value = GetPaymentStatusText(payment.Status);
+            worksheet.Cell(row, 12).Value = payment.PaidAt?.ToString("dd.MM.yyyy") ?? "-";
+            row++;
+        }
+
+        // Итоги
+        AddPaymentSummary(worksheet, payments, row);
+
+        // Автоширина колонок
+        worksheet.Columns().AdjustToContents();
+    }
+
+    private void CreatePaymentsByStatusWorksheet(XLWorkbook workbook, List<Domain.Users.Payment> payments)
+    {
+        var worksheet = workbook.Worksheets.Add("По статусам");
+
+        int currentRow = 1;
+
+        var statuses = new[]
+        {
+            PaymentStatus.Paid,
+            PaymentStatus.Pending,
+            PaymentStatus.Overdue,
+            PaymentStatus.Cancelled,
+            PaymentStatus.Refunded
+        };
+
+        foreach (var status in statuses)
+        {
+            var statusPayments = payments.Where(p => p.Status == status).ToList();
+            if (!statusPayments.Any())
+                continue;
+
+            // Заголовок секции
+            worksheet.Cell(currentRow, 1).Value = $"=== {GetPaymentStatusText(status).ToUpper()} ===";
+            worksheet.Cell(currentRow, 1).Style.Font.Bold = true;
+            worksheet.Cell(currentRow, 1).Style.Font.FontSize = 12;
+            worksheet.Cell(currentRow, 1).Style.Fill.BackgroundColor = GetStatusColor(status);
+            worksheet.Range(currentRow, 1, currentRow, 11).Merge();
+            currentRow++;
+
+            // Шапка таблицы
+            var headers = new[] { "№", "Студент", "Логин", "Телефон", "Группа", "Предмет", "Период оплаты", "Базовая цена", "Скидка", "Сумма", "Дата платежа" };
+            for (int i = 0; i < headers.Length; i++)
+            {
+                worksheet.Cell(currentRow, i + 1).Value = headers[i];
+                worksheet.Cell(currentRow, i + 1).Style.Font.Bold = true;
+                worksheet.Cell(currentRow, i + 1).Style.Fill.BackgroundColor = XLColor.LightGray;
+            }
+            currentRow++;
+
+            // Данные
+            int counter = 1;
+            foreach (var payment in statusPayments)
+            {
+                worksheet.Cell(currentRow, 1).Value = counter++;
+                worksheet.Cell(currentRow, 2).Value = payment.Student.FullName;
+                worksheet.Cell(currentRow, 3).Value = payment.Student.Login;
+                worksheet.Cell(currentRow, 4).Value = payment.Student.Phone;
+                worksheet.Cell(currentRow, 5).Value = payment.Group.Name;
+                worksheet.Cell(currentRow, 6).Value = payment.Group.Subject?.Name ?? "Без предмета";
+                worksheet.Cell(currentRow, 7).Value = FormatPaymentPeriod(payment.PaymentPeriod);
+                worksheet.Cell(currentRow, 8).Value = payment.OriginalAmount;
+                worksheet.Cell(currentRow, 9).Value = FormatDiscount(payment);
+                worksheet.Cell(currentRow, 10).Value = payment.Amount;
+                worksheet.Cell(currentRow, 11).Value = payment.PaidAt?.ToString("dd.MM.yyyy") ?? "-";
+                currentRow++;
+            }
+
+            // Итоги по статусу
+            worksheet.Cell(currentRow, 1).Value = $"Итого по статусу '{GetPaymentStatusText(status)}':";
+            worksheet.Cell(currentRow, 1).Style.Font.Bold = true;
+            worksheet.Cell(currentRow, 10).Value = statusPayments.Sum(p => p.Amount);
+            worksheet.Cell(currentRow, 10).Style.Font.Bold = true;
+            worksheet.Cell(currentRow, 10).Style.NumberFormat.Format = "#,##0.00 ₽";
+            currentRow += 2; // Пропуск строки между секциями
+        }
+
+        // Общие итоги
+        worksheet.Cell(currentRow, 1).Value = "ОБЩИЕ ИТОГИ:";
+        worksheet.Cell(currentRow, 1).Style.Font.Bold = true;
+        worksheet.Cell(currentRow, 1).Style.Font.FontSize = 12;
+        currentRow++;
+
+        AddPaymentSummary(worksheet, payments, currentRow);
+
+        // Автоширина колонок
+        worksheet.Columns().AdjustToContents();
+    }
+
+    private void CreateGroupPaymentsWorksheet(XLWorkbook workbook, string groupName, string subjectName, List<Domain.Users.Payment> payments)
+    {
+        var worksheet = workbook.Worksheets.Add(SanitizeSheetName(groupName));
+
+        // Заголовок
+        worksheet.Cell(1, 1).Value = groupName.ToUpper();
+        worksheet.Cell(1, 1).Style.Font.Bold = true;
+        worksheet.Cell(1, 1).Style.Font.FontSize = 14;
+        worksheet.Range(1, 1, 1, 11).Merge();
+
+        worksheet.Cell(2, 1).Value = $"Предмет: {subjectName}";
+        worksheet.Cell(2, 1).Style.Font.Bold = true;
+        worksheet.Range(2, 1, 2, 11).Merge();
+
+        // Шапка таблицы
+        var headers = new[] { "№", "Студент", "Логин", "Телефон", "Период оплаты", "Базовая цена", "Скидка", "Сумма", "Статус", "Дата платежа" };
+        for (int i = 0; i < headers.Length; i++)
+        {
+            worksheet.Cell(4, i + 1).Value = headers[i];
+            worksheet.Cell(4, i + 1).Style.Font.Bold = true;
+            worksheet.Cell(4, i + 1).Style.Fill.BackgroundColor = XLColor.LightGray;
+        }
+
+        // Данные
+        int row = 5;
+        foreach (var payment in payments)
+        {
+            worksheet.Cell(row, 1).Value = row - 4;
+            worksheet.Cell(row, 2).Value = payment.Student.FullName;
+            worksheet.Cell(row, 3).Value = payment.Student.Login;
+            worksheet.Cell(row, 4).Value = payment.Student.Phone;
+            worksheet.Cell(row, 5).Value = FormatPaymentPeriod(payment.PaymentPeriod);
+            worksheet.Cell(row, 6).Value = payment.OriginalAmount;
+            worksheet.Cell(row, 7).Value = FormatDiscount(payment);
+            worksheet.Cell(row, 8).Value = payment.Amount;
+            worksheet.Cell(row, 9).Value = GetPaymentStatusText(payment.Status);
+            worksheet.Cell(row, 10).Value = payment.PaidAt?.ToString("dd.MM.yyyy") ?? "-";
+            row++;
+        }
+
+        // Итоги
+        AddPaymentSummary(worksheet, payments, row);
+
+        // Автоширина колонок
+        worksheet.Columns().AdjustToContents();
+    }
+
+    private void AddPaymentSummary(IXLWorksheet worksheet, List<Domain.Users.Payment> payments, int startRow)
+    {
+        var paidPayments = payments.Where(p => p.Status == PaymentStatus.Paid).ToList();
+        var pendingPayments = payments.Where(p => p.Status == PaymentStatus.Pending).ToList();
+        var overduePayments = payments.Where(p => p.Status == PaymentStatus.Overdue).ToList();
+        var cancelledPayments = payments.Where(p => p.Status == PaymentStatus.Cancelled).ToList();
+        var refundedPayments = payments.Where(p => p.Status == PaymentStatus.Refunded).ToList();
+
+        worksheet.Cell(startRow, 1).Value = "Оплачено:";
+        worksheet.Cell(startRow, 1).Style.Font.Bold = true;
+        worksheet.Cell(startRow, 2).Value = $"{paidPayments.Count} шт.";
+        worksheet.Cell(startRow, 3).Value = $"{paidPayments.Sum(p => p.Amount):N2} ₽";
+        worksheet.Cell(startRow, 3).Style.Font.Bold = true;
+
+        worksheet.Cell(startRow + 1, 1).Value = "Ожидает оплаты:";
+        worksheet.Cell(startRow + 1, 2).Value = $"{pendingPayments.Count} шт.";
+        worksheet.Cell(startRow + 1, 3).Value = $"{pendingPayments.Sum(p => p.Amount):N2} ₽";
+
+        worksheet.Cell(startRow + 2, 1).Value = "Просрочено:";
+        worksheet.Cell(startRow + 2, 2).Value = $"{overduePayments.Count} шт.";
+        worksheet.Cell(startRow + 2, 3).Value = $"{overduePayments.Sum(p => p.Amount):N2} ₽";
+
+        worksheet.Cell(startRow + 3, 1).Value = "Отменено:";
+        worksheet.Cell(startRow + 3, 2).Value = $"{cancelledPayments.Count} шт.";
+        worksheet.Cell(startRow + 3, 3).Value = $"{cancelledPayments.Sum(p => p.Amount):N2} ₽";
+
+        worksheet.Cell(startRow + 4, 1).Value = "Возврат:";
+        worksheet.Cell(startRow + 4, 2).Value = $"{refundedPayments.Count} шт.";
+        worksheet.Cell(startRow + 4, 3).Value = $"{refundedPayments.Sum(p => p.Amount):N2} ₽";
+
+        worksheet.Cell(startRow + 5, 1).Value = "ИТОГО:";
+        worksheet.Cell(startRow + 5, 1).Style.Font.Bold = true;
+        worksheet.Cell(startRow + 5, 1).Style.Font.FontSize = 12;
+        worksheet.Cell(startRow + 5, 2).Value = $"{payments.Count} шт.";
+        worksheet.Cell(startRow + 5, 2).Style.Font.Bold = true;
+        worksheet.Cell(startRow + 5, 3).Value = $"{payments.Sum(p => p.Amount):N2} ₽";
+        worksheet.Cell(startRow + 5, 3).Style.Font.Bold = true;
+        worksheet.Cell(startRow + 5, 3).Style.Font.FontSize = 12;
+    }
+
+    private string FormatPaymentPeriod(string paymentPeriod)
+    {
+        // Ожидаем формат "YYYY-MM" или "2025-11"
+        if (string.IsNullOrEmpty(paymentPeriod) || paymentPeriod.Length < 7)
+            return paymentPeriod;
+
+        var parts = paymentPeriod.Split('-');
+        if (parts.Length != 2 || !int.TryParse(parts[1], out int month))
+            return paymentPeriod;
+
+        var monthNames = new[] { "", "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь" };
+        if (month < 1 || month > 12)
+            return paymentPeriod;
+
+        return $"{monthNames[month]} {parts[0]}";
+    }
+
+    private string FormatDiscount(Domain.Users.Payment payment)
+    {
+        if (payment.DiscountValue == 0)
+            return "-";
+
+        if (payment.DiscountType == DiscountType.Percentage)
+            return $"{payment.DiscountValue}%";
+        else
+            return $"{payment.DiscountValue:N2} ₽";
+    }
+
+    private XLColor GetStatusColor(PaymentStatus status)
+    {
+        return status switch
+        {
+            PaymentStatus.Paid => XLColor.LightGreen,
+            PaymentStatus.Pending => XLColor.LightYellow,
+            PaymentStatus.Overdue => XLColor.LightPink,
+            PaymentStatus.Cancelled => XLColor.LightGray,
+            PaymentStatus.Refunded => XLColor.LightBlue,
+            _ => XLColor.White
+        };
+    }
 }

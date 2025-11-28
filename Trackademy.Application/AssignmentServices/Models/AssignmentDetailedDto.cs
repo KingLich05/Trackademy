@@ -15,6 +15,7 @@ public class AssignmentDetailedDto
     public DateTime CreatedAt { get; set; }
     
     public GroupMinimalViewModel? Group { get; set; }
+    public string? SubjectName { get; set; }
     
     /// <summary>
     /// Список студентов группы с их submissions для этого задания
