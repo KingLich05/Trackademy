@@ -13,6 +13,17 @@ try
 
     builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
 
+    // Увеличиваем лимит размера тела запроса до 150 МБ
+    builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(options =>
+    {
+        options.MultipartBodyLengthLimit = 157286400; // 150 МБ
+    });
+
+    builder.WebHost.ConfigureKestrel(serverOptions =>
+    {
+        serverOptions.Limits.MaxRequestBodySize = 157286400; // 150 МБ
+    });
+
     builder.Services.AddDependencies(builder.Configuration);
 
     builder.Services.AddControllers();

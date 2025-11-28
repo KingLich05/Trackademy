@@ -658,6 +658,7 @@ public class ExcelExportService : IExcelExportService
     {
         // Загружаем все платежи с фильтрацией
         var query = _context.Payments
+            .AsNoTracking()
             .Include(p => p.Student)
             .Include(p => p.Group)
                 .ThenInclude(g => g.Subject)
@@ -818,7 +819,6 @@ public class ExcelExportService : IExcelExportService
             worksheet.Cell(currentRow, 1).Style.Font.Bold = true;
             worksheet.Cell(currentRow, 10).Value = statusPayments.Sum(p => p.Amount);
             worksheet.Cell(currentRow, 10).Style.Font.Bold = true;
-            worksheet.Cell(currentRow, 10).Style.NumberFormat.Format = "#,##0.00 ₽";
             currentRow += 2; // Пропуск строки между секциями
         }
 
@@ -830,8 +830,18 @@ public class ExcelExportService : IExcelExportService
 
         AddPaymentSummary(worksheet, payments, currentRow);
 
-        // Автоширина колонок
-        worksheet.Columns().AdjustToContents();
+        // Фиксированная ширина колонок
+        worksheet.Column(1).Width = 5;
+        worksheet.Column(2).Width = 25;
+        worksheet.Column(3).Width = 15;
+        worksheet.Column(4).Width = 15;
+        worksheet.Column(5).Width = 20;
+        worksheet.Column(6).Width = 20;
+        worksheet.Column(7).Width = 15;
+        worksheet.Column(8).Width = 12;
+        worksheet.Column(9).Width = 10;
+        worksheet.Column(10).Width = 12;
+        worksheet.Column(11).Width = 12;
     }
 
     private void CreateGroupPaymentsWorksheet(XLWorkbook workbook, string groupName, string subjectName, List<Domain.Users.Payment> payments)
@@ -877,8 +887,17 @@ public class ExcelExportService : IExcelExportService
         // Итоги
         AddPaymentSummary(worksheet, payments, row);
 
-        // Автоширина колонок
-        worksheet.Columns().AdjustToContents();
+        // Фиксированная ширина колонок
+        worksheet.Column(1).Width = 5;
+        worksheet.Column(2).Width = 25;
+        worksheet.Column(3).Width = 15;
+        worksheet.Column(4).Width = 15;
+        worksheet.Column(5).Width = 15;
+        worksheet.Column(6).Width = 12;
+        worksheet.Column(7).Width = 10;
+        worksheet.Column(8).Width = 12;
+        worksheet.Column(9).Width = 15;
+        worksheet.Column(10).Width = 12;
     }
 
     private void AddPaymentSummary(IXLWorksheet worksheet, List<Domain.Users.Payment> payments, int startRow)
@@ -889,34 +908,37 @@ public class ExcelExportService : IExcelExportService
         var cancelledPayments = payments.Where(p => p.Status == PaymentStatus.Cancelled).ToList();
         var refundedPayments = payments.Where(p => p.Status == PaymentStatus.Refunded).ToList();
 
+        // Отступ 2 строки
+        startRow += 2;
+
         worksheet.Cell(startRow, 1).Value = "Оплачено:";
         worksheet.Cell(startRow, 1).Style.Font.Bold = true;
         worksheet.Cell(startRow, 2).Value = $"{paidPayments.Count} шт.";
-        worksheet.Cell(startRow, 3).Value = $"{paidPayments.Sum(p => p.Amount):N2} ₽";
+        worksheet.Cell(startRow, 3).Value = paidPayments.Sum(p => p.Amount);
         worksheet.Cell(startRow, 3).Style.Font.Bold = true;
 
         worksheet.Cell(startRow + 1, 1).Value = "Ожидает оплаты:";
         worksheet.Cell(startRow + 1, 2).Value = $"{pendingPayments.Count} шт.";
-        worksheet.Cell(startRow + 1, 3).Value = $"{pendingPayments.Sum(p => p.Amount):N2} ₽";
+        worksheet.Cell(startRow + 1, 3).Value = pendingPayments.Sum(p => p.Amount);
 
         worksheet.Cell(startRow + 2, 1).Value = "Просрочено:";
         worksheet.Cell(startRow + 2, 2).Value = $"{overduePayments.Count} шт.";
-        worksheet.Cell(startRow + 2, 3).Value = $"{overduePayments.Sum(p => p.Amount):N2} ₽";
+        worksheet.Cell(startRow + 2, 3).Value = overduePayments.Sum(p => p.Amount);
 
         worksheet.Cell(startRow + 3, 1).Value = "Отменено:";
         worksheet.Cell(startRow + 3, 2).Value = $"{cancelledPayments.Count} шт.";
-        worksheet.Cell(startRow + 3, 3).Value = $"{cancelledPayments.Sum(p => p.Amount):N2} ₽";
+        worksheet.Cell(startRow + 3, 3).Value = cancelledPayments.Sum(p => p.Amount);
 
         worksheet.Cell(startRow + 4, 1).Value = "Возврат:";
         worksheet.Cell(startRow + 4, 2).Value = $"{refundedPayments.Count} шт.";
-        worksheet.Cell(startRow + 4, 3).Value = $"{refundedPayments.Sum(p => p.Amount):N2} ₽";
+        worksheet.Cell(startRow + 4, 3).Value = refundedPayments.Sum(p => p.Amount);
 
         worksheet.Cell(startRow + 5, 1).Value = "ИТОГО:";
         worksheet.Cell(startRow + 5, 1).Style.Font.Bold = true;
         worksheet.Cell(startRow + 5, 1).Style.Font.FontSize = 12;
         worksheet.Cell(startRow + 5, 2).Value = $"{payments.Count} шт.";
         worksheet.Cell(startRow + 5, 2).Style.Font.Bold = true;
-        worksheet.Cell(startRow + 5, 3).Value = $"{payments.Sum(p => p.Amount):N2} ₽";
+        worksheet.Cell(startRow + 5, 3).Value = payments.Sum(p => p.Amount);
         worksheet.Cell(startRow + 5, 3).Style.Font.Bold = true;
         worksheet.Cell(startRow + 5, 3).Style.Font.FontSize = 12;
     }
@@ -946,7 +968,7 @@ public class ExcelExportService : IExcelExportService
         if (payment.DiscountType == DiscountType.Percentage)
             return $"{payment.DiscountValue}%";
         else
-            return $"{payment.DiscountValue:N2} ₽";
+            return $"{payment.DiscountValue:N2}";
     }
 
     private XLColor GetStatusColor(PaymentStatus status)

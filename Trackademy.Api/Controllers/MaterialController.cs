@@ -25,6 +25,8 @@ public class MaterialController : ControllerBase
     /// </summary>
     [HttpPost]
     [Authorize(Roles = "Administrator,Owner,Teacher")]
+    [RequestSizeLimit(157286400)] // 150 МБ
+    [RequestFormLimits(MultipartBodyLengthLimit = 157286400)] // 150 МБ
     public async Task<IActionResult> UploadMaterial([FromForm] MaterialAddModel model)
     {
         var userId = GetCurrentUserId();
